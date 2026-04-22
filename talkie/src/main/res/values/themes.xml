@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.UI" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/dark_green</item>
+    </style>>
+    <style name="Theme.Splash" parent="Theme.UI">
+        <item name="windowSplashScreenBackground">@color/dark_green</item>
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_wt_02</item>
+        <item name="postSplashScreenTheme">@style/Theme.UI</item>
+    </style>
+</resources>

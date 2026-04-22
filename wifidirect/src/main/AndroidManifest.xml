@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="walkie.wifidirect"
+    android:versionCode="1"
+    android:versionName="1.0">
+
+    <!-- If your app targets Android 13 (API level 33)
+        or higher, you must declare the NEARBY_WIFI_DEVICES permission. -->
+    <uses-permission
+        android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="s" />
+    <!-- If your app derives location information from Wi-Fi APIs,
+         don't include the "usesPermissionFlags" attribute. -->
+    <uses-permission
+        android:required="true"
+        android:name="android.permission.ACCESS_FINE_LOCATION"
+        android:maxSdkVersion="35"/>
+
+    <uses-permission
+        android:required="true"
+        android:name="android.permission.ACCESS_COARSE_LOCATION"
+        android:maxSdkVersion="35"/>
+
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+
+
+    <!-- android:name="android.permission.ACCESS_COARSE_LOCATION" -->
+    <!-- If any feature in your app relies on precise location information,
+         don't include the "maxSdkVersion" attribute. -->
+    <uses-permission
+    android:required="true"
+    android:name="android.permission.ACCESS_WIFI_STATE"/>
+    <uses-permission
+    android:required="true"
+    android:name="android.permission.CHANGE_WIFI_STATE"/>
+    <uses-permission
+    android:required="true"
+    android:name="android.permission.INTERNET"/>
+</manifest>
