@@ -4,6 +4,7 @@ constraintlayout = "2.2.1"
 constraintlayoutCompose = "1.1.1"
 constraintlayoutComposeVersion = "1.0.1"
 coreSplashscreen = "1.2.0"
+jetbrainsKotlinxSerializationJson = "1.11.0"
 kotlin = "2.3.21"
 coreKtx = "1.13.1"
 junit = "4.13.2"
@@ -46,6 +47,7 @@ androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit
 androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version = "1.11.0" }
+kotlinx-serialization-json-v163 = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "jetbrainsKotlinxSerializationJson" }
 kotlinx-serialization-json-v171 = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJsonVersion" }
 support-v4 = { group = "com.android.support", name = "support-v4", version.ref = "supportV4" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
