@@ -1,4 +1,4 @@
-import org.jetbrains.kotlin.incremental.BuildInfo
+//import org.jetbrains.kotlin.incremental.BuildInfo
 import java.time.Instant.now
 import walkie.talkie.git.*
 
@@ -33,7 +33,7 @@ tasks.register("generateBuildInfo") {
         """.trimIndent()
         )
 
-        println("commit: $commit $BuildInfo")
+        //println("commit: $commit $BuildInfo")
     }
 }
 
@@ -95,11 +95,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
-    }
-    kotlinOptions {
-        jvmTarget = "1.8"
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
     buildFeatures {
         compose = true
@@ -151,6 +148,11 @@ android {
             java.srcDir(layout.buildDirectory.dir("generated/source/buildInfo/walkie/talkie"))
         }
     }
+    buildToolsVersion = "36.0.0"
+}
+
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {
@@ -178,6 +180,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.kotlinx.serialization.json)
     implementation (libs.androidx.core.splashscreen)
+    implementation(libs.androidx.compose.material.icons.extended)
     /* implementation(libs.androidx.multidex) */
 
     implementation(project(":glue_inc"))

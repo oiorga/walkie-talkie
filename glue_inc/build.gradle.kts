@@ -8,11 +8,11 @@ plugins {
 
 android {
     namespace = "walkie.glue_inc"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 30
-        targetSdk = 34
+        targetSdk = 36
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -53,12 +53,10 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "1.8"
-    }
+
     buildFeatures {
         compose = true
     }
@@ -70,6 +68,11 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+    buildToolsVersion = "36.0.0"
+}
+
+kotlin {
+    jvmToolchain(17)
 }
 
 dependencies {

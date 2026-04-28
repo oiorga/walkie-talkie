@@ -13,7 +13,7 @@ import android.net.wifi.p2p.WifiP2pManager
 import android.net.wifi.p2p.WifiP2pManager.Channel
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.lifecycle.AtomicReference
+import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.sync.Semaphore
 import walkie.util.generic.ChannelMux
