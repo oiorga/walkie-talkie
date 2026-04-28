@@ -45,7 +45,7 @@ android {
     val baseName = "Walkie Talkie"
 
     namespace = "walkie.talkie"
-    compileSdk = 35
+    compileSdk = 36
 
     buildFeatures {
         buildConfig = true
@@ -54,7 +54,7 @@ android {
     defaultConfig {
         applicationId = "walky.talky"
         minSdk = 30
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 4
         versionName = "0.0.4"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
