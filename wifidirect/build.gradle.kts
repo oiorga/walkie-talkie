@@ -88,7 +88,6 @@ dependencies {
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.constraintlayout.compose.v101)
     implementation(libs.kotlinx.serialization.json)
     /* implementation(libs.androidx.multidex) */
 

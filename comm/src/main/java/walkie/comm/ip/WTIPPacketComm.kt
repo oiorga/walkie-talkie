@@ -1,6 +1,7 @@
 package walkie.comm.ip
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import walkie.util.logd
 import walkie.util.logging

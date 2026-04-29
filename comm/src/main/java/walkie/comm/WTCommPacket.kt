@@ -3,6 +3,7 @@ package  walkie.comm
 import android.os.Build
 import androidx.annotation.RequiresApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import walkie.glue.wtcomm.WTMedium
 import walkie.glue.wtcomm.WTPeerInt

@@ -2,6 +2,7 @@ package walkie.glue.wtcomm
 
 import android.util.Log
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import walkie.glue.wtchat.ChatGroupType
 import walkie.glue.wtsystem.nodeUniqueId
