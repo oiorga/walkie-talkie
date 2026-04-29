@@ -13,16 +13,12 @@ pluginManagement {
 
     plugins {
         id("org.jetbrains.kotlin.android") version "2.3.21"
-        id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
     }
 }
 
-/*
 plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
 }
-*/
-
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
