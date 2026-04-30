@@ -9,7 +9,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import walkie.util.VMCollection
 import kotlinx.coroutines.runBlocking
 import walkie.chat.ChatMessage
 import walkie.glue.wtchat.ChatGroupIdInt
@@ -28,15 +27,11 @@ enum class UIMessageAction {Send, Receive}
 class WTViewModel (
     var coroutineScope: CoroutineScope =
         CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
-    var savedStateHandle: SavedStateHandle? = null
 ): ViewModel() {
     companion object {
         const val TAG = "WTViewModel"
     }
-    private val uiDummyObj: VMCollection = VMCollection()
-
     private val wtCommonData: WTCommonData = WTCommonData.ONE
-
     /* Needed by WTMainUI */
     private var _triggerUIUpdate: Boolean by mutableStateOf(false)
     private var _changed: Boolean = true
@@ -105,20 +100,6 @@ class WTViewModel (
         _changed = true
         _triggerUIUpdate = !_triggerUIUpdate
     }
-
-    fun addUIObj(key: String, value: Any) {
-        uiDummyObj.add(key, value)
-        savedStateHandle?.set(key, value)
-    }
-
-    fun getUIObj(key: String, type: String): Any {
-        return (uiDummyObj.get(key, type))
-    }
-
-    fun getUIObjFromSavedState(key: String): Any {
-        return savedStateHandle?.get(key)!!
-    }
-
     fun processMessage(message: ChatMessage, action: UIMessageAction) {
         if (UIMessageAction.Send == action) {
             runBlocking { wtCommonData.sendChatMessage(message) }
