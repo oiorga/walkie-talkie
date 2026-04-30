@@ -1,8 +1,6 @@
 package walkie.talkie.playground
 
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.CoroutineScope
@@ -43,7 +41,6 @@ class WalkiePlayGroundTimer(private val delay: Long = 1000L) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 fun WalkieTalkie.jobby (scope: CoroutineScope = MainScope(),
                         counter: CounterLive = wtCommonData().counterLive,
                         delay: Long = 1000L,
@@ -70,7 +67,6 @@ fun WalkieTalkie.jobby (scope: CoroutineScope = MainScope(),
     return job
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 fun WalkieTalkie.squirrelWheel (scope: CoroutineScope = MainScope(), counter: CounterLive = wtCommonData().counterLive, delay: Long = 1000L) = runBlocking {
     val tag: String = "squirrelWheel"
     val jobList = mutableListOf<Job>()
@@ -90,7 +86,6 @@ fun WalkieTalkie.squirrelWheel (scope: CoroutineScope = MainScope(), counter: Co
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 fun WalkieTalkie.commSquirrelWheel (scope: CoroutineScope = MainScope(), delay: Long = 1003L, addRandom: Long = 10L) = runBlocking {
     val tag: String = "commSquirrelWheel"
     var delaY = 0
@@ -111,7 +106,6 @@ fun WalkieTalkie.commSquirrelWheel (scope: CoroutineScope = MainScope(), delay: 
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 fun WalkieTalkie.wifiLocalRndMsgs(scope: CoroutineScope, delay: Long) {
     val message = ChatMessage(
         sender = generateRandomSender(),
@@ -126,7 +120,6 @@ fun WalkieTalkie.wifiLocalRndMsgs(scope: CoroutineScope, delay: Long) {
     wtCommonData().sendChatMessage(message)
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: Long) {
     delay(0L)
     var delaY = 0

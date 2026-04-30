@@ -26,8 +26,6 @@ import walkie.talkie.viewmodel.WTViewModel
 import walkie.util.logd
 import walkie.util.randomString
 
-
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.MainScreenTopBarActionMenu(
     modifier: Modifier,
@@ -75,7 +73,6 @@ internal fun WalkieTalkie.MainScreenTopBarActionMenu(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.MenuItemInfo(
     entryId: String,
@@ -105,7 +102,6 @@ internal fun WalkieTalkie.MenuItemInfo(
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.MenuTextInfo() {
     val tag = "WalkieTalkieMenuItem"

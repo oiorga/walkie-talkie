@@ -16,7 +16,6 @@ import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 abstract class Mesh<K , V> (
     private var uniqueId: K,
     private var _heartbeat: Long = 3000L,

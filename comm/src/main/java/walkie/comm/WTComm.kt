@@ -22,7 +22,6 @@ import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class WTComm (
     private val nodeId: NodeIdInt,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),

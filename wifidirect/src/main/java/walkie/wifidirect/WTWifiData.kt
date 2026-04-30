@@ -41,7 +41,6 @@ data class WTWifiDirectServiceInfo (
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 data class WTWifiDirectPeerInfo (
     val p2pInfo: WifiP2pDevice,
     var isGroupOwner: Boolean = p2pInfo.isGroupOwner,

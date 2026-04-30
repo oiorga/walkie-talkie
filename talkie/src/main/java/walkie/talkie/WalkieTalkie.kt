@@ -83,7 +83,6 @@ import walkie.wifidirect.wtWifiDirectStop
 import kotlin.random.Random
 import kotlin.system.exitProcess
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class WalkieTalkie(
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>()
     ) :
@@ -358,7 +357,6 @@ class WalkieTalkie(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 internal fun WalkieTalkie.wifiDInit() {
     requestWifiDPermission()
 
@@ -372,7 +370,6 @@ internal fun WalkieTalkie.wifiDInit() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 internal fun WalkieTalkie.wifiDRestartChannel() {
     val tag = "wifiDRestartChannel/${randomString(2u)}"
 
@@ -397,12 +394,10 @@ internal fun WalkieTalkie.wifiDRestartChannel() {
     wtCommonData().wtWifiD.wtWifiDirectMain(wtCommonData().wtScope, scanInterval = 1000L)
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 internal fun WalkieTalkie.wtDeviceName() : String{
     return Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME)
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 internal fun WalkieTalkie.requestWifiDPermission() {
     ActivityCompat.requestPermissions(
         this,
@@ -411,7 +406,6 @@ internal fun WalkieTalkie.requestWifiDPermission() {
     )
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 internal fun WalkieTalkie.requestWifiDPermissionLocation() {
     ActivityCompat.requestPermissions(
         this,
@@ -420,7 +414,6 @@ internal fun WalkieTalkie.requestWifiDPermissionLocation() {
     );
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 internal fun WalkieTalkie.wtCommDataInit(stage: Int) : WTCommonData {
     val wtCommonData: WTCommonData = WTCommonData.ONE
 
@@ -565,7 +558,6 @@ internal fun WalkieTalkie.wtCommDataInit(stage: Int) : WTCommonData {
     return wtCommonData
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 fun WalkieTalkie.customComposablesInit() {
     wtCommonData().customComposables["About"] = { mod, theme -> WTInfo(mod, theme) }
     wtCommonData().customComposables["Help"] = { mod, theme -> WTHelp(mod, theme) }

@@ -53,7 +53,6 @@ private val WTPeersUITheme: WTUITheme = WTUITheme(
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.WalkieTalkiePeersUI(wtNavNode: WTNavNode? = null) {
     val tag = "WalkieTalkiePeersUI/${randomString(2u)}"
@@ -93,7 +92,6 @@ internal fun WalkieTalkie.WalkieTalkiePeersUI(wtNavNode: WTNavNode? = null) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.PeersUiMainEntry(
     modifier: Modifier,
@@ -144,7 +142,6 @@ internal fun WalkieTalkie.PeersUiMainEntry(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.PeersUiEntry(
     modifier: Modifier,
@@ -222,7 +219,6 @@ internal fun WalkieTalkie.PeersUiEntry(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 internal fun WalkieTalkie.openChatOnClickPrep(
     mainVModel: WTViewModel,
     peer: WTCommPeerInfo
@@ -244,8 +240,6 @@ internal fun WalkieTalkie.openChatOnClickPrep(
     logd(tag, "(1): ${mainVModel.currentScreen()} dId: ${mainVModel.nextDiscussionId}")
 }
 
-
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 internal fun WalkieTalkie.openChatOnClick(
     mainVModel: WTViewModel,
     peer: WTCommPeerInfo
@@ -254,7 +248,6 @@ internal fun WalkieTalkie.openChatOnClick(
     mainVModel.switchScreen(WTNavigation.RemoteChat)
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.PeersMainScreen(
     mainVModel: WTViewModel,
@@ -305,7 +298,6 @@ internal fun WalkieTalkie.PeersMainScreen(
         })
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.Searching(
     modifier: Modifier,
@@ -392,7 +384,6 @@ internal fun WalkieTalkie.Searching(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.Searching01(
     modifier: Modifier,

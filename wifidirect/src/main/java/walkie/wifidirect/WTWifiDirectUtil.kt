@@ -30,7 +30,6 @@ internal fun WifiP2pInfo.logD(tag: String = "WifiP2pInfo") {
     )
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 internal fun WTWiFiDirect.wtWifiDirectInfo() : String {
     var info = ""
 

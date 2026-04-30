@@ -25,7 +25,6 @@ import walkie.talkie.ui.util.EmptyLine
 import walkie.util.logd
 import walkie.util.randomString
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 fun WalkieTalkie.WTInfo(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WTUITheme()) {
     val pInfo: PackageInfo = packageManager.getPackageInfo(packageName, 0)
@@ -192,7 +191,6 @@ fun WalkieTalkie.WTInfo(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WT
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 fun WalkieTalkie.WTDebug(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WTUITheme()) {
     val tag = "WTDebug/${randomString(2U)}"

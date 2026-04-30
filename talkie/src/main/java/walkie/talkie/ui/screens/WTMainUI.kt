@@ -51,7 +51,6 @@ private val WTMainUITheme: WTUITheme = WTUITheme(
 )
 
 val WalkieTalkie.WTMenuUITheme: WTUITheme
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     get() =
         WTUITheme(
             topTitle = this.wtVModel().textInfoId,
@@ -59,7 +58,6 @@ val WalkieTalkie.WTMenuUITheme: WTUITheme
         )
 
 @OptIn(ExperimentalMaterial3Api::class)
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.WalkieTalkieMainUI(wtNavNode: WTNavNode? = null) {
     val tag = "WalkieTalkieMain"
@@ -113,7 +111,6 @@ internal fun WalkieTalkie.onDiscussionItemClick(
     logd(tag, "$tag/onDiscussionItemClick(1): ${mainVModel.currentScreen()} dId: ${mainVModel.nextDiscussionId}")
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.DiscussionItemEntry(
     modifier: Modifier,
@@ -213,7 +210,6 @@ internal fun WalkieTalkie.DiscussionItemEntry(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.MainScreen(
     modifier: Modifier,
@@ -235,7 +231,6 @@ internal fun WalkieTalkie.MainScreen(
         })
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 internal fun WalkieTalkie.mainScreenList(
     mainVModel: WTViewModel
 ) : MutableList<WTNavNode> {

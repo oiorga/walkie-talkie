@@ -46,7 +46,6 @@ class WTWiFiDirectStatic private constructor() {
 }
 
 @SuppressLint("MissingPermission")
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.scanPeers(coroutineScope: CoroutineScope = MainScope(), delay: Long = 1000L) {
     val tag = "scanPeers/${randomString(2u)}"
     val s = WTWiFiDirectStatic.INSTANCE
@@ -129,7 +128,6 @@ suspend fun WTWiFiDirect.scanPeers(coroutineScope: CoroutineScope = MainScope(),
     wtWifiDirectStop()
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.updatePeers(delay: Long = 1000L) {
     val divider = 5
     val tag = "updatePeers/${randomString(2u)}"
@@ -167,7 +165,6 @@ suspend fun WTWiFiDirect.updatePeers(delay: Long = 1000L) {
     logd(tag, "--------------------------------------------------------------")
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 fun WTWiFiDirect.updateThisDevice() {
     val tag = "updateThisDevice/${randomString(2u)}"
 
@@ -180,7 +177,6 @@ fun WTWiFiDirect.updateThisDevice() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.discoverPeersJob(delay: Long = 100L) {
     val tag = "discoverPeersJob/${randomString(2u)}"
 
@@ -240,7 +236,6 @@ suspend fun WTWiFiDirect.discoverPeersJob(delay: Long = 100L) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.updatePeersInfo () {
     val tag = "updatePeersInfo/${randomString(2u)}"
     var change = false
@@ -334,7 +329,6 @@ suspend fun WTWiFiDirect.updatePeersInfo () {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 fun WTWiFiDirect.updateGroupInfo() {
     val tag = "updateGroupInfo/${randomString(2u)}"
     var changed = false
@@ -401,7 +395,6 @@ fun WTWiFiDirect.updateGroupInfo() {
     logd(tag, "--------------------------------------------------------------")
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 fun WTWiFiDirect.notifyOfChange(
     oldGroupInfo: Triple<InetAddress?, InetAddress?, Int?>,
     wtGroupInfo: Triple<InetAddress?, InetAddress?, Int?>
@@ -472,7 +465,6 @@ fun WTWiFiDirect.notifyOfChange(
     return wtGroupInfo
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.updateP2pInfo () {
     val tag = "updateP2pInfo/${randomString(2u)}"
 
@@ -503,7 +495,6 @@ suspend fun WTWiFiDirect.updateP2pInfo () {
     logd(tag, "Exit--------------------------------------------------------------")
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.connectToPeers(delay: Long = 1000L) {
     val tag = "connectToPeers/${randomString(2u)}"
     var c = 0
@@ -611,7 +602,6 @@ suspend fun WTWiFiDirect.connectToPeers(delay: Long = 1000L) {
 }
 
 @SuppressLint("MissingPermission")
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.removeLocalService(sync: Boolean = true) {
     val tag = "removeLocalService/${randomString(2u)}"
     val instanceName = WT_SERVICE_WALKIETALKIE// + "." + deviceUid()
@@ -659,7 +649,6 @@ suspend fun WTWiFiDirect.removeLocalService(sync: Boolean = true) {
 }
 
 @SuppressLint("MissingPermission")
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.addLocalService(sync: Boolean = true, removeFirst: Boolean = true) {
     val tag = "addLocalService/${randomString(2u)}"
     val instanceName = WT_SERVICE_WALKIETALKIE /* + "." + deviceUid() */
@@ -708,7 +697,6 @@ suspend fun WTWiFiDirect.addLocalService(sync: Boolean = true, removeFirst: Bool
 }
 
 @SuppressLint("MissingPermission")
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.removeServiceRequest(sync: Boolean = true) {
     val tag = "addServiceRequest/${randomString(2u)}"
     val sem = Semaphore(1, 1)
@@ -748,7 +736,6 @@ suspend fun WTWiFiDirect.removeServiceRequest(sync: Boolean = true) {
 }
 
 @SuppressLint("MissingPermission")
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.addServiceRequest(sync: Boolean = true, removeFirst: Boolean = true) {
     val tag = "addServiceRequest/${randomString(2u)}"
     val sem = Semaphore(1, 1)
@@ -791,7 +778,6 @@ suspend fun WTWiFiDirect.addServiceRequest(sync: Boolean = true, removeFirst: Bo
 }
 
 @SuppressLint("MissingPermission")
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 fun WTWiFiDirect.registerServiceListeners() {
     val tag = "registerServiceListeners/${randomString(2u)}"
 
@@ -847,7 +833,6 @@ fun WTWiFiDirect.registerServiceListeners() {
 }
 
 @SuppressLint("MissingPermission")
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.wtServicesInit(sync: Boolean = true) {
     val tag = "discoverServicesInit/${randomString(2u)}"
     val sem = Semaphore(1, 1)
@@ -871,7 +856,6 @@ suspend fun WTWiFiDirect.wtServicesInit(sync: Boolean = true) {
 
 /* For some reason is not working */
 @SuppressLint("MissingPermission")
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.stopPeerDiscovery(sync: Boolean = true) {
     val tag = "stopPeerDiscovery/${randomString(2u)}"
     val sem = Semaphore(1, 1)
@@ -906,7 +890,6 @@ suspend fun WTWiFiDirect.stopPeerDiscovery(sync: Boolean = true) {
 }
 
 @SuppressLint("MissingPermission")
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.discoverServices(sync: Boolean = true) {
     val tag = "discoverServices/${randomString(2u)}"
     val sem = Semaphore(1, 1)
@@ -935,7 +918,6 @@ suspend fun WTWiFiDirect.discoverServices(sync: Boolean = true) {
     if (sync) sem.acquire()
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.clearAllServices(sync: Boolean = true) {
     val tag = "clearAllServices/${randomString(2u)}"
     val sem = Semaphore(1, 1)
@@ -990,7 +972,6 @@ suspend fun WTWiFiDirect.clearAllServices(sync: Boolean = true) {
     if (sync) sem.acquire()
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.processBcastReceiverMessage(intent: Intent) {
     val action = intent.action
     val tag = "WiFiDirectBroadcastReceiver"
@@ -1064,7 +1045,6 @@ suspend fun WTWiFiDirect.processBcastReceiverMessage(intent: Intent) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 fun WTWiFiDirect.wtWifiDirectMain(scope: CoroutineScope = MainScope(), scanInterval: Long = 1000L) {
     val tag = "wtWifiDirectMain/${randomString(2u)}"
 
@@ -1082,7 +1062,6 @@ fun WTWiFiDirect.wtWifiDirectMain(scope: CoroutineScope = MainScope(), scanInter
     logd(tag, "wtWifiDirectMain Entry 2 scanPeersJob: ${scanPeersJob.toString()}")
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 suspend fun WTWiFiDirect.wtWifiDirectStop(delay: Long = 1000L) {
     val tag = "wtWifiDirectStop/${randomString(2u)}"
     val s = WTWiFiDirectStatic.INSTANCE

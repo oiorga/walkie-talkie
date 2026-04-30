@@ -37,7 +37,6 @@ class WTPRMCommStatic private constructor() {
 }
 */
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class WTPRMComm (
     private val node: NodeIdInt,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
@@ -52,7 +51,6 @@ class WTPRMComm (
 {
     private val wtIPComm: WTIPComm = WTIPComm(node)
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private val wtMesh: Mesh<String, WTCommPeerInfo> = WTIPMesh(node.uid())
     private val directNodes: MutableList<String> = mutableListOf()
 
@@ -266,7 +264,6 @@ class WTPRMComm (
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 internal fun WTPRMComm.peersUpdateSendDebugInfo() {
     var str = ""
     str += "Peers List: ${directNodes()}"

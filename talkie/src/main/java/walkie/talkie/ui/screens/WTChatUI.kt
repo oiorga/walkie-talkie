@@ -56,7 +56,6 @@ import walkie.util.logd
 import walkie.util.randomString
 
 val WalkieTalkie.WTChatUITheme: WTUITheme
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     get() =
         WTUITheme(
             topTitle = this.wtVModel().chatDiscussionId?.groupName,
@@ -64,7 +63,6 @@ val WalkieTalkie.WTChatUITheme: WTUITheme
         )
 
 @OptIn(ExperimentalMaterial3Api::class)
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 fun WalkieTalkie.WTChat (wtNavNode: WTNavNode? = null) {
     val tag = "WTChat/${randomString(2U)}"
@@ -103,7 +101,6 @@ fun WalkieTalkie.WTChat (wtNavNode: WTNavNode? = null) {
     chatVModel.chatDiscussion.read = true
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.ChatBox(
     chatVModel: WTViewModel,
@@ -196,7 +193,6 @@ internal fun WalkieTalkie.ChatBox(
     logd(tag, "ChatBox Sending: $textInput")
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.ChatItem(
     modifier: Modifier,
@@ -228,7 +224,6 @@ internal fun WalkieTalkie.ChatItem(
     logd(tag, "$tag Exit")
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.ChatScreen(
     modifier: Modifier,

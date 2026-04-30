@@ -146,7 +146,6 @@ data class WTNavGraph (
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.WTUI(route: WTNavigation) {
     when (route) {
@@ -165,7 +164,6 @@ internal fun WalkieTalkie.WTUI(route: WTNavigation) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.WTPreUI(route: WTNavigation) {
     when (route) {
@@ -184,7 +182,6 @@ internal fun WalkieTalkie.WTPreUI(route: WTNavigation) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.WTPostUI(route: WTNavigation) {
     when (route) {
@@ -203,7 +200,6 @@ internal fun WalkieTalkie.WTPostUI(route: WTNavigation) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.WTNavInit(
     navController: NavHostController = rememberNavController(),

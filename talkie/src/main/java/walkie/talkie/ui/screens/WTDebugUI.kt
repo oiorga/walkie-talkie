@@ -48,7 +48,6 @@ private val WTDebugUITheme: WTUITheme = WTUITheme(
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.WalkieTalkieDebugUI(wtNavNode: WTNavNode? = null) {
     val tag = "WalkieTalkieDebugUI"
@@ -87,7 +86,6 @@ internal fun WalkieTalkie.WalkieTalkieDebugUI(wtNavNode: WTNavNode? = null) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.DebugUiMainEntry(
     modifier: Modifier,
@@ -137,7 +135,6 @@ internal fun WalkieTalkie.DebugUiMainEntry(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.DebugMainScreen(
     mainVModel: WTViewModel,

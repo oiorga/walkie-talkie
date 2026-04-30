@@ -51,7 +51,6 @@ fun WTCommPeerInfo.uid(): String {
     return nodeUniqueId(id, unique!!)
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class WTIPMesh(uniqueId: String) : Mesh<String, WTCommPeerInfo>(uniqueId) {
     companion object {
         const val TAG = "WTIPMesh"

@@ -82,7 +82,6 @@ fun ChatDivider(modifier: Modifier) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 fun WalkieTalkie.ComposableChatItem(
     chatMessage: ChatMessageAbs,
@@ -440,7 +439,6 @@ inline fun<reified T, reified K> T.Compose(key: K? = null, content: @Composable(
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 internal fun WalkieTalkie.TopBarBack(
     modifier: Modifier = Modifier,

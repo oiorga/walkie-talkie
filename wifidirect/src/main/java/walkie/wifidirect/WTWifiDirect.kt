@@ -32,7 +32,6 @@ import walkie.util.randomString
 import java.net.InetAddress
 import kotlin.random.Random
 
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 class WTWiFiDirect(
     private val _manager: WifiP2pManager,
     private var _channel: Channel,
@@ -335,7 +334,6 @@ class WTWiFiDirect(
         wifiP2PEngineFailCoolDown(false)
     }
 
-    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     suspend fun discoverPeers(sync: Boolean = true) {
         val tag = "discoverPeers/${randomString(2u)}"
         val sem = Semaphore(1, 1)
