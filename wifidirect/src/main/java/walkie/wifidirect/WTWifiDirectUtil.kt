@@ -40,15 +40,15 @@ internal fun WTWiFiDirect.wtWifiDirectInfo() : String {
             "\n\tGroup Address: " + this.wtWifiP2pInfo.get()?.groupOwnerAddress +
             "\n\tLocal IPAddress: " + this.wtWifiGroupInfo.get()?.`interface`?.let { getInterfaceIpAddress(it) }
 
-    info = info + "\nGroup Info: " + "${this.wtWifiGroupInfo.get()?.owner?.uniqueWifiId()}/${wtGroupOwnerName}" + " " + wtGroupOwner?.p2pInfo?.uniqueWifiId()
+    info += "\nGroup Info: " + "${this.wtWifiGroupInfo.get()?.owner?.uniqueWifiId()}/${wtGroupOwnerName}" + " " + wtGroupOwner?.p2pInfo?.uniqueWifiId()
     var cList = ""
     this.wtWifiGroupInfo.get()?.clientList?.forEach { device ->
         cList += "\t[${device.deviceName}]"
     }
 
-    info = info + "\n\tCurrent Device: ${thisDevice?.uniqueWifiId()} $deviceUid" +
+    info += "\n\tCurrent Device: ${thisDevice?.uniqueWifiId()} $deviceUid" +
             "\n\tGroup Owner: " + this.wtWifiGroupInfo.get()?.owner?.deviceName +
-            "\n\tGroup IP Address: " + this.wtGroupIp + " $wtGroupServerPort"
+            "\n\tGroup IP Address: " + this.wtGroupIp + " $wtGroupServerPort" +
             //"\n\tOwner device address: " + wtWifiGroupInfo?.owner?.deviceAddress +
             "\n\tis Owner: " + this.wtWifiGroupInfo.get()?.isGroupOwner + " " + wtIsGroupOwner + " " + this.wtWifiGroupInfo.get()?.owner?.isGroupOwner +
             "\n\tis Formed: " + wtIsGroupFormed +

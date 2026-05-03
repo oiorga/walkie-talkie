@@ -1,10 +1,11 @@
 package walkie.talkie
 
+import android.Manifest.permission.ACCESS_COARSE_LOCATION
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.Manifest.permission.NEARBY_WIFI_DEVICES
 import android.content.Context
-import android.content.Context.RECEIVER_EXPORTED
 import android.content.IntentFilter
+import android.content.pm.PackageManager
 import android.net.wifi.p2p.WifiP2pManager
 import android.net.wifi.p2p.WifiP2pManager.ACTION_WIFI_P2P_LISTEN_STATE_CHANGED
 import android.net.wifi.p2p.WifiP2pManager.ACTION_WIFI_P2P_REQUEST_RESPONSE_CHANGED
@@ -23,16 +24,15 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Observer
-import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -62,6 +62,7 @@ import walkie.glue.wtmisc.WTNavigation
 import walkie.glue_inc.ChannelId
 import walkie.glue_inc.ChannelIdInt
 import walkie.glue_inc.ChannelMessageType
+import walkie.glue_inc.RemoteCallId
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.common.WTCommonData
 import walkie.talkie.globalmap.DiscussionMap
@@ -73,6 +74,8 @@ import walkie.talkie.viewmodel.WTViewModel
 import walkie.util.LifeCycleObserver
 import walkie.util.Logging
 import walkie.util.generateBinaryRec
+import walkie.util.generic.RemoteCallMux
+import walkie.util.generic.RemoteCallMuxInt
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -84,12 +87,13 @@ import kotlin.random.Random
 import kotlin.system.exitProcess
 
 class WalkieTalkie(
-    private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>()
+    private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
+    private val _remoteCallMux: RemoteCallMuxInt<Any, Any> = RemoteCallMux<Any, Any>()
     ) :
     ComponentActivity(),
     WTDebugInt,
-    ChannelMuxInt<Any, ChannelMessageType> by _channelMux
-{
+    ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
+    RemoteCallMuxInt<Any, Any> by _remoteCallMux {
     companion object {
         const val TAG = "WalkieTalkie"
         val TAGKClass = WalkieTalkie::class
@@ -102,7 +106,9 @@ class WalkieTalkie(
         addAction(WIFI_P2P_CONNECTION_CHANGED_ACTION)
         addAction(WIFI_P2P_THIS_DEVICE_CHANGED_ACTION)
         addAction(WIFI_P2P_DISCOVERY_CHANGED_ACTION)
-        addAction(ACTION_WIFI_P2P_REQUEST_RESPONSE_CHANGED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            addAction(ACTION_WIFI_P2P_REQUEST_RESPONSE_CHANGED)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             addAction(ACTION_WIFI_P2P_LISTEN_STATE_CHANGED)
         }
@@ -197,7 +203,7 @@ class WalkieTalkie(
 
         super.onResume()
         wtCommonData().wtBcastReceiver.also { bcastReceiver ->
-            this.registerReceiver(bcastReceiver, intentFilter, RECEIVER_EXPORTED)
+            ContextCompat.registerReceiver(this, bcastReceiver, intentFilter, ContextCompat.RECEIVER_EXPORTED)
         }
     }
 
@@ -229,7 +235,6 @@ class WalkieTalkie(
 
         wtVModel.lateInit()
         wtVModel.coroutineScope = wtCommonData.wtScope
-        wtVModel.savedStateHandle = SavedStateHandle()
 
         wtCommDataInit(stage = 2)
 
@@ -253,7 +258,6 @@ class WalkieTalkie(
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
         //WindowCompat.setDecorFitsSystemWindows(window, false)
-
 
         logd(tag, "($count) navDest: ${wtVModel.currentScreen()}").also {count++}
 
@@ -366,7 +370,11 @@ internal fun WalkieTalkie.wifiDInit() {
     channel?.also { chanel ->
         wtCommonData().wtWifiD = WTWiFiDirect(manager, chanel, wtCommonData().wtSystemNodeId )
         wtCommonData().wtBcastReceiver = WiFiDirectBroadcastReceiver()
-        this.registerReceiver(wtCommonData().wtBcastReceiver, intentFilter, RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(this, wtCommonData().wtBcastReceiver, intentFilter, ContextCompat.RECEIVER_EXPORTED)
+        registerRemoteCall(RemoteCallId.RCCheckWifiDPermission) { _ -> hasWifiDPermission() }
+        wtCommonData().wtWifiD.registerRemoteCallTo(RemoteCallId.RCCheckWifiDPermission, this)
+        registerRemoteCall(RemoteCallId.RCRequestWifiDPermission) { _ -> requestWifiDPermission() }
+        wtCommonData().wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermission, this)
     }
 }
 
@@ -387,7 +395,8 @@ internal fun WalkieTalkie.wifiDRestartChannel() {
 
     wtCommonData().wtBcastReceiver.also { bcastReceiver ->
         this.unregisterReceiver(bcastReceiver)
-        this.registerReceiver(bcastReceiver, intentFilter, RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(this, wtCommonData().wtBcastReceiver, intentFilter, ContextCompat.RECEIVER_EXPORTED)
+
     }
 
     logd(tag, "Restarting peers scanning")
@@ -399,13 +408,47 @@ internal fun WalkieTalkie.wtDeviceName() : String{
 }
 
 internal fun WalkieTalkie.requestWifiDPermission() {
-    ActivityCompat.requestPermissions(
-        this,
-        arrayOf(ACCESS_FINE_LOCATION, NEARBY_WIFI_DEVICES, /*ACCESS_BACKGROUND_LOCATION */),
-        WalkieTalkie.PERMISSION_REQUEST_CODE
-    )
+    logd(tag, "WalkieTalkie.requestWifiDPermission")
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(ACCESS_FINE_LOCATION, NEARBY_WIFI_DEVICES /* ACCESS_BACKGROUND_LOCATION */),
+            WalkieTalkie.PERMISSION_REQUEST_CODE
+        )
+    } else {
+        ActivityCompat.requestPermissions(
+            this,
+            arrayOf(ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION),
+            WalkieTalkie.PERMISSION_REQUEST_CODE
+        )
+    }
 }
 
+internal fun WalkieTalkie.hasWifiDPermission(): Boolean {
+    val ret = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        (ActivityCompat.checkSelfPermission(
+            this,
+            ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
+            this,
+            NEARBY_WIFI_DEVICES
+        ) == PackageManager.PERMISSION_GRANTED
+                )
+    } else {
+        (ActivityCompat.checkSelfPermission(
+            this,
+            ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
+            this,
+            ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED
+                )    }
+
+    logd(tag, "WalkieTalkie.wifiDPermission: $ret")
+    return ret
+}
+
+/*
 internal fun WalkieTalkie.requestWifiDPermissionLocation() {
     ActivityCompat.requestPermissions(
         this,
@@ -413,6 +456,7 @@ internal fun WalkieTalkie.requestWifiDPermissionLocation() {
         WalkieTalkie.PERMISSION_REQUEST_CODE
     );
 }
+*/
 
 internal fun WalkieTalkie.wtCommDataInit(stage: Int) : WTCommonData {
     val wtCommonData: WTCommonData = WTCommonData.ONE
@@ -563,6 +607,7 @@ fun WalkieTalkie.customComposablesInit() {
     wtCommonData().customComposables["Help"] = { mod, theme -> WTHelp(mod, theme) }
 }
 
+/*
 class S private constructor() {
     private var _s: Int = 0
     val s: Int
@@ -580,3 +625,4 @@ class S private constructor() {
         _s--
     }
 }
+*/

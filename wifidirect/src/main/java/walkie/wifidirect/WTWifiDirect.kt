@@ -1,7 +1,10 @@
 package walkie.wifidirect
 
+import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.wifi.WpsInfo
 import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pConfig.GROUP_OWNER_INTENT_MAX
@@ -13,6 +16,8 @@ import android.net.wifi.p2p.WifiP2pManager
 import android.net.wifi.p2p.WifiP2pManager.Channel
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.sync.Semaphore
@@ -23,6 +28,7 @@ import walkie.glue.wtsystem.NodeIdInt
 import walkie.glue_inc.ChannelId
 import walkie.glue_inc.ChannelIdInt
 import walkie.glue_inc.ChannelMessageType
+import walkie.glue_inc.RemoteCallId
 import walkie.util.generic.RemoteCallMux
 import walkie.util.generic.RemoteCallMuxInt
 import walkie.util.getInterfaceIpAddress
@@ -37,8 +43,8 @@ class WTWiFiDirect(
     private var _channel: Channel,
     val node: NodeIdInt,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux(),
-    private val _remoteCallMux: RemoteCallMuxInt<Any, Any> = RemoteCallMux()
-    ) :
+    private val _remoteCallMux: RemoteCallMuxInt<Any, Any> = RemoteCallMux<Any, Any>()
+) :
     ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
     RemoteCallMuxInt<Any, Any> by _remoteCallMux {
 
@@ -341,7 +347,7 @@ class WTWiFiDirect(
 
         logd(tag, "Entry++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
-        if (!checkWifiDPermission()) {
+        if (!wifiDPermission()) {
             logd(tag, "Not enough WIFI_D permissions")
             return
         }
@@ -368,60 +374,58 @@ class WTWiFiDirect(
         logd(TAGKClass, tag, "Exit(1)--------------------------------------------------------------")
     }
 
-    fun checkWifiDPermission(): Boolean {
+    /* Need to fix this */
+    fun wifiDPermission(): Boolean {
         val tag = TAG
-
-        logd(tag, "checkWifiDPermission TO FIX IT")
-
-        /* return fineLocation == PackageManager.PERMISSION_GRANTED && nearbyWifi == PackageManager.PERMISSION_GRANTED; */
-
-        return true
+        logd(tag, "wifiDPermission TO FIX IT: perm = ${remoteCall(RemoteCallId.RCCheckWifiDPermission)}")
+        return remoteCall(RemoteCallId.RCCheckWifiDPermission) as? Boolean ?: false
     }
 
-    @SuppressLint("MissingPermission")
     suspend fun requestPeersInfo(sync: Boolean = true): MutableList<WifiP2pDevice> {
         val tag = "requestPeersInfo/${randomString(2u)}"
         val sem = Semaphore(1, 1)
 
-        manager.requestPeers(channel) { peerList ->
-            var str = ""
-            peerList.deviceList.forEach {wifiDevice ->
-                str += wifiDevice.deviceName +  "/${wifiDevice.deviceAddress}" + " "
+        if (wifiDPermission()) {
+            manager.requestPeers(channel) { peerList ->
+                var str = ""
+                peerList.deviceList.forEach { wifiDevice ->
+                    str += wifiDevice.deviceName + "/${wifiDevice.deviceAddress}" + " "
+                }
+                logd(
+                    TAGKClass,
+                    tag,
+                    "NEW Peers: $str"
+                )
+                directWifiPeersN.addAll(peerList.deviceList)
+                if (sync) sem.release()
             }
-            logd(
-                TAGKClass,
-                tag,
-                "NEW Peers: $str"
-            )
-            directWifiPeersN.addAll(peerList.deviceList)
-            if (sync) sem.release()
+            if (sync) sem.acquire()
         }
-        if (sync) sem.acquire()
         return directWifiPeersN
     }
 
-    @SuppressLint("MissingPermission")
     suspend fun requestDeviceInfo(sync: Boolean = true): WifiP2pDevice? {
         val tag = "requestDeviceInfo/${randomString(2u)}"
         var ret: WifiP2pDevice? = null
 
         val sem = Semaphore(1, 1)
-        manager.requestDeviceInfo(channel) { device ->
-            ret = device
-            /* onDeviceInfoAvailable(device) */
-            logd(
-                tag, "processBcastReceiverMessage: P2P this device changed:" +
-                        "\n\t\t\t\tGO: ${device?.isGroupOwner}" +
-                        "\n\t\t\t\tdeviceName: ${device?.deviceName}" +
-                        "\n\t\t\t\tdeviceAddress${device?.deviceAddress}"
-            )
-            if (sync) sem.release()
+        if (wifiDPermission()) {
+            manager.requestDeviceInfo(channel) { device ->
+                ret = device
+                /* onDeviceInfoAvailable(device) */
+                logd(
+                    tag, "processBcastReceiverMessage: P2P this device changed:" +
+                            "\n\t\t\t\tGO: ${device?.isGroupOwner}" +
+                            "\n\t\t\t\tdeviceName: ${device?.deviceName}" +
+                            "\n\t\t\t\tdeviceAddress${device?.deviceAddress}"
+                )
+                if (sync) sem.release()
+            }
+            if (sync) sem.acquire()
         }
-        if (sync) sem.acquire()
         return ret
     }
 
-    @SuppressLint("MissingPermission")
     suspend fun requestGroupInfo(sync: Boolean = true): WifiP2pGroup? {
         val tag = "requestGroupInfo/${randomString(2u)}"
         var ret: WifiP2pGroup? = null
@@ -429,38 +433,42 @@ class WTWiFiDirect(
 
         logd(tag, "Entry+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
-        manager.requestGroupInfo(channel) { group ->
-            if (null != group) {
-                var str = ""
-                group.clientList.forEach { dev ->
-                    str += dev.deviceName + " "
+        if (wifiDPermission()) {
+            manager.requestGroupInfo(channel) { group ->
+                if (null != group) {
+                    var str = ""
+                    group.clientList.forEach { dev ->
+                        str += dev.deviceName + " "
+                    }
+
+                    logd(
+                        tag,
+                        "Callback: sync: $sync" +
+                                "\n Owner: [${group.owner.deviceName}] [$deviceId] [${group.owner.deviceAddress}]" +
+                                "\n Passwd: ${group.passphrase}" +
+                                "\n GO: ${group.isGroupOwner}" +
+                                "\n Interface Name: ${group.`interface`} / ${
+                                    getInterfaceIpAddress(
+                                        group.`interface`
+                                    )
+                                }" +
+                                "\n ClientList: $str"
+                    )
+                } else {
+                    logd(tag, "requestGroupInfo got NULL")
                 }
 
-                logd(
-                    tag,
-                    "Callback: sync: $sync" +
-                            "\n Owner: [${group.owner.deviceName}] [$deviceId] [${group.owner.deviceAddress}]" +
-                            "\n Passwd: ${group.passphrase}" +
-                            "\n GO: ${group.isGroupOwner}" +
-                            "\n Interface Name: ${group.`interface`} / ${getInterfaceIpAddress(group.`interface`)}" +
-                            "\n ClientList: $str"
-                )
-            } else {
-                logd(tag, "requestGroupInfo got NULL")
+                if (wtWifiGroupInfoN.get() != group) wtWifiGroupInfoN.getAndSet(group)
+
+                ret = group
+
+                if (sync)
+                    sem.release()
             }
-
-            if (wtWifiGroupInfoN.get() != group) wtWifiGroupInfoN.getAndSet(group)
-
-            ret = group
-
-            if (sync)
-                sem.release()
+            if (sync) sem.acquire()
         }
 
         logd(tag, "Exit(0)-----------------------------------------------------------------")
-        if (sync) {
-            sem.acquire()
-        }
 
         logd(
             tag,
@@ -543,7 +551,6 @@ class WTWiFiDirect(
         return ((null != wtLocalIp) && wtIsGroupFormed && (null != wtGroupIp))
     }
 
-    @SuppressLint("MissingPermission")
     suspend fun connect(device: WifiP2pDevice,
                         config: WifiP2pConfig = WifiP2pConfig().apply {
                             deviceAddress = device.deviceAddress
@@ -555,43 +562,45 @@ class WTWiFiDirect(
         var ret: ConnectionStatus = ConnectionStatus.Null
         var reasonToStr = "Success"
 
-
         logd(tag, "Connecting to ${device.uniqueWifiId()}")
-        try {
-            manager.connect(channel, config,
-                object : WifiP2pManager.ActionListener {
-                    override fun onSuccess() {
-                        logd(
-                            TAGKClass,
-                            tag,
-                            "onSuccess: " +
-                                    "Connect to: ${device.uniqueWifiId()}  ${device.deviceAddress} GO = ${device.isGroupOwner} Success"
-                        )
-                        ret = ConnectionStatus.InProgress
-                        wtWifiFailure("$tag/$reasonToStr")
-                        if (sync) sem.release()
-                    }
+        if (wifiDPermission()) {
+            try {
+                manager.connect(
+                    channel, config,
+                    object : WifiP2pManager.ActionListener {
+                        override fun onSuccess() {
+                            logd(
+                                TAGKClass,
+                                tag,
+                                "onSuccess: " +
+                                        "Connect to: ${device.uniqueWifiId()}  ${device.deviceAddress} GO = ${device.isGroupOwner} Success"
+                            )
+                            ret = ConnectionStatus.InProgress
+                            wtWifiFailure("$tag/$reasonToStr")
+                            if (sync) sem.release()
+                        }
 
-                    override fun onFailure(reasonCode: Int) {
-                        reasonToStr = errToString(reasonCode)
-                        logd(
-                            TAGKClass,
-                            tag,
-                            "onFailure: Connect to: ${device.uniqueWifiId()}  ${device.deviceAddress} GO = ${device.isGroupOwner} Fail reason($reasonCode): $reasonToStr"
-                        )
-                        wtWifiFailure("$tag/$reasonToStr")
-                        ret = ConnectionStatus.Fail
-                        if (sync) sem.release()
+                        override fun onFailure(reasonCode: Int) {
+                            reasonToStr = errToString(reasonCode)
+                            logd(
+                                TAGKClass,
+                                tag,
+                                "onFailure: Connect to: ${device.uniqueWifiId()}  ${device.deviceAddress} GO = ${device.isGroupOwner} Fail reason($reasonCode): $reasonToStr"
+                            )
+                            wtWifiFailure("$tag/$reasonToStr")
+                            ret = ConnectionStatus.Fail
+                            if (sync) sem.release()
+                        }
                     }
-                }
-            )
-        } catch (e: Exception) {
-            throw(e)
-        } catch (t: Throwable) {
-            throw(t)
+                )
+                if (sync) sem.acquire()
+            } catch (e: Exception) {
+                throw (e)
+            } catch (t: Throwable) {
+                throw (t)
+            }
         }
 
-        if (sync) sem.acquire()
         return ret
     }
 
@@ -623,7 +632,6 @@ class WTWiFiDirect(
         if (sync) sem.acquire()
     }
 
-    @SuppressLint("MissingPermission")
     suspend fun connectTo(device: WTWifiDirectPeerInfo, sync: Boolean = true): ConnectionStatus {
         val tag = "connectTo/${randomString(2u)}"
         val sem = Semaphore(1, 1)
@@ -688,7 +696,6 @@ class WTWiFiDirect(
                     if (synC) sem.release()
                 }
             }
-
             ConnectionStatus.Fail -> {
                 logd(
                     TAGKClass,
@@ -707,7 +714,6 @@ class WTWiFiDirect(
                     device.stateCounterTick()
                 }
             }
-
             ConnectionStatus.InProgress -> {
                 logd(
                     TAGKClass,
@@ -727,7 +733,6 @@ class WTWiFiDirect(
                 device.stateCounterTick()
                 //newWTDevice(false)
             }
-
             ConnectionStatus.Connected -> {
                 logd(
                     TAGKClass,
@@ -743,7 +748,6 @@ class WTWiFiDirect(
                                 "wtLocalIp: $wtLocalIp wtIsGroupFormed: $wtIsGroupFormed wtGroupIp: $wtGroupIp").also { c++ }
                 }
             }
-
             else -> {
                 logd(
                     TAGKClass,

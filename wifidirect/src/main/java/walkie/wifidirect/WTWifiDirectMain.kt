@@ -22,6 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import walkie.glue_inc.ChannelId
 import walkie.glue_inc.ChannelMessageType
+import walkie.glue_inc.RemoteCallId
 import walkie.util.logd
 import walkie.util.randomString
 import walkie.util.stringSum
@@ -45,7 +46,6 @@ class WTWiFiDirectStatic private constructor() {
     var scanPeersS: Boolean = false
 }
 
-@SuppressLint("MissingPermission")
 suspend fun WTWiFiDirect.scanPeers(coroutineScope: CoroutineScope = MainScope(), delay: Long = 1000L) {
     val tag = "scanPeers/${randomString(2u)}"
     val s = WTWiFiDirectStatic.INSTANCE
@@ -88,8 +88,14 @@ suspend fun WTWiFiDirect.scanPeers(coroutineScope: CoroutineScope = MainScope(),
 
     logd(tag, "Entering Main Loop: ${s.scanPeersS}")
     while (true) {
+        delay(c * delay/divider)
+        if (!wifiDPermission()) {
+            remoteCall(RemoteCallId.RCRequestWifiDPermission)
+            continue
+        }
+
         logd(tag, "thisDevice: ${thisDevice?.deviceName}" +
-                "\nisWifiP2pEnabled: ${wifiP2pEnable}" +
+                "\nisWifiP2pEnabled: $wifiP2pEnable" +
                 "\nwtIsGroupFormed: $wtIsGroupFormed" +
                 "\ndiscoveryCountdown: $discoveryCountdown" +
                 "\nchannelCountdown: ${channelCountdown()}" +
@@ -122,7 +128,6 @@ suspend fun WTWiFiDirect.scanPeers(coroutineScope: CoroutineScope = MainScope(),
         )
 
         c = (restartChannelCountdown() + c + 1) % divider
-        delay(c * delay/divider)
     }
 
     wtWifiDirectStop()
@@ -181,7 +186,7 @@ suspend fun WTWiFiDirect.discoverPeersJob(delay: Long = 100L) {
     val tag = "discoverPeersJob/${randomString(2u)}"
 
     logd(tag, "Entry isWifiP2pEnabled: $wifiP2pEnable resetPeersDiscovery: ${peersDiscoveryReset()} discoveryCountdown: $discoveryCountdown")
-    if (!checkWifiDPermission()) {
+    if (!wifiDPermission()) {
         logd(tag, "Not enough WIFI-D permissions.")
     } else if (wifiP2pEnable) {
         var str = ""
@@ -510,7 +515,7 @@ suspend fun WTWiFiDirect.connectToPeers(delay: Long = 1000L) {
                 "\n\t\tdiscoverPeersProcessActive: ${serviceDiscoveryActive()}").
     also { c++ }
 
-    if (checkWifiDPermission() &&
+    if (wifiDPermission() &&
         wifiP2pEnable &&
         connectingAllowed()
     ) {
@@ -601,7 +606,6 @@ suspend fun WTWiFiDirect.connectToPeers(delay: Long = 1000L) {
     logd(tag, "--------------------------------------------------------------")
 }
 
-@SuppressLint("MissingPermission")
 suspend fun WTWiFiDirect.removeLocalService(sync: Boolean = true) {
     val tag = "removeLocalService/${randomString(2u)}"
     val instanceName = WT_SERVICE_WALKIETALKIE// + "." + deviceUid()
@@ -648,7 +652,6 @@ suspend fun WTWiFiDirect.removeLocalService(sync: Boolean = true) {
     }
 }
 
-@SuppressLint("MissingPermission")
 suspend fun WTWiFiDirect.addLocalService(sync: Boolean = true, removeFirst: Boolean = true) {
     val tag = "addLocalService/${randomString(2u)}"
     val instanceName = WT_SERVICE_WALKIETALKIE /* + "." + deviceUid() */
@@ -675,28 +678,35 @@ suspend fun WTWiFiDirect.addLocalService(sync: Boolean = true, removeFirst: Bool
     }
 
     logd(tag, "addLocalService: $wtLocalServiceRecord")
-    manager.addLocalService(
-        channel,
-        WifiP2pDnsSdServiceInfo.newInstance(
-            instanceName,
-            serviceType,
-            wtLocalServiceRecord),
-        object: WifiP2pManager.ActionListener {
-            override fun onSuccess() {
-                logd(TAGKClass, tag,"Success adding local service")
-                if (sync) sem.release()
+    if (wifiDPermission()) {
+        manager.addLocalService(
+            channel,
+            WifiP2pDnsSdServiceInfo.newInstance(
+                instanceName,
+                serviceType,
+                wtLocalServiceRecord
+            ),
+            object : WifiP2pManager.ActionListener {
+                override fun onSuccess() {
+                    logd(TAGKClass, tag, "Success adding local service")
+                    if (sync) sem.release()
+                }
+
+                override fun onFailure(errCode: Int) {
+                    logd(
+                        TAGKClass,
+                        tag,
+                        "Failed adding local service: $errCode: ${errToString(errCode)}"
+                    )
+                    wifiP2PEngineFailCoolDown(true)
+                    if (sync) sem.release()
+                }
             }
-            override fun onFailure(errCode: Int) {
-                logd(TAGKClass, tag,"Failed adding local service: $errCode: ${errToString(errCode)}")
-                wifiP2PEngineFailCoolDown(true)
-                if (sync) sem.release()
-            }
-        }
-    )
-    if (sync) sem.acquire()
+        )
+        if (sync) sem.acquire()
+    }
 }
 
-@SuppressLint("MissingPermission")
 suspend fun WTWiFiDirect.removeServiceRequest(sync: Boolean = true) {
     val tag = "addServiceRequest/${randomString(2u)}"
     val sem = Semaphore(1, 1)
@@ -735,7 +745,6 @@ suspend fun WTWiFiDirect.removeServiceRequest(sync: Boolean = true) {
     if (sync) sem.acquire()
 }
 
-@SuppressLint("MissingPermission")
 suspend fun WTWiFiDirect.addServiceRequest(sync: Boolean = true, removeFirst: Boolean = true) {
     val tag = "addServiceRequest/${randomString(2u)}"
     val sem = Semaphore(1, 1)
@@ -777,7 +786,6 @@ suspend fun WTWiFiDirect.addServiceRequest(sync: Boolean = true, removeFirst: Bo
     if (sync) sem.acquire()
 }
 
-@SuppressLint("MissingPermission")
 fun WTWiFiDirect.registerServiceListeners() {
     val tag = "registerServiceListeners/${randomString(2u)}"
 
@@ -832,7 +840,6 @@ fun WTWiFiDirect.registerServiceListeners() {
     manager.setDnsSdResponseListeners(channel, servListener, txtListener)
 }
 
-@SuppressLint("MissingPermission")
 suspend fun WTWiFiDirect.wtServicesInit(sync: Boolean = true) {
     val tag = "discoverServicesInit/${randomString(2u)}"
     val sem = Semaphore(1, 1)
@@ -855,7 +862,7 @@ suspend fun WTWiFiDirect.wtServicesInit(sync: Boolean = true) {
 }
 
 /* For some reason is not working */
-@SuppressLint("MissingPermission")
+@SuppressLint("NewApi")
 suspend fun WTWiFiDirect.stopPeerDiscovery(sync: Boolean = true) {
     val tag = "stopPeerDiscovery/${randomString(2u)}"
     val sem = Semaphore(1, 1)
@@ -867,14 +874,16 @@ suspend fun WTWiFiDirect.stopPeerDiscovery(sync: Boolean = true) {
         channel,
         object : WifiP2pManager.ActionListener {
             override fun onSuccess() {
-                logd(TAGKClass,
+                logd(
+                    TAGKClass,
                     tag,
                     "Success stopping peers discovery"
                 )
                 if (sync) sem.release()
             }
             override fun onFailure(errCode: Int) {
-                logd(TAGKClass,
+                logd(
+                    TAGKClass,
                     tag,
                     "Failed stopping peers discovery: $errCode: ${errToString(errCode)}"
                 )
@@ -889,33 +898,37 @@ suspend fun WTWiFiDirect.stopPeerDiscovery(sync: Boolean = true) {
     logd(tag, "Exit 1")
 }
 
-@SuppressLint("MissingPermission")
 suspend fun WTWiFiDirect.discoverServices(sync: Boolean = true) {
     val tag = "discoverServices/${randomString(2u)}"
     val sem = Semaphore(1, 1)
 
     logd(tag, "manager.discoverServices")
-    manager.discoverServices(
-        channel,
-        object : WifiP2pManager.ActionListener {
-            override fun onSuccess() {
-                logd(TAGKClass,
-                    tag,
-                    "Success starting discoverServices"
-                )
-                if (sync) sem.release()
+    if (wifiDPermission()) {
+        manager.discoverServices(
+            channel,
+            object : WifiP2pManager.ActionListener {
+                override fun onSuccess() {
+                    logd(
+                        TAGKClass,
+                        tag,
+                        "Success starting discoverServices"
+                    )
+                    if (sync) sem.release()
+                }
+
+                override fun onFailure(errCode: Int) {
+                    logd(
+                        TAGKClass,
+                        tag,
+                        "Failed starting discoverServices: $errCode: ${errToString(errCode)}"
+                    )
+                    wifiP2PEngineFailCoolDown(true)
+                    if (sync) sem.release()
+                }
             }
-            override fun onFailure(errCode: Int) {
-                logd(TAGKClass,
-                    tag,
-                    "Failed starting discoverServices: $errCode: ${errToString(errCode)}"
-                )
-                wifiP2PEngineFailCoolDown(true)
-                if (sync) sem.release()
-            }
-        }
-    )
-    if (sync) sem.acquire()
+        )
+        if (sync) sem.acquire()
+    }
 }
 
 suspend fun WTWiFiDirect.clearAllServices(sync: Boolean = true) {
@@ -1011,7 +1024,7 @@ suspend fun WTWiFiDirect.processBcastReceiverMessage(intent: Intent) {
             */
             logd(tag, "processBcastReceiverMessage: P2P peers changed")
 
-            if (!checkWifiDPermission()) {
+            if (!wifiDPermission()) {
                 logd(tag, "processBcastReceiverMessage: Not enough permissions.")
                 return
             }

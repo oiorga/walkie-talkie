@@ -38,9 +38,6 @@
 -keep class walkie.comm.prm.WTPRMComm
 -keep class walkie.util.generic.ChannelMux
 -keep class walkie.util.generic.ChannelMuxInt
--keep class walkie.util.generic.WTChannelId
--keep class walkie.glue.wtchannel.WTChannelKt
--keep class walkie.util.generic.WTChannelMessageType
 -keep class walkie.glue.wtchat.ChatGroupIdInt
 -keep class walkie.glue.wtchat.ChatGroupListAbs
 -keep class walkie.glue.wtchat.ChatGroupType$Local
@@ -59,7 +56,6 @@
 -keep class walkie.glue.wtdebug.WTDebugInt
 -keep class walkie.util.generic.GenericList
 -keep class walkie.util.generic.GenericListAbs
--keep class walkie.glue.wtgeneric.WTGenericIntKt
 -keep class walkie.glue.wtmisc.InfoMap
 -keep class walkie.glue.wtmisc.WTNavigation$Back
 -keep class walkie.glue.wtmisc.WTNavigation$LocalChatTesting
@@ -74,19 +70,9 @@
 -keep class walkie.glue.wtmisc.WTNavigation$TextInfo
 -keep class walkie.glue.wtmisc.WTNavigation$WT
 -keep class walkie.glue.wtmisc.WTNavigation
--keep class walkie.util.generic.WTRemoteCallMux
--keep class walkie.util.generic.WTRemoteCallMuxInt
 -keep class walkie.glue.wtsystem.NodeIdInt
 -keep class walkie.glue.wtsystem.WtSystemNodeIdIntKt
--keep class walkie.glue.wtutil.Logging$Companion
--keep class walkie.glue.wtutil.Logging
--keep class walkie.util.VMCollection
--keep class walkie.util.WTLifeCycleLogs
--keep class walkie.glue.wtutil.WTLifeCycleObserver
--keep class walkie.glue.wtutil.WTUtilBinaryGamesKt
--keep class walkie.glue.wtutil.WTUtilKt
 # This is generated automatically by the Android Gradle plugin.
--keep class walkie.util.generic.WTCallBackInt
 -keep class walkie.glue.wtcomm.WTCommChatMessageIn
 -keep class walkie.glue.wtcomm.WTCommChatMessageOut
 -keep class walkie.glue.wtcomm.WTCommPacketIn
