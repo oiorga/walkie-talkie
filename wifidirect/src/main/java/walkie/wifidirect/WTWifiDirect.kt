@@ -16,7 +16,7 @@ import kotlinx.coroutines.sync.Semaphore
 import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.GenericList
-import walkie.glue.wtsystem.NodeIdInt
+import walkie.app.api.wtsystem.NodeIdInt
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType

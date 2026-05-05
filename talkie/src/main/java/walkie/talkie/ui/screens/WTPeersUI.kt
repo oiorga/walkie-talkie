@@ -1,8 +1,6 @@
 package walkie.talkie.ui.screens
 
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -31,8 +29,8 @@ import androidx.compose.ui.Alignment
 import walkie.chat.ChatGroupId
 import walkie.comm.WTCommPeerInfo
 import walkie.comm.uid
-import walkie.glue.wtchat.ChatGroupType
-import walkie.glue.wtmisc.WTNavigation
+import walkie.app.api.wtchat.ChatGroupType
+import walkie.app.api.wtmisc.WTNavigation
 import walkie.talkie.WalkieTalkie
 import walkie.talkie.WalkieTalkie.Companion.TAGKClass
 import walkie.talkie.node.NodeId

@@ -1,4 +1,4 @@
-package  walkie.glue.wtmisc
+package walkie.app.api.wtmisc
 
 import kotlinx.serialization.Serializable
 import walkie.util.generic.GenericMapAbs

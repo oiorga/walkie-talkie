@@ -1,10 +1,10 @@
-package walkie.glue.wtchat
+package walkie.app.api.wtchat
 
 import android.util.Log
 import kotlinx.serialization.Serializable
 import walkie.util.generic.GenericListAbs
 import walkie.util.generic.GenericMapAbs
-import walkie.glue.wtsystem.NodeIdInt
+import walkie.app.api.wtsystem.NodeIdInt
 
 @Serializable
 sealed interface CGType {

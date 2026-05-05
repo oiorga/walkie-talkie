@@ -54,11 +54,11 @@ import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.registerAsReceiver
 import walkie.util.generic.registerSenders
-import walkie.glue.wtchat.ChatGroupType
-import walkie.glue.wtdebug.WTDebugInt
+import walkie.app.api.wtchat.ChatGroupType
+import walkie.app.api.wtdebug.WTDebugInt
 import walkie.util.generic.genericListOf
-import walkie.glue.wtmisc.InfoMap
-import walkie.glue.wtmisc.WTNavigation
+import walkie.app.api.wtmisc.InfoMap
+import walkie.app.api.wtmisc.WTNavigation
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.common.WTCommonData
 import walkie.talkie.globalmap.DiscussionMap

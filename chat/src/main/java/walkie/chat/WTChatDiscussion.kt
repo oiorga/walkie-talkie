@@ -2,10 +2,10 @@ package walkie.chat
 
 import android.util.Log
 import walkie.util.generic.GenericListAbs
-import walkie.glue.wtchat.ChatGroupIdInt
-import walkie.glue.wtchat.ChatMessageAbs
-import walkie.glue.wtchat.DiscussionAbs
-import walkie.glue.wtchat.DiscussionMapAbs
+import walkie.app.api.wtchat.ChatGroupIdInt
+import walkie.app.api.wtchat.ChatMessageAbs
+import walkie.app.api.wtchat.DiscussionAbs
+import walkie.app.api.wtchat.DiscussionMapAbs
 
 data class ChatDiscussion(
     override val discussionId: ChatGroupIdInt,

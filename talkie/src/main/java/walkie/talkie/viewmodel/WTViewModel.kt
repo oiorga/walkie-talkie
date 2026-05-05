@@ -3,7 +3,6 @@ package walkie.talkie.viewmodel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -11,10 +10,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import walkie.chat.ChatMessage
-import walkie.glue.wtchat.ChatGroupIdInt
-import walkie.glue.wtchat.DiscussionAbs
-import walkie.glue.wtchat.DiscussionMapAbs
-import walkie.glue.wtmisc.WTNavigation
+import walkie.app.api.wtchat.ChatGroupIdInt
+import walkie.app.api.wtchat.DiscussionAbs
+import walkie.app.api.wtchat.DiscussionMapAbs
+import walkie.app.api.wtmisc.WTNavigation
 import walkie.talkie.common.WTCommonData
 import walkie.talkie.node.NodeId
 import walkie.talkie.ui.nav.WTNavGraph

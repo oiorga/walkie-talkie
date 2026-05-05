@@ -1,14 +1,9 @@
 package walkie.talkie.ui.screens
 
 import android.icu.text.DateFormat.getDateTimeInstance
-import android.icu.text.DateFormat.getTimeInstance
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,9 +24,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import walkie.chat.ChatGroupId
-import walkie.glue.wtchat.ChatGroupIdInt
-import walkie.glue.wtchat.ChatGroupType
-import walkie.glue.wtmisc.WTNavigation
+import walkie.app.api.wtchat.ChatGroupIdInt
+import walkie.app.api.wtchat.ChatGroupType
+import walkie.app.api.wtmisc.WTNavigation
 import walkie.talkie.WalkieTalkie
 import walkie.talkie.WalkieTalkie.Companion.TAGKClass
 import walkie.talkie.ui.nav.WTNavNode

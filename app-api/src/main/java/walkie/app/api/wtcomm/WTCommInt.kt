@@ -1,11 +1,10 @@
-package walkie.glue.wtcomm
+package walkie.app.api.wtcomm
 
 import android.util.Log
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import walkie.glue.wtchat.ChatGroupType
-import walkie.glue.wtsystem.nodeUniqueId
+import walkie.app.api.wtchat.ChatGroupType
+import walkie.app.api.wtsystem.nodeUniqueId
 
 enum class CommTransmissionMedium {BlueTooth, WIFIDirect}
 enum class CommLoopback {Internal, External}

@@ -2,13 +2,13 @@ package walkie.chat
 
 import android.util.Log
 import walkie.util.generic.GenericListAbs
-import walkie.glue.wtchat.ChatGroupIdInt
-import walkie.glue.wtchat.ChatMessageAbs
-import walkie.glue.wtchat.ChatMessageItemInt
-import walkie.glue.wtchat.ReceiverInt
-import walkie.glue.wtchat.SenderInt
-import walkie.glue.wtcomm.CommPacket
-import walkie.glue.wtcomm.CommPacketInt
+import walkie.app.api.wtchat.ChatGroupIdInt
+import walkie.app.api.wtchat.ChatMessageAbs
+import walkie.app.api.wtchat.ChatMessageItemInt
+import walkie.app.api.wtchat.ReceiverInt
+import walkie.app.api.wtchat.SenderInt
+import walkie.app.api.wtcomm.CommPacket
+import walkie.app.api.wtcomm.CommPacketInt
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString

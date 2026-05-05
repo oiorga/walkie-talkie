@@ -1,9 +1,9 @@
 package walkie.talkie.node
 
-import walkie.glue.wtsystem.NodeIdInt
-import walkie.glue.wtsystem.nodeUniqueId
-import walkie.glue.wtsystem.uidToId
-import walkie.glue.wtsystem.uidToUnique
+import walkie.app.api.wtsystem.NodeIdInt
+import walkie.app.api.wtsystem.nodeUniqueId
+import walkie.app.api.wtsystem.uidToId
+import walkie.app.api.wtsystem.uidToUnique
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString

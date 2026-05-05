@@ -1,7 +1,5 @@
 package walkie.talkie.ui.screens
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
@@ -37,9 +35,9 @@ import walkie.chat.ChatMessage
 import walkie.chat.ChatMessageItem
 import walkie.chat.Receiver
 import walkie.chat.Sender
-import walkie.glue.wtchat.ChatGroupType
-import walkie.glue.wtchat.ChatMessageAbs
-import walkie.glue.wtmisc.WTNavigation
+import walkie.app.api.wtchat.ChatGroupType
+import walkie.app.api.wtchat.ChatMessageAbs
+import walkie.app.api.wtmisc.WTNavigation
 import walkie.talkie.WalkieTalkie
 import walkie.talkie.ui.nav.WTNavNode
 import walkie.talkie.ui.nav.wtChatTypeToNavScreen

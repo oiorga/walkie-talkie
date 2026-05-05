@@ -1,15 +1,12 @@
 package  walkie.comm
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import walkie.glue.wtcomm.WTMedium
-import walkie.glue.wtcomm.WTPeerInt
-import walkie.glue.wtsystem.nodeUniqueId
-import walkie.glue.wtsystem.uidToId
-import walkie.glue.wtsystem.uidToUnique
+import walkie.app.api.wtcomm.WTMedium
+import walkie.app.api.wtcomm.WTPeerInt
+import walkie.app.api.wtsystem.nodeUniqueId
+import walkie.app.api.wtsystem.uidToId
+import walkie.app.api.wtsystem.uidToUnique
 import walkie.util.`try`
 import walkie.util.logd
 import walkie.util.logging

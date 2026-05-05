@@ -1,4 +1,4 @@
-package walkie.glue.wtsystem
+package walkie.app.api.wtsystem
 
 interface NodeIdInt {
     val id: String

@@ -11,8 +11,8 @@ import kotlinx.serialization.json.Json
 import walkie.comm.ip.WTIPComm.Companion.TAGKClass
 import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
-import walkie.glue.wtcomm.CommPacket
-import walkie.glue.wtsystem.NodeIdInt
+import walkie.app.api.wtcomm.CommPacket
+import walkie.app.api.wtsystem.NodeIdInt
 import walkie.util.TCPClient
 import walkie.util.TCPServer
 import walkie.util.api.CallBackId

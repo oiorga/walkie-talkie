@@ -6,10 +6,10 @@ import walkie.comm.ip.WTIPComm
 import walkie.comm.ip.WTIPCommPacketType
 import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
-import walkie.glue.wtchat.ChatGroupType
-import walkie.glue.wtcomm.CommPacket
-import walkie.glue.wtcomm.WTMedium
-import walkie.glue.wtsystem.NodeIdInt
+import walkie.app.api.wtchat.ChatGroupType
+import walkie.app.api.wtcomm.CommPacket
+import walkie.app.api.wtcomm.WTMedium
+import walkie.app.api.wtsystem.NodeIdInt
 import walkie.util.api.CallBackId
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt

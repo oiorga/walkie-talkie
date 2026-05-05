@@ -1,8 +1,6 @@
 package walkie.talkie.ui.util
 
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -59,9 +57,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import walkie.glue.wtchat.ChatMessageAbs
-import walkie.glue.wtchat.ChatMessageItemInt
-import walkie.glue.wtmisc.WTNavigation
+import walkie.app.api.wtchat.ChatMessageAbs
+import walkie.app.api.wtchat.ChatMessageItemInt
+import walkie.app.api.wtmisc.WTNavigation
 import walkie.talkie.WalkieTalkie
 import walkie.talkie.ui.screens.WTUITheme
 import walkie.talkie.ui.theme.UiTheme

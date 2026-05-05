@@ -9,10 +9,10 @@ import walkie.chat.ChatGroupMap
 import walkie.comm.WTComm
 import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
-import walkie.glue.wtchat.ChatGroupIdInt
-import walkie.glue.wtchat.ChatGroupType
-import walkie.glue.wtchat.ChatMessageAbs
-import walkie.glue.wtsystem.NodeIdInt
+import walkie.app.api.wtchat.ChatGroupIdInt
+import walkie.app.api.wtchat.ChatGroupType
+import walkie.app.api.wtchat.ChatMessageAbs
+import walkie.app.api.wtsystem.NodeIdInt
 import walkie.talkie.globalmap.DiscussionMap
 import walkie.talkie.playground.CounterLive
 import walkie.talkie.ui.nav.wtChatUpdateUI
