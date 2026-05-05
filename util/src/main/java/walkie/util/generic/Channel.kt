@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import walkie.glue_inc.ChannelIdInt
+import walkie.util.api.ChannelIdInt
 
 interface ChannelMuxInt<T, K> {
     val channelOnReceiveScope: CoroutineScope

@@ -24,9 +24,8 @@ import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION
-import android.os.Build
-import walkie.glue_inc.ChannelId
-import walkie.glue_inc.ChannelMessageType
+import walkie.util.api.ChannelId
+import walkie.util.api.ChannelMessageType
 import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.util.getClassSimpleName

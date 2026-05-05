@@ -1,7 +1,7 @@
 package walkie.util.generic
 
 import android.util.Log
-import walkie.glue_inc.RemoteCallIdInt
+import walkie.util.api.RemoteCallIdInt
 
 interface RemoteCallMuxInt<In, Out> {
     fun registerRemoteCallTo (remoteCallId: RemoteCallIdInt, callToObj: RemoteCallMuxInt<In, Out>)

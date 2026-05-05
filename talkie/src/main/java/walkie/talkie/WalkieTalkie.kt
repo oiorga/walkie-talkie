@@ -59,10 +59,6 @@ import walkie.glue.wtdebug.WTDebugInt
 import walkie.util.generic.genericListOf
 import walkie.glue.wtmisc.InfoMap
 import walkie.glue.wtmisc.WTNavigation
-import walkie.glue_inc.ChannelId
-import walkie.glue_inc.ChannelIdInt
-import walkie.glue_inc.ChannelMessageType
-import walkie.glue_inc.RemoteCallId
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.common.WTCommonData
 import walkie.talkie.globalmap.DiscussionMap
@@ -73,6 +69,10 @@ import walkie.talkie.ui.nav.WTNavInit
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.util.LifeCycleObserver
 import walkie.util.Logging
+import walkie.util.api.ChannelId
+import walkie.util.api.ChannelIdInt
+import walkie.util.api.ChannelMessageType
+import walkie.util.api.RemoteCallId
 import walkie.util.generateBinaryRec
 import walkie.util.generic.RemoteCallMux
 import walkie.util.generic.RemoteCallMuxInt

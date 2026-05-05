@@ -13,9 +13,6 @@ import walkie.glue.wtchat.ChatGroupIdInt
 import walkie.glue.wtchat.ChatGroupType
 import walkie.glue.wtchat.ChatMessageAbs
 import walkie.glue.wtsystem.NodeIdInt
-import walkie.glue_inc.ChannelId
-import walkie.glue_inc.ChannelIdInt
-import walkie.glue_inc.ChannelMessageType
 import walkie.talkie.globalmap.DiscussionMap
 import walkie.talkie.playground.CounterLive
 import walkie.talkie.ui.nav.wtChatUpdateUI
@@ -23,6 +20,9 @@ import walkie.talkie.ui.screens.WTUITheme
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.BuildConfig
 import walkie.util.LifeCycleObserver
+import walkie.util.api.ChannelId
+import walkie.util.api.ChannelIdInt
+import walkie.util.api.ChannelMessageType
 import walkie.util.generic.RemoteCallMux
 import walkie.util.generic.RemoteCallMuxInt
 import walkie.util.logd

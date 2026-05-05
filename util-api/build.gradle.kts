@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "walkie.glue_inc"
+    namespace = "walkie.util.api"
     compileSdk = 36
 
     defaultConfig {

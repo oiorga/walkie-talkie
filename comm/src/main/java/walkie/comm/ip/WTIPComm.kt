@@ -13,12 +13,12 @@ import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.glue.wtcomm.CommPacket
 import walkie.glue.wtsystem.NodeIdInt
-import walkie.glue_inc.CallBackId
-import walkie.glue_inc.ChannelId
-import walkie.glue_inc.ChannelIdInt
-import walkie.glue_inc.ChannelMessageType
 import walkie.util.TCPClient
 import walkie.util.TCPServer
+import walkie.util.api.CallBackId
+import walkie.util.api.ChannelId
+import walkie.util.api.ChannelIdInt
+import walkie.util.api.ChannelMessageType
 import walkie.util.exceptionToString
 import walkie.util.generic.BlockingQueue
 import walkie.util.generic.CallBack

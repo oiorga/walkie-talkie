@@ -1,14 +1,12 @@
 package walkie.util.mesh
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.serialization.Serializable
-import walkie.glue_inc.CallBackId
 import walkie.util.TimedSemaphore
+import walkie.util.api.CallBackId
 import walkie.util.generic.BlockingQueue
 import walkie.util.generic.CallBack
 import walkie.util.generic.CallBackInt

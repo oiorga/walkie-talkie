@@ -1,10 +1,6 @@
 package walkie.wifidirect
 
-import android.Manifest
-import android.annotation.SuppressLint
-import android.content.Context
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.net.wifi.WpsInfo
 import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pConfig.GROUP_OWNER_INTENT_MAX
@@ -14,10 +10,6 @@ import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.net.wifi.p2p.WifiP2pManager.Channel
-import android.os.Build
-import androidx.annotation.RequiresApi
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.sync.Semaphore
@@ -25,10 +17,10 @@ import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.GenericList
 import walkie.glue.wtsystem.NodeIdInt
-import walkie.glue_inc.ChannelId
-import walkie.glue_inc.ChannelIdInt
-import walkie.glue_inc.ChannelMessageType
-import walkie.glue_inc.RemoteCallId
+import walkie.util.api.ChannelId
+import walkie.util.api.ChannelIdInt
+import walkie.util.api.ChannelMessageType
+import walkie.util.api.RemoteCallId
 import walkie.util.generic.RemoteCallMux
 import walkie.util.generic.RemoteCallMuxInt
 import walkie.util.getInterfaceIpAddress

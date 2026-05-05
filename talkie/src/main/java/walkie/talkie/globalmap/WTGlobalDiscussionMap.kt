@@ -16,11 +16,11 @@ import walkie.glue.wtchat.DiscussionAbs
 import walkie.glue.wtchat.DiscussionMapAbs
 import walkie.glue.wtcomm.CommPacket
 import walkie.glue.wtsystem.NodeIdInt
-import walkie.glue_inc.ChannelId
-import walkie.glue_inc.ChannelIdInt
-import walkie.glue_inc.ChannelMessageType
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.node.NodeId
+import walkie.util.api.ChannelId
+import walkie.util.api.ChannelIdInt
+import walkie.util.api.ChannelMessageType
 import walkie.util.generic.RemoteCallMux
 import walkie.util.generic.RemoteCallMuxInt
 import walkie.util.logd

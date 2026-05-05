@@ -1,6 +1,6 @@
 package walkie.util.generic
 
-import walkie.glue_inc.CallBackIdInt
+import walkie.util.api.CallBackIdInt
 import android.util.Log
 
 interface CallBackInt<T, K> {

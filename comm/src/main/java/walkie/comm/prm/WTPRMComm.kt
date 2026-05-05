@@ -1,7 +1,5 @@
 package walkie.comm.prm
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import walkie.comm.WTCommPeerInfo
 import walkie.comm.WTIPMesh
 import walkie.comm.ip.WTIPComm
@@ -12,10 +10,10 @@ import walkie.glue.wtchat.ChatGroupType
 import walkie.glue.wtcomm.CommPacket
 import walkie.glue.wtcomm.WTMedium
 import walkie.glue.wtsystem.NodeIdInt
-import walkie.glue_inc.CallBackId
-import walkie.glue_inc.ChannelId
-import walkie.glue_inc.ChannelIdInt
-import walkie.glue_inc.ChannelMessageType
+import walkie.util.api.CallBackId
+import walkie.util.api.ChannelId
+import walkie.util.api.ChannelIdInt
+import walkie.util.api.ChannelMessageType
 import walkie.util.generic.CallBack
 import walkie.util.generic.CallBackInt
 import walkie.util.inetToIpString

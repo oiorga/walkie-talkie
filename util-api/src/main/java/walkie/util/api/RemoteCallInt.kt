@@ -1,4 +1,4 @@
-package walkie.glue_inc
+package walkie.util.api
 
 interface RemoteCallIdInt
 enum class RemoteCallId : RemoteCallIdInt {

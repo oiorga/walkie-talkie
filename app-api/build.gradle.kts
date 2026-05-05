@@ -86,7 +86,6 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlin.reflect)
     implementation(libs.firebase.crashlytics.buildtools)
-    /* implementation(libs.androidx.multidex) */
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -98,5 +97,4 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
 
     implementation(project(":util"))
-    implementation(project(":util-api"))
 }
