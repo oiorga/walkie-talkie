@@ -181,10 +181,10 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation (libs.androidx.core.splashscreen)
     implementation(libs.androidx.compose.material.icons.extended)
+    implementation(project(":util-api"))
     /* implementation(libs.androidx.multidex) */
 
-    implementation(project(":glue_inc"))
-    implementation(project(":glue"))
+    implementation(project(":app-api"))
     implementation(project(":comm"))
     implementation(project(":chat"))
     implementation(project(":wifidirect"))

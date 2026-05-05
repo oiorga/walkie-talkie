@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "walkie.glue_inc"
+    namespace = "walkie.glue"
     compileSdk = 36
 
     defaultConfig {
@@ -56,7 +56,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
     buildFeatures {
         compose = true
     }
@@ -97,4 +96,7 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.kotlinx.serialization.json)
+
+    implementation(project(":util"))
+    implementation(project(":util-api"))
 }

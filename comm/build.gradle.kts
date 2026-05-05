@@ -83,7 +83,7 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.kotlinx.serialization.json)
-    implementation(project(":glue_inc"))
+    implementation(project(":util-api"))
     /* implementation(libs.androidx.multidex) */
 
     testImplementation(libs.junit)
@@ -93,8 +93,8 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation(project(":app-api"))
 
-    implementation(project(":glue"))
     implementation(project(":util"))
     implementation(project(":wifidirect"))
 }

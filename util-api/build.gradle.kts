@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "walkie.glue"
+    namespace = "walkie.glue_inc"
     compileSdk = 36
 
     defaultConfig {
@@ -56,6 +56,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+
     buildFeatures {
         compose = true
     }
@@ -86,7 +87,6 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlin.reflect)
     implementation(libs.firebase.crashlytics.buildtools)
-    /* implementation(libs.androidx.multidex) */
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -96,7 +96,4 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.kotlinx.serialization.json)
-
-    implementation(project(":util"))
-    implementation(project(":glue_inc"))
 }

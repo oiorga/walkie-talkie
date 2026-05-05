@@ -89,18 +89,7 @@ dependencies {
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlinx.serialization.json)
-    /* implementation(libs.androidx.multidex) */
-
-    /*
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
-    */
-
-    implementation(project(":glue"))
+    implementation(project(":app-api"))
     implementation(project(":util"))
-    implementation(project(":glue_inc"))
+    implementation(project(":util-api"))
 }

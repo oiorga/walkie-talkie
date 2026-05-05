@@ -3,42 +3,42 @@ package walkie.util.generic
 import android.util.Log
 import walkie.glue_inc.RemoteCallIdInt
 
-interface RemoteCallMuxInt<T, K> {
-    fun registerRemoteCallTo (remoteCallId: RemoteCallIdInt, callToObj: RemoteCallMuxInt<T, K>)
-    fun registerRemoteCall (remoteCallId: RemoteCallIdInt, callBack: (input: T?) -> K)
-    fun remoteCall (remoteCallId: RemoteCallIdInt, input: T) : K?
-    fun remoteCall (remoteCallId: RemoteCallIdInt) : K?
-    fun remoteCallById (remoteCallId: RemoteCallIdInt) : ((T?) -> K)?
+interface RemoteCallMuxInt<In, Out> {
+    fun registerRemoteCallTo (remoteCallId: RemoteCallIdInt, callToObj: RemoteCallMuxInt<In, Out>)
+    fun registerRemoteCall (remoteCallId: RemoteCallIdInt, callBack: (input: In?) -> Out)
+    fun remoteCall (remoteCallId: RemoteCallIdInt, input: In) : Out?
+    fun remoteCall (remoteCallId: RemoteCallIdInt) : Out?
+    fun remoteCallById (remoteCallId: RemoteCallIdInt) : ((In?) -> Out)?
 }
 
-class RemoteCallMux<T, K>() : RemoteCallMuxInt<T, K> {
-    private val _remoteCallMapMux: MutableMap<RemoteCallIdInt, RemoteCallMuxInt<T, K>> = mutableMapOf()
-    private val _remoteCallMap: MutableMap<RemoteCallIdInt, (input : T?) -> K> = mutableMapOf()
+class RemoteCallMux<In, Out>() : RemoteCallMuxInt<In, Out> {
+    private val _remoteCallMapMux: MutableMap<RemoteCallIdInt, RemoteCallMuxInt<In, Out>> = mutableMapOf()
+    private val _remoteCallMap: MutableMap<RemoteCallIdInt, (input : In?) -> Out> = mutableMapOf()
     private val tag = "RemoteCallMux"
 
     init {
         Log.d (tag, "$tag init")
     }
 
-    override fun remoteCallById(remoteCallId: RemoteCallIdInt): ((T?) -> K)? {
+    override fun remoteCallById(remoteCallId: RemoteCallIdInt): ((In?) -> Out)? {
         return _remoteCallMap[remoteCallId]
     }
 
-    override fun registerRemoteCallTo(remoteCallId: RemoteCallIdInt, callToObj: RemoteCallMuxInt<T, K>) {
+    override fun registerRemoteCallTo(remoteCallId: RemoteCallIdInt, callToObj: RemoteCallMuxInt<In, Out>) {
         if (null != _remoteCallMap[remoteCallId])
             Log.d (tag, "$tag: register: callback ${remoteCallId.toString()} already exists")
 
         _remoteCallMapMux[remoteCallId] = callToObj
     }
 
-    override fun registerRemoteCall(remoteCallId: RemoteCallIdInt, callBack:  (input: T?) -> K) {
+    override fun registerRemoteCall(remoteCallId: RemoteCallIdInt, callBack:  (input: In?) -> Out) {
         if (null != _remoteCallMap[remoteCallId])
             Log.d (tag, "$tag: register: callback ${remoteCallId.toString()} already exists")
 
         _remoteCallMap[remoteCallId] = callBack
     }
 
-    override fun remoteCall(remoteCallId: RemoteCallIdInt, input: T) : K? {
+    override fun remoteCall(remoteCallId: RemoteCallIdInt, input: In) : Out? {
         return _remoteCallMapMux[remoteCallId]
             ?.remoteCallById(remoteCallId)
             ?.invoke(input)
@@ -48,7 +48,7 @@ class RemoteCallMux<T, K>() : RemoteCallMuxInt<T, K> {
             }
     }
 
-    override fun remoteCall(remoteCallId: RemoteCallIdInt): K? {
+    override fun remoteCall(remoteCallId: RemoteCallIdInt): Out? {
         return _remoteCallMapMux[remoteCallId]
             ?.remoteCallById(remoteCallId)
             ?.invoke(null)

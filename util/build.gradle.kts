@@ -94,7 +94,7 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.kotlin.reflect)
     implementation(libs.firebase.crashlytics.buildtools)
-    implementation(project(":glue_inc"))
+    implementation(project(":util-api"))
     /* implementation(libs.androidx.multidex) */
 
     testImplementation(libs.junit)
