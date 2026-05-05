@@ -73,9 +73,9 @@ import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
 import walkie.util.api.RemoteCallId
+import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generateBinaryRec
 import walkie.util.generic.RemoteCallMux
-import walkie.util.generic.RemoteCallMuxInt
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -88,12 +88,12 @@ import kotlin.system.exitProcess
 
 class WalkieTalkie(
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
-    private val _remoteCallMux: RemoteCallMuxInt<Any, Any> = RemoteCallMux<Any, Any>()
+    private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
     ) :
     ComponentActivity(),
     WTDebugInt,
     ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
-    RemoteCallMuxInt<Any, Any> by _remoteCallMux {
+    RemoteCallMuxInt by _remoteCallMux {
     companion object {
         const val TAG = "WalkieTalkie"
         val TAGKClass = WalkieTalkie::class

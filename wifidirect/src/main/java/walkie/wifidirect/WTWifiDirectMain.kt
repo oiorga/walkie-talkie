@@ -87,7 +87,7 @@ suspend fun WTWiFiDirect.scanPeers(coroutineScope: CoroutineScope = MainScope(),
     logd(tag, "Entering Main Loop: ${s.scanPeersS}")
     while (true) {
         delay(c * delay/divider)
-        if (!wifiDPermission()) {
+        if (!checkWifiDPermission()) {
             remoteCall(RemoteCallId.RCRequestWifiDPermission)
             continue
         }
@@ -184,7 +184,7 @@ suspend fun WTWiFiDirect.discoverPeersJob(delay: Long = 100L) {
     val tag = "discoverPeersJob/${randomString(2u)}"
 
     logd(tag, "Entry isWifiP2pEnabled: $wifiP2pEnable resetPeersDiscovery: ${peersDiscoveryReset()} discoveryCountdown: $discoveryCountdown")
-    if (!wifiDPermission()) {
+    if (!checkWifiDPermission()) {
         logd(tag, "Not enough WIFI-D permissions.")
     } else if (wifiP2pEnable) {
         var str = ""
@@ -513,7 +513,7 @@ suspend fun WTWiFiDirect.connectToPeers(delay: Long = 1000L) {
                 "\n\t\tdiscoverPeersProcessActive: ${serviceDiscoveryActive()}").
     also { c++ }
 
-    if (wifiDPermission() &&
+    if (checkWifiDPermission() &&
         wifiP2pEnable &&
         connectingAllowed()
     ) {
@@ -676,7 +676,7 @@ suspend fun WTWiFiDirect.addLocalService(sync: Boolean = true, removeFirst: Bool
     }
 
     logd(tag, "addLocalService: $wtLocalServiceRecord")
-    if (wifiDPermission()) {
+    if (checkWifiDPermission()) {
         manager.addLocalService(
             channel,
             WifiP2pDnsSdServiceInfo.newInstance(
@@ -901,7 +901,7 @@ suspend fun WTWiFiDirect.discoverServices(sync: Boolean = true) {
     val sem = Semaphore(1, 1)
 
     logd(tag, "manager.discoverServices")
-    if (wifiDPermission()) {
+    if (checkWifiDPermission()) {
         manager.discoverServices(
             channel,
             object : WifiP2pManager.ActionListener {
@@ -1022,7 +1022,7 @@ suspend fun WTWiFiDirect.processBcastReceiverMessage(intent: Intent) {
             */
             logd(tag, "processBcastReceiverMessage: P2P peers changed")
 
-            if (!wifiDPermission()) {
+            if (!checkWifiDPermission()) {
                 logd(tag, "processBcastReceiverMessage: Not enough permissions.")
                 return
             }

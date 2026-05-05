@@ -21,8 +21,9 @@ import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
 import walkie.util.api.RemoteCallId
+import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.RemoteCallMux
-import walkie.util.generic.RemoteCallMuxInt
+import walkie.util.generic.typedCall
 import walkie.util.getInterfaceIpAddress
 import walkie.util.logd
 import walkie.util.logging
@@ -35,10 +36,10 @@ class WTWiFiDirect(
     private var _channel: Channel,
     val node: NodeIdInt,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux(),
-    private val _remoteCallMux: RemoteCallMuxInt<Any, Any> = RemoteCallMux<Any, Any>()
+    private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
 ) :
     ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
-    RemoteCallMuxInt<Any, Any> by _remoteCallMux {
+    RemoteCallMuxInt by _remoteCallMux {
 
     companion object {
         const val TAG = "WTWiFiDirect"
@@ -339,7 +340,7 @@ class WTWiFiDirect(
 
         logd(tag, "Entry++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
-        if (!wifiDPermission()) {
+        if (!checkWifiDPermission()) {
             logd(tag, "Not enough WIFI_D permissions")
             return
         }
@@ -366,18 +367,17 @@ class WTWiFiDirect(
         logd(TAGKClass, tag, "Exit(1)--------------------------------------------------------------")
     }
 
-    /* Need to fix this */
-    fun wifiDPermission(): Boolean {
+    fun checkWifiDPermission(): Boolean {
         val tag = TAG
-        logd(tag, "wifiDPermission TO FIX IT: perm = ${remoteCall(RemoteCallId.RCCheckWifiDPermission)}")
-        return remoteCall(RemoteCallId.RCCheckWifiDPermission) as? Boolean ?: false
+        logd(tag, "checkWifiDPermission perm = ${remoteCall(RemoteCallId.RCCheckWifiDPermission)}")
+        return (true == typedCall<Boolean>(RemoteCallId.RCCheckWifiDPermission))
     }
 
     suspend fun requestPeersInfo(sync: Boolean = true): MutableList<WifiP2pDevice> {
         val tag = "requestPeersInfo/${randomString(2u)}"
         val sem = Semaphore(1, 1)
 
-        if (wifiDPermission()) {
+        if (checkWifiDPermission()) {
             manager.requestPeers(channel) { peerList ->
                 var str = ""
                 peerList.deviceList.forEach { wifiDevice ->
@@ -401,7 +401,7 @@ class WTWiFiDirect(
         var ret: WifiP2pDevice? = null
 
         val sem = Semaphore(1, 1)
-        if (wifiDPermission()) {
+        if (checkWifiDPermission()) {
             manager.requestDeviceInfo(channel) { device ->
                 ret = device
                 /* onDeviceInfoAvailable(device) */
@@ -425,7 +425,7 @@ class WTWiFiDirect(
 
         logd(tag, "Entry+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
-        if (wifiDPermission()) {
+        if (checkWifiDPermission()) {
             manager.requestGroupInfo(channel) { group ->
                 if (null != group) {
                     var str = ""
@@ -555,7 +555,7 @@ class WTWiFiDirect(
         var reasonToStr = "Success"
 
         logd(tag, "Connecting to ${device.uniqueWifiId()}")
-        if (wifiDPermission()) {
+        if (checkWifiDPermission()) {
             try {
                 manager.connect(
                     channel, config,

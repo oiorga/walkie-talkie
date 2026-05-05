@@ -23,8 +23,8 @@ import walkie.util.LifeCycleObserver
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
+import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.RemoteCallMux
-import walkie.util.generic.RemoteCallMuxInt
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -32,9 +32,9 @@ import walkie.wifidirect.WTWiFiDirect
 import walkie.wifidirect.WiFiDirectBroadcastReceiver
 
 class WTCommonData private constructor (
-    private val _remoteCallMux: RemoteCallMuxInt<Any, Any> = RemoteCallMux<Any, Any>(),
+    private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
-) : RemoteCallMuxInt<Any, Any> by _remoteCallMux,
+) : RemoteCallMuxInt by _remoteCallMux,
     ChannelMuxInt<Any, ChannelMessageType> by _channelMux
 {
     companion object {

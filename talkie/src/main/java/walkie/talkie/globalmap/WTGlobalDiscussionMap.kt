@@ -21,8 +21,8 @@ import walkie.talkie.node.NodeId
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
+import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.RemoteCallMux
-import walkie.util.generic.RemoteCallMuxInt
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -37,9 +37,9 @@ data class DiscussionMap(
     private val discussionMap: DiscussionMapAbs,
     private val groupMap: ChatGroupMap,
     private val systemNode: NodeIdInt,
-    private val _remoteCallMux: RemoteCallMuxInt<Any, Any> = RemoteCallMux<Any, Any>(),
+    private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
-) : RemoteCallMuxInt<Any, Any> by _remoteCallMux,
+) : RemoteCallMuxInt by _remoteCallMux,
     ChannelMuxInt<Any, ChannelMessageType> by _channelMux
 {
     lateinit var updateUiLiveData: UpdateUiLiveData
