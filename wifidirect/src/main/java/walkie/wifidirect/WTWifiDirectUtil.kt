@@ -2,10 +2,14 @@ package walkie.wifidirect
 
 import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pInfo
+import android.net.wifi.p2p.WifiP2pManager
 import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresApi
+import kotlinx.coroutines.suspendCancellableCoroutine
 import walkie.util.getInterfaceIpAddress
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 internal fun WifiP2pGroup.logD(tag: String = "WifiP2pGroup") {
     Log.d(
@@ -85,4 +89,33 @@ internal fun WTWiFiDirect.wtWifiDirectInfo() : String {
     }
 
     return info
+}
+
+sealed class P2pResult {
+    data object Success : P2pResult()
+    data class Failure(val reason: Int) : P2pResult()
+}
+
+suspend inline fun awaitP2pAction(
+    crossinline action: (WifiP2pManager.ActionListener) -> Unit
+): P2pResult {
+    return suspendCancellableCoroutine { continuation ->
+        action(object: WifiP2pManager.ActionListener {
+            override fun onSuccess() {
+                if (continuation.isActive) {
+                    continuation.resume(P2pResult.Success)
+                }
+            }
+
+            override fun onFailure(reason: Int) {
+                if (continuation.isActive) {
+                    continuation.resume(P2pResult.Failure(reason))
+                }
+            }
+        })
+
+        continuation.invokeOnCancellation {
+            TODO("To implement awaitP2pAction -> invokeOnCancellation")
+        }
+    }
 }

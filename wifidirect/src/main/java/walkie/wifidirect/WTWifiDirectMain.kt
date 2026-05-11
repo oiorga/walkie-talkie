@@ -193,19 +193,19 @@ suspend fun WTWiFiDirect.discoverPeersJob(delay: Long = 100L) {
             serviceDiscoveryActive(true)
 
             if (wtIsGroupFormed && !wtIsGroupOwner) {
-                removeLocalService(true)
+                removeLocalService()
                 delay(delay)
             }
 
             if (wtIsGroupOwner || !wtIsGroupFormed) {
-                addLocalService(sync = true, removeFirst = true)
+                addLocalService(removeFirst = true)
                 delay(delay)
             }
 
             if (!wtIsGroupFormed || (null == wtGroupServerPort)) {
                 addServiceRequest(removeFirst = true)
                 delay(delay)
-                discoverServices(sync = true)
+                discoverServices()
             }
             /* delay(delay) */
         }
@@ -221,7 +221,7 @@ suspend fun WTWiFiDirect.discoverPeersJob(delay: Long = 100L) {
 
         if (serviceDiscoveryActive() &&
             (!wtIsGroupFormed || (null == wtGroupServerPort))){
-            discoverServices(sync = true)
+            discoverServices()
         } else {
             delay (delay)
         }
@@ -604,7 +604,7 @@ suspend fun WTWiFiDirect.connectToPeers(delay: Long = 1000L) {
     logd(tag, "--------------------------------------------------------------")
 }
 
-suspend fun WTWiFiDirect.removeLocalService(sync: Boolean = true) {
+suspend fun WTWiFiDirect.removeLocalService() {
     val tag = "removeLocalService/${randomString(2u)}"
     val instanceName = WT_SERVICE_WALKIETALKIE// + "." + deviceUid()
     /* val serviceType = "_presence._tcp" */
@@ -617,40 +617,38 @@ suspend fun WTWiFiDirect.removeLocalService(sync: Boolean = true) {
         WT_SERVICE_RND to randomString(8U),
         WT_SERVICE_LOCAL_SERVER_PORT to wtLocalServerPort!!.toString()
     )
-    val sem = Semaphore(1, 1)
 
     logd(tag, "Entry: $wtLocalServiceRecord")
 
     if (null != wtLocalServiceRecord) {
         logd(tag, "removeLocalService: $wtLocalServiceRecord")
-        manager.removeLocalService(
-            channel,
-            WifiP2pDnsSdServiceInfo.newInstance(
-                instanceName,
-                serviceType,
-                wtLocalServiceRecord),
-            object : WifiP2pManager.ActionListener {
-                override fun onSuccess() {
-                    logd(TAGKClass, tag, "Success removing local service")
-                    wtLocalServiceRecord = null
-                    if (sync) sem.release()
-                }
-                override fun onFailure(errCode: Int) {
-                    logd(
-                        TAGKClass,
-                        tag,
-                        "Failed removing local service: $errCode: ${errToString(errCode)}"
-                    )
-                    wifiP2PEngineFailCoolDown(true)
-                    if (sync) sem.release()
-                }
+
+        when (val res = awaitP2pAction { listener ->
+            manager.removeLocalService(
+                channel,
+                WifiP2pDnsSdServiceInfo.newInstance(
+                    instanceName,
+                    serviceType,
+                    wtLocalServiceRecord),
+                listener)
+        }) {
+            P2pResult.Success -> {
+                logd(TAGKClass, tag, "Success removing local service")
+                wtLocalServiceRecord = null
             }
-        )
-        if (sync) sem.acquire()
+            is P2pResult.Failure -> {
+                logd(
+                    TAGKClass,
+                    tag,
+                    "Failed removing local service: ${res.reason}: ${errToString(res.reason)}"
+                )
+                wifiP2PEngineFailCoolDown(true)
+            }
+        }
     }
 }
 
-suspend fun WTWiFiDirect.addLocalService(sync: Boolean = true, removeFirst: Boolean = true) {
+suspend fun WTWiFiDirect.addLocalService(removeFirst: Boolean = false) {
     val tag = "addLocalService/${randomString(2u)}"
     val instanceName = WT_SERVICE_WALKIETALKIE /* + "." + deviceUid() */
     /* val serviceType = "_presence._tcp" */
@@ -663,12 +661,11 @@ suspend fun WTWiFiDirect.addLocalService(sync: Boolean = true, removeFirst: Bool
         WT_SERVICE_RND to randomString(8U),
         WT_SERVICE_LOCAL_SERVER_PORT to wtLocalServerPort!!.toString()
     )
-    val sem = Semaphore(1, 1)
 
     logd(tag, "Entry: $wtLocalServiceRecord")
 
     if (removeFirst) {
-        removeLocalService(sync)
+        removeLocalService()
     }
 
     if (null == wtLocalServiceRecord) {
@@ -677,37 +674,34 @@ suspend fun WTWiFiDirect.addLocalService(sync: Boolean = true, removeFirst: Bool
 
     logd(tag, "addLocalService: $wtLocalServiceRecord")
     if (checkWifiDPermission()) {
-        manager.addLocalService(
-            channel,
-            WifiP2pDnsSdServiceInfo.newInstance(
-                instanceName,
-                serviceType,
-                wtLocalServiceRecord
-            ),
-            object : WifiP2pManager.ActionListener {
-                override fun onSuccess() {
-                    logd(TAGKClass, tag, "Success adding local service")
-                    if (sync) sem.release()
-                }
 
-                override fun onFailure(errCode: Int) {
-                    logd(
-                        TAGKClass,
-                        tag,
-                        "Failed adding local service: $errCode: ${errToString(errCode)}"
-                    )
-                    wifiP2PEngineFailCoolDown(true)
-                    if (sync) sem.release()
-                }
+        when (val res = awaitP2pAction { listener ->
+            manager.addLocalService(
+                channel,
+                WifiP2pDnsSdServiceInfo.newInstance(
+                    instanceName,
+                    serviceType,
+                    wtLocalServiceRecord
+                ),
+                listener)
+        }) {
+            P2pResult.Success -> {
+                logd(TAGKClass, tag, "Success adding local service")
             }
-        )
-        if (sync) sem.acquire()
+            is P2pResult.Failure -> {
+                logd(
+                    TAGKClass,
+                    tag,
+                    "Failed adding local service: ${res.reason}: ${errToString(res.reason)}"
+                )
+                wifiP2PEngineFailCoolDown(true)
+            }
+        }
     }
 }
 
-suspend fun WTWiFiDirect.removeServiceRequest(sync: Boolean = true) {
+suspend fun WTWiFiDirect.removeServiceRequest() {
     val tag = "addServiceRequest/${randomString(2u)}"
-    val sem = Semaphore(1, 1)
     val instanceName = WT_SERVICE_WALKIETALKIE /* + "." + deviceUid() */
     /* val serviceType = "_presence._tcp" */
     val serviceType = WT_SERVICE_WALKIETALKIE
@@ -716,36 +710,33 @@ suspend fun WTWiFiDirect.removeServiceRequest(sync: Boolean = true) {
     val serviceRequest = WifiP2pDnsSdServiceRequest.newInstance(instanceName, serviceType)
 
     logd(tag, "manager.removeServiceRequest")
-    manager.removeServiceRequest(
-        channel,
-        serviceRequest,
-        object : WifiP2pManager.ActionListener {
-            override fun onSuccess() {
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Success removing service request"
-                )
-                if (sync) sem.release()
-            }
 
-            override fun onFailure(errCode: Int) {
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Failed removing service request: $errCode: ${errToString(errCode)}"
-                )
-                wifiP2PEngineFailCoolDown(true)
-                if (sync) sem.release()
-            }
+    when (val res = awaitP2pAction { listener ->
+        manager.removeServiceRequest(
+            channel,
+            serviceRequest,
+            listener)
+    }) {
+        P2pResult.Success -> {
+            logd(
+                TAGKClass,
+                tag,
+                "Success removing service request"
+            )
         }
-    )
-    if (sync) sem.acquire()
+        is P2pResult.Failure -> {
+            logd(
+                TAGKClass,
+                tag,
+                "Failed removing service request: ${res.reason}: ${errToString(res.reason)}"
+            )
+            wifiP2PEngineFailCoolDown(true)
+        }
+    }
 }
 
-suspend fun WTWiFiDirect.addServiceRequest(sync: Boolean = true, removeFirst: Boolean = true) {
+suspend fun WTWiFiDirect.addServiceRequest(removeFirst: Boolean = false) {
     val tag = "addServiceRequest/${randomString(2u)}"
-    val sem = Semaphore(1, 1)
     val instanceName = WT_SERVICE_WALKIETALKIE /* + "." + deviceUid() */
     /* val serviceType = "_presence._tcp" */
     val serviceType = WT_SERVICE_WALKIETALKIE
@@ -754,34 +745,33 @@ suspend fun WTWiFiDirect.addServiceRequest(sync: Boolean = true, removeFirst: Bo
     val serviceRequest = WifiP2pDnsSdServiceRequest.newInstance(instanceName, serviceType)
 
     if (removeFirst) {
-        removeServiceRequest(sync)
+        removeServiceRequest()
     }
 
     logd(tag, "manager.addServiceRequest")
-    manager.addServiceRequest(
-        channel,
-        serviceRequest,
-        object : WifiP2pManager.ActionListener {
-            override fun onSuccess() {
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Success adding service request"
-                )
-                if (sync) sem.release()
-            }
-            override fun onFailure(errCode: Int) {
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Failed adding service request: $errCode: ${errToString(errCode)}"
-                )
-                wifiP2PEngineFailCoolDown(true)
-                if (sync) sem.release()
-            }
+
+    when (val res = awaitP2pAction { listener ->
+        manager.addServiceRequest(
+            channel,
+            serviceRequest,
+            listener)
+    }) {
+        P2pResult.Success -> {
+            logd(
+                TAGKClass,
+                tag,
+                "Success adding service request"
+            )
         }
-    )
-    if (sync) sem.acquire()
+        is P2pResult.Failure -> {
+            logd(
+                TAGKClass,
+                tag,
+                "Failed adding service request: ${res.reason}: ${errToString(res.reason)}"
+            )
+            wifiP2PEngineFailCoolDown(true)
+        }
+    }
 }
 
 fun WTWiFiDirect.registerServiceListeners() {
@@ -838,7 +828,7 @@ fun WTWiFiDirect.registerServiceListeners() {
     manager.setDnsSdResponseListeners(channel, servListener, txtListener)
 }
 
-suspend fun WTWiFiDirect.wtServicesInit(sync: Boolean = true) {
+suspend fun WTWiFiDirect.wtServicesInit() {
     val tag = "discoverServicesInit/${randomString(2u)}"
     val sem = Semaphore(1, 1)
 
@@ -846,14 +836,14 @@ suspend fun WTWiFiDirect.wtServicesInit(sync: Boolean = true) {
 
     registerServiceListeners()
     delay(1000L)
-    clearAllServices(sync)
+    clearAllServices()
     delay(1000L)
     /*
-    /* addLocalService(sync) */
+    /* addLocalService() */
     delay(1000L)
-    /* addServiceRequest(sync) */
+    /* addServiceRequest() */
     delay(1000L)
-    /* discoverServices(sync) */
+    /* discoverServices() */
     delay(1000L)
     */
     peersDiscoveryReset(true)
@@ -861,126 +851,114 @@ suspend fun WTWiFiDirect.wtServicesInit(sync: Boolean = true) {
 
 /* For some reason is not working */
 @SuppressLint("NewApi")
-suspend fun WTWiFiDirect.stopPeerDiscovery(sync: Boolean = true) {
+suspend fun WTWiFiDirect.stopPeerDiscovery() {
     val tag = "stopPeerDiscovery/${randomString(2u)}"
-    val sem = Semaphore(1, 1)
 
     logd(tag, "Entry")
 
-    /* manager.stopPeerDiscovery( */
-    manager.stopListening(
-        channel,
-        object : WifiP2pManager.ActionListener {
-            override fun onSuccess() {
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Success stopping peers discovery"
-                )
-                if (sync) sem.release()
-            }
-            override fun onFailure(errCode: Int) {
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Failed stopping peers discovery: $errCode: ${errToString(errCode)}"
-                )
-                wifiP2PEngineFailCoolDown(true)
-                if (sync) sem.release()
-            }
+    when (val res = awaitP2pAction { listener ->
+        /* manager.stopPeerDiscovery( */
+        manager.stopListening(
+            channel,
+            listener)
+    }) {
+        P2pResult.Success -> {
+            logd(
+                TAGKClass,
+                tag,
+                "Success stopping peers discovery"
+            )
         }
-    )
+        is P2pResult.Failure -> {
+            logd(
+                TAGKClass,
+                tag,
+                "Failed stopping peers discovery: ${res.reason}: ${errToString(res.reason)}"
+            )
+            wifiP2PEngineFailCoolDown(true)
+        }
+    }
 
     logd(tag, "Exit 0")
-    if (sync) sem.acquire()
-    logd(tag, "Exit 1")
 }
 
-suspend fun WTWiFiDirect.discoverServices(sync: Boolean = true) {
+suspend fun WTWiFiDirect.discoverServices() {
     val tag = "discoverServices/${randomString(2u)}"
-    val sem = Semaphore(1, 1)
 
     logd(tag, "manager.discoverServices")
     if (checkWifiDPermission()) {
-        manager.discoverServices(
-            channel,
-            object : WifiP2pManager.ActionListener {
-                override fun onSuccess() {
-                    logd(
-                        TAGKClass,
-                        tag,
-                        "Success starting discoverServices"
-                    )
-                    if (sync) sem.release()
-                }
-
-                override fun onFailure(errCode: Int) {
-                    logd(
-                        TAGKClass,
-                        tag,
-                        "Failed starting discoverServices: $errCode: ${errToString(errCode)}"
-                    )
-                    wifiP2PEngineFailCoolDown(true)
-                    if (sync) sem.release()
-                }
+        when (val res = awaitP2pAction { listener ->
+            manager.discoverServices(
+                channel,
+                listener)
+        }) {
+            P2pResult.Success -> {
+                logd(
+                    TAGKClass,
+                    tag,
+                    "Success starting discoverServices"
+                )
             }
-        )
-        if (sync) sem.acquire()
+            is P2pResult.Failure -> {
+                logd(
+                    TAGKClass,
+                    tag,
+                    "Failed starting discoverServices: ${res.reason}: ${errToString(res.reason)}"
+                )
+                wifiP2PEngineFailCoolDown(true)
+            }
+        }
     }
 }
 
-suspend fun WTWiFiDirect.clearAllServices(sync: Boolean = true) {
+suspend fun WTWiFiDirect.clearAllServices() {
     val tag = "clearAllServices/${randomString(2u)}"
-    val sem = Semaphore(1, 1)
 
     logd(tag, "Entry")
 
     logd(tag, "manager.clearServiceRequests")
-    manager.clearServiceRequests(
-        channel,
-        object : WifiP2pManager.ActionListener {
-            override fun onSuccess() {
-                logd(TAGKClass,
-                    tag,
-                    "Success clearServiceRequests"
-                )
-                if (sync) sem.release()
-            }
-            override fun onFailure(errCode: Int) {
-                logd(TAGKClass,
-                    tag,
-                    "Failed clearServiceRequests: $errCode: ${errToString(errCode)}"
-                )
-                wifiP2PEngineFailCoolDown(true)
-                if (sync) sem.release()
-            }
+
+    when (val res = awaitP2pAction { listener ->
+        manager.clearServiceRequests(
+            channel, listener)
+    }) {
+        P2pResult.Success -> {
+            logd(TAGKClass,
+                tag,
+                "Success clearServiceRequests"
+            )
         }
-    )
-    if (sync) sem.acquire()
+        is P2pResult.Failure -> {
+            logd(TAGKClass,
+                tag,
+                "Failed clearServiceRequests: ${res.reason}: ${errToString(res.reason)}"
+            )
+            wifiP2PEngineFailCoolDown(true)
+        }
+    }
 
     logd(tag, "manager.clearLocalServices")
-    manager.clearLocalServices(
-        channel,
-        object : WifiP2pManager.ActionListener {
-            override fun onSuccess() {
-                logd(TAGKClass,
-                    tag,
-                    "Success clearLocalServices"
-                )
-                if (sync) sem.release()
-            }
-            override fun onFailure(errCode: Int) {
-                wifiP2PEngineFailCoolDown(true)
-                logd(TAGKClass,
-                    tag,
-                    "Failed clearLocalServices: $errCode: ${errToString(errCode)}"
-                )
-                wifiP2PEngineFailCoolDown(true)
-                if (sync) sem.release()
-            }
+
+    when (val res = awaitP2pAction { listener ->
+        manager.clearLocalServices(
+            channel,
+            listener)
+    }) {
+        P2pResult.Success -> {
+            logd(TAGKClass,
+                tag,
+                "Success clearLocalServices"
+            )
         }
-    )
-    if (sync) sem.acquire()
+        is P2pResult.Failure -> {
+            wifiP2PEngineFailCoolDown(true)
+            logd(TAGKClass,
+                tag,
+                "Failed clearLocalServices: ${res.reason}: ${errToString(res.reason)}"
+            )
+            wifiP2PEngineFailCoolDown(true)
+        }
+    }
 }
 
 suspend fun WTWiFiDirect.processBcastReceiverMessage(intent: Intent) {
@@ -1088,7 +1066,7 @@ suspend fun WTWiFiDirect.wtWifiDirectStop(delay: Long = 1000L) {
 
     logd(tag, "stopPeerDiscovery")
     delay(delay/divider)
-    stopPeerDiscovery(true)
+    stopPeerDiscovery()
 
     /*
     logd(tag, "stopPeerDiscovery")

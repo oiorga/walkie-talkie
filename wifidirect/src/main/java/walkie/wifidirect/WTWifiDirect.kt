@@ -333,10 +333,9 @@ class WTWiFiDirect(
         wifiP2PEngineFailCoolDown(false)
     }
 
-    suspend fun discoverPeers(sync: Boolean = true) {
+    suspend fun discoverPeers() {
         val tag = "discoverPeers/${randomString(2u)}"
-        val sem = Semaphore(1, 1)
-        var reasonToStr = "Success"
+            var reasonToStr = "Success"
 
         logd(tag, "Entry++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
@@ -345,25 +344,23 @@ class WTWiFiDirect(
             return
         }
 
-        manager.discoverPeers(channel, object : WifiP2pManager.ActionListener {
-            override fun onSuccess() {
+        when (val res = awaitP2pAction { listener ->
+            manager.discoverPeers(channel, listener)
+        }) {
+            P2pResult.Success -> {
                 logd(TAGKClass, tag, "onSuccess")
                 wtWifiFailure("$tag/$reasonToStr")
-                if (sync) sem.release()
-            }
+                }
+            is P2pResult.Failure -> {
+                reasonToStr = errToString(res.reason)
 
-            override fun onFailure(reasonCode: Int) {
-                reasonToStr = errToString(reasonCode)
-
-                logd(TAGKClass, tag, "onFailure($reasonCode): $reasonToStr")
+                logd(TAGKClass, tag, "onFailure(${res.reason}): $reasonToStr")
                 wtWifiFailure("$tag/$reasonToStr")
-
-                if (sync) sem.release()
             }
-        })
+        }
 
         logd(TAGKClass, tag, "Exit(0)--------------------------------------------------------------")
-        if (sync) sem.acquire()
+
         logd(TAGKClass, tag, "Exit(1)--------------------------------------------------------------")
     }
 
@@ -475,12 +472,11 @@ class WTWiFiDirect(
         return ret
     }
 
-    suspend fun removeGroup(sync: Boolean = true) {
+    suspend fun removeGroup() {
         val tag = "removeGroup/${randomString(2u)}"
-        val sem = Semaphore(1, 1)
         var reasonToStr = "Success"
 
-        logd(tag, "Entry sync: $sync++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        logd(tag, "Entry ++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
         val group: WifiP2pGroup? =
             if (wtWifiGroupInfo.get() != null) { wtWifiGroupInfo.get() }
@@ -499,40 +495,37 @@ class WTWiFiDirect(
                     "\n Interface Name: ${group?.`interface`} / ${getInterfaceIpAddress(group!!.`interface`)}"
         )
 
-        manager.removeGroup(channel,
-            object: WifiP2pManager.ActionListener {
-                override fun onSuccess() {
-                    logd(
-                        TAGKClass,
-                        tag,
-                        "onSuccess"
-                    )
-                    wtWifiGroupInfo.getAndSet(null)
-                    wtWifiGroupInfoN.getAndSet(null)
-                    wtWifiFailure("$tag/$reasonToStr")
-                    if (sync) sem.release()
-                }
-
-                override fun onFailure(reasonCode: Int) {
-                    reasonToStr = errToString(reasonCode)
-
-                    logd(
-                        TAGKClass,
-                        tag,
-                        "onFailure: Reason($reasonCode): $reasonToStr"
-                    )
-                    wtWifiFailure("$tag/$reasonToStr")
-                    wtWifiGroupInfo.getAndSet(null)
-                    wtWifiGroupInfoN.getAndSet(null)
-
-                    wifiP2PEngineFailCoolDown(true)
-                    if (sync) sem.release()
-                }
+        when (val res = awaitP2pAction { listener ->
+            manager.removeGroup(channel, listener)
+        }) {
+            P2pResult.Success -> {
+                logd(
+                    TAGKClass,
+                    tag,
+                    "onSuccess"
+                )
+                wtWifiGroupInfo.getAndSet(null)
+                wtWifiGroupInfoN.getAndSet(null)
+                wtWifiFailure("$tag/$reasonToStr")
             }
-            )
+            is P2pResult.Failure -> {
+                reasonToStr = errToString(res.reason)
+
+                logd(
+                    TAGKClass,
+                    tag,
+                    "onFailure: Reason(${res.reason}): $reasonToStr"
+                )
+                wtWifiFailure("$tag/$reasonToStr")
+                wtWifiGroupInfo.getAndSet(null)
+                wtWifiGroupInfoN.getAndSet(null)
+
+                wifiP2PEngineFailCoolDown(true)
+            }
+        }
 
         logd("Exit(0)------------------------------------------------------")
-        if (sync) sem.acquire()
+
         logd("Exit(1)------------------------------------------------------")
     }
 
@@ -547,81 +540,73 @@ class WTWiFiDirect(
                         config: WifiP2pConfig = WifiP2pConfig().apply {
                             deviceAddress = device.deviceAddress
                             groupOwnerIntent = GROUP_OWNER_INTENT_MIN
-                            wps.setup = WpsInfo.PBC },
-                        sync: Boolean = true): ConnectionStatus {
+                            wps.setup = WpsInfo.PBC }
+                       ): ConnectionStatus {
         val tag = "connectTo/${randomString(2u)}"
-        val sem = Semaphore(1, 1)
         var ret: ConnectionStatus = ConnectionStatus.Null
         var reasonToStr = "Success"
 
         logd(tag, "Connecting to ${device.uniqueWifiId()}")
         if (checkWifiDPermission()) {
             try {
-                manager.connect(
-                    channel, config,
-                    object : WifiP2pManager.ActionListener {
-                        override fun onSuccess() {
-                            logd(
-                                TAGKClass,
-                                tag,
-                                "onSuccess: " +
-                                        "Connect to: ${device.uniqueWifiId()}  ${device.deviceAddress} GO = ${device.isGroupOwner} Success"
-                            )
-                            ret = ConnectionStatus.InProgress
-                            wtWifiFailure("$tag/$reasonToStr")
-                            if (sync) sem.release()
-                        }
-
-                        override fun onFailure(reasonCode: Int) {
-                            reasonToStr = errToString(reasonCode)
-                            logd(
-                                TAGKClass,
-                                tag,
-                                "onFailure: Connect to: ${device.uniqueWifiId()}  ${device.deviceAddress} GO = ${device.isGroupOwner} Fail reason($reasonCode): $reasonToStr"
-                            )
-                            wtWifiFailure("$tag/$reasonToStr")
-                            ret = ConnectionStatus.Fail
-                            if (sync) sem.release()
-                        }
+                when (val res = awaitP2pAction { listener ->
+                    manager.connect(
+                        channel,
+                        config,
+                        listener
+                    )
+                }) {
+                    P2pResult.Success -> {
+                        logd(
+                            TAGKClass,
+                            tag,
+                            "onSuccess: " +
+                                    "Connect to: ${device.uniqueWifiId()}  ${device.deviceAddress} GO = ${device.isGroupOwner} Success"
+                        )
+                        ret = ConnectionStatus.InProgress
+                        wtWifiFailure("$tag/$reasonToStr")
                     }
-                )
-                if (sync) sem.acquire()
+                    is P2pResult.Failure -> {
+                        reasonToStr = errToString(res.reason)
+                        logd(
+                            TAGKClass,
+                            tag,
+                            "onFailure: Connect to: ${device.uniqueWifiId()}  ${device.deviceAddress} GO = ${device.isGroupOwner} Fail reason(${res.reason}): $reasonToStr"
+                        )
+                        wtWifiFailure("$tag/$reasonToStr")
+                        ret = ConnectionStatus.Fail
+                    }
+                }
             } catch (e: Exception) {
                 throw (e)
             } catch (t: Throwable) {
                 throw (t)
             }
         }
-
         return ret
     }
 
-    suspend fun cancelConnect(sync: Boolean = true) {
+    suspend fun cancelConnect() {
         val tag = "cancelConnect/${randomString(2u)}"
-        val sem = Semaphore(1, 1)
         var reasonToStr = "Success"
 
         logd(tag, "Cancelling Connecting process")
 
-        manager.cancelConnect(channel,
-            object : WifiP2pManager.ActionListener {
-                override fun onSuccess() {
-                    logd(TAGKClass, tag, "onSuccess:")
-                    wtWifiFailure("$tag/$reasonToStr")
-                    if (sync) sem.release()
-                }
-
-                override fun onFailure(reasonCode: Int) {
-                    reasonToStr = errToString(reasonCode)
-                    logd(
-                        TAGKClass, tag, "onFailure: Reason($reasonCode): $reasonToStr"
-                    )
-                    wtWifiFailure("$tag/$reasonToStr")
-                    if (sync) sem.release()
-                }
+        when (val res = awaitP2pAction { listener ->
+            manager.cancelConnect(channel, listener)
+        }) {
+            P2pResult.Success -> {
+                logd(TAGKClass, tag, "onSuccess:")
+                wtWifiFailure("$tag/$reasonToStr")
             }
-        )
-        if (sync) sem.acquire()
+            is P2pResult.Failure -> {
+                reasonToStr = errToString(res.reason)
+                logd(
+                    TAGKClass, tag, "onFailure: Reason(${res.reason}): $reasonToStr"
+                )
+                wtWifiFailure("$tag/$reasonToStr")
+            }
+        }
     }
 
     suspend fun connectTo(device: WTWifiDirectPeerInfo, sync: Boolean = true): ConnectionStatus {
@@ -670,7 +655,7 @@ class WTWiFiDirect(
 
                 if (device.wtService() && wifiP2PEngineOk()) {
                     synC = sync
-                    device.directWifiConnection = connect(device.p2pInfo, config, sync)
+                    device.directWifiConnection = connect(device.p2pInfo, config)
                     when (device.directWifiConnection) {
                         ConnectionStatus.InProgress -> {
                             logd(TAGKClass, tag,"($c)Connect to: ${device.name}  ${device.address} GO = ${device.isGroupOwner} Success").also { c++ }
@@ -701,7 +686,7 @@ class WTWiFiDirect(
                 } else {
                     if (!device.fcd()) {
                         device.directWifiConnection = ConnectionStatus.Retry
-                        cancelConnect(sync = true)
+                        cancelConnect()
                     }
                     device.stateCounterTick()
                 }
@@ -714,7 +699,7 @@ class WTWiFiDirect(
                     ).also { c++ }
                 if (!connectedToGroup()) {
                     if (!device.cip()) {
-                        cancelConnect(sync = true)
+                        cancelConnect()
                         device.directWifiConnection = ConnectionStatus.Retry
                     }
                 } else {
