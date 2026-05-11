@@ -4,7 +4,9 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -224,27 +226,28 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
     }
 }
 
-suspend fun WTIPComm.wifiServer(context: CoroutineDispatcher = Dispatchers.IO,
-                                localIp: InetAddress? = null,
-                                delay: Long = 1000L) {
+suspend fun WTIPComm.wifiServer(localIp: InetAddress? = null,
+                                delay: Long = 1000L) = coroutineScope {
     val tag = "wifiServer/${randomString(2u)}"
     val s = WTIPCommStatic.INSTANCE
     var serverIp: InetAddress? = null
     val ipZero = getInetAddressByName("0.0.0.0")
 
-    if (s.wifiServerS) return
+    if (s.wifiServerS) return@coroutineScope
     s.wifiServerS = true
 
     serverPort(WTIPComm.SERVERPORT + Random.nextInt(99))
     callBack(CallBackId.CBServerPort, serverPort())
 
-    CoroutineScope(context).launch {
+    launch(Dispatchers.Default) {
         var count: Long = 0
-        while (true) {
+        while (isActive) {
             count++
-            logd(TAGKClass,
+            logd(
+                TAGKClass,
                 tag,
-                "ipInMessageQueue: mainLoop $count")
+                "ipInMessageQueue: mainLoop $count"
+            )
             val packet = ipInQueue.dequeue()
             if (packet != null) {
                 wifiServerProcessInput(packet)
@@ -252,44 +255,60 @@ suspend fun WTIPComm.wifiServer(context: CoroutineDispatcher = Dispatchers.IO,
         }
     }
 
-    logd(TAGKClass,
+    logd(
+        TAGKClass,
         tag,
         "Main Loop Enter: localIp: $localIp"
     )
 
-    while (true) {
+    while (isActive) {
         var count: Long = 0
         /* if (null == serverIp) serverIp = localIp ?: this.localServerIpAddress */
         /* serverIp = (serverIp ?: (localIp ?: this.localServerIpAddress)) */
-        serverIp = ((this.localServerIpAddress) ?: localIp)
-        logd(TAGKClass,
+        serverIp = ((this@wifiServer.localServerIpAddress) ?: localIp)
+        logd(
+            TAGKClass,
             tag,
-            "$count: mainLoop serverIp(zero): $serverIp / ${this.localServerIpAddress}"). also { count++ }
+            "$count: mainLoop serverIp(zero): $serverIp / ${this@wifiServer.localServerIpAddress}"
+        ).also { count++ }
 
         if (null == serverIp) {
             wtServer = TCPServer(
                 ipAddress = ipZero,
                 port = serverPort(),
-                soTimeout = 1000) { _, _ ->
-                logd(TAGKClass, tag, "$count: mainLoop serverIp(null): $serverIp / ${this.localServerIpAddress}"). also { count++ }
-                val cont = (null == this.localServerIpAddress)
+                soTimeout = 1000
+            ) { _, _ ->
+                logd(
+                    TAGKClass,
+                    tag,
+                    "$count: mainLoop serverIp(null): $serverIp / ${this@wifiServer.localServerIpAddress}"
+                ).also { count++ }
+                val cont = (null == this@wifiServer.localServerIpAddress)
                 if (cont) delay(1010)
-                return@TCPServer(cont)
+                return@TCPServer (cont)
             }
-            logd(TAGKClass, tag, "$count: mainLoop serverIp(null Out): $serverIp / ${this.localServerIpAddress}"). also { count++ }
+            logd(
+                TAGKClass,
+                tag,
+                "$count: mainLoop serverIp(null Out): $serverIp / ${this@wifiServer.localServerIpAddress}"
+            ).also { count++ }
             wtServer?.wait()
             wtServer?.close()
             wtServer = null
         } else {
             wtServer = TCPServer(
-                ipAddress= serverIp,
+                ipAddress = serverIp,
                 port = serverPort(),
                 soTimeout = 0
             ) { client, input ->
-                logd(TAGKClass, tag, "$count: mainLoop serverIp(normal): $serverIp / ${this.localServerIpAddress}"). also { count++ }
+                logd(
+                    TAGKClass,
+                    tag,
+                    "$count: mainLoop serverIp(normal): $serverIp / ${this@wifiServer.localServerIpAddress}"
+                ).also { count++ }
                 wifiServerCallback(client, input as Scanner)
                 count++
-                return@TCPServer(null != this.localServerIpAddress)
+                return@TCPServer (null != this@wifiServer.localServerIpAddress)
             }
             wtServer?.wait()
             wtServer?.close()
@@ -309,61 +328,71 @@ suspend fun WTIPComm.sendJsonString(ipAddress: InetAddress, port: Int, jsonStrin
 }
 
 suspend fun WTIPComm.wifiClient(
-    context: CoroutineDispatcher = Dispatchers.IO,
     inOutQueue: BlockingQueue<Triple<InetAddress, Int, ByteArray>>? = null
-    ) {
-    val tag = "wifiClient/${randomString(2u)}"
+    ) = coroutineScope {
+     val tag = "wifiClient/${randomString(2u)}"
     val s = WTIPCommStatic.INSTANCE
 
-    if (s.wifiClientS) return
+    if (s.wifiClientS) return@coroutineScope
     s.wifiClientS = true
 
     val ioQueue = inOutQueue ?: ipOutQueue
 
     var count = 0
-    while (true) {
+    while (isActive) {
         try {
             /***************************/
-            withContext(context) {
-                logd(TAGKClass,
+            logd(
+                TAGKClass,
+                tag,
+                "$count: main loop ipOutQueue before deQueue. Size: ${ioQueue.size}"
+            )
+            val triple = ioQueue.dequeue()
+            val ipAddress = triple?.first
+            val serverPort = triple?.second
+            val byteArray = triple?.third
+            var logF: Boolean = true
+
+            //wtTry(TAGKClass, tag) { logF = ((byteArray?.decodeToString()?.let { Json.decodeFromString<WTIPPacketComm>(it) })?.ipCommType == WTIPCommPacketType.ControlMesh) }
+
+            logd(
+                TAGKClass,
+                tag,
+                "$count: main loop ipOutQueue after deQueue. Size: ${ioQueue.size}"
+            )
+
+            if (null != ipAddress &&
+                null != serverPort &&
+                null != byteArray
+            ) {
+                logd(
+                    TAGKClass,
                     tag,
-                    "$count: main loop ipOutQueue before deQueue. Size: ${ioQueue.size}")
-                val triple = ioQueue.dequeue()
-                val ipAddress = triple?.first
-                val serverPort = triple?.second
-                val byteArray = triple?.third
-                var logF: Boolean = true
-
-                //wtTry(TAGKClass, tag) { logF = ((byteArray?.decodeToString()?.let { Json.decodeFromString<WTIPPacketComm>(it) })?.ipCommType == WTIPCommPacketType.ControlMesh) }
-
-                logd(TAGKClass,
-                    tag,
-                    "$count: main loop ipOutQueue after deQueue. Size: ${ioQueue.size}")
-
-                if (null != ipAddress &&
-                    null != serverPort &&
-                    null != byteArray) {
-                    logd(TAGKClass,
+                    "$count: Creating Client Socket to: $ipAddress:$serverPort ${byteArray.decodeToString()}"
+                )
+                val client = TCPClient(ipAddress, serverPort)
+                if (client.init(timeOut = 10000)) {
+                    logd(
+                        TAGKClass,
                         tag,
-                        "$count: Creating Client Socket to: $ipAddress:$serverPort ${byteArray.decodeToString()}")
-                    val client = TCPClient(ipAddress, serverPort)
-                    if (client.init(timeOut = 10000)) {
-                        logd(TAGKClass,
-                            tag,
-                            "$count: Sending Remote to: $ipAddress:$serverPort ${byteArray.decodeToString()}")
-                        client.send(byteArray, timeOut = 10000)
-                        client.close()
-                        logd(TAGKClass,
-                            tag,
-                            "$count: DONE Sending Remote to: $ipAddress:$serverPort. TimedOut: ${client.timedOut()}")
-                    } else {
-                        logd(TAGKClass,
-                            tag,
-                            "$count: Creating Client Socket Failed to: $ipAddress:$serverPort ${byteArray.decodeToString()}")
-                        delay(1000L)
-                    }
-                    count++
+                        "$count: Sending Remote to: $ipAddress:$serverPort ${byteArray.decodeToString()}"
+                    )
+                    client.send(byteArray, timeOut = 10000)
+                    client.close()
+                    logd(
+                        TAGKClass,
+                        tag,
+                        "$count: DONE Sending Remote to: $ipAddress:$serverPort. TimedOut: ${client.timedOut()}"
+                    )
+                } else {
+                    logd(
+                        TAGKClass,
+                        tag,
+                        "$count: Creating Client Socket Failed to: $ipAddress:$serverPort ${byteArray.decodeToString()}"
+                    )
+                    delay(1000L)
                 }
+                count++
             }
             /***************************/
         } catch (e: Exception) {
@@ -382,15 +411,10 @@ suspend fun WTIPComm.wifiClient(
     }
 }
 
-fun WTIPComm.wtIPCommMain(scope: CoroutineScope = CoroutineScope(Dispatchers.IO)) {
-
-    val wifiServer: Job = scope.launch {
-        /* wifiServer(context = Dispatchers.IO, localIp = getInetAddressByName("0.0.0.0")) */
-        wifiServer(context = Dispatchers.IO)
-    }
-
-    val wifiClient: Job = scope.launch {
-        wifiClient(context = Dispatchers.IO)
+fun WTIPComm.wtIPCommMain(scope: CoroutineScope): Job {
+    return scope.launch {
+        launch { wifiServer() }
+        launch { wifiClient() }
     }
 }
 

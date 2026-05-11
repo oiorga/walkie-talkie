@@ -1,5 +1,7 @@
 package walkie.comm
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import walkie.comm.ip.wtIPCommMain
 import walkie.comm.prm.WTPRMComm
 import walkie.util.generic.ChannelMux
@@ -82,7 +84,7 @@ class WTComm (
     }
 
     fun start() {
-        wtPRMComm().wtIPComm().wtIPCommMain()
+        wtPRMComm().wtIPComm().wtIPCommMain(CoroutineScope(Dispatchers.IO))
     }
 
     private suspend fun chatMessageLoopback(commPacket: CommPacketInt) {
