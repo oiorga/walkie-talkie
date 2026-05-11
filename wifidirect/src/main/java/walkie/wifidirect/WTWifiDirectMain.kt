@@ -983,7 +983,7 @@ suspend fun WTWiFiDirect.processBcastReceiverMessage(intent: Intent) {
 
             wifiP2pEnabledNInfo.getAndSet(enabled)
             if (wifiP2pEnabledNInfo.get()) {
-                val device = requestDeviceInfo(sync = true)
+                val device = requestDeviceInfo()
                 onDeviceInfoAvailable(device)
                 logd(tag, "processBcastReceiverMessage(1): P2P state changed to enabled" +
                         "\n\t\t\t\tGO: ${device?.isGroupOwner}" +
@@ -1014,14 +1014,14 @@ suspend fun WTWiFiDirect.processBcastReceiverMessage(intent: Intent) {
             logd(tag, "processBcastReceiverMessage: P2P connection changed to: " +
                         if (networkInfo.isConnected) "Connected" else "Disconnected")
 
-            requestConnectionInfo(sync = true)
-            requestGroupInfo(sync = true)
+            requestConnectionInfo()
+            requestGroupInfo()
         }
 
         WIFI_P2P_THIS_DEVICE_CHANGED_ACTION -> {
-            val device = requestDeviceInfo(sync = true)
+            val device = requestDeviceInfo()
             onDeviceInfoAvailable(device)
-            requestGroupInfo(sync = true)
+            requestGroupInfo()
             logd(tag, "processBcastReceiverMessage: P2P this device changed:" +
                     "\n\t\t\t\tGO: ${device?.isGroupOwner}" +
                     "\n\t\t\t\tdeviceName: ${device?.deviceName}" +

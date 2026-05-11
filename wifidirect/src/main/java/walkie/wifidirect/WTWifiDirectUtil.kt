@@ -8,6 +8,8 @@ import android.util.Log
 import androidx.annotation.RequiresApi
 import kotlinx.coroutines.suspendCancellableCoroutine
 import walkie.util.getInterfaceIpAddress
+import walkie.util.logd
+import walkie.wifidirect.WTWiFiDirect.Companion.TAG
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
@@ -96,26 +98,38 @@ sealed class P2pResult {
     data class Failure(val reason: Int) : P2pResult()
 }
 
-suspend inline fun awaitP2pAction(
+suspend inline fun WTWiFiDirect.awaitP2pAction(
     crossinline action: (WifiP2pManager.ActionListener) -> Unit
-): P2pResult {
-    return suspendCancellableCoroutine { continuation ->
-        action(object: WifiP2pManager.ActionListener {
-            override fun onSuccess() {
-                if (continuation.isActive) {
-                    continuation.resume(P2pResult.Success)
-                }
+): P2pResult = suspendCancellableCoroutine { continuation ->
+    action(object : WifiP2pManager.ActionListener {
+        override fun onSuccess() {
+            if (continuation.isActive) {
+                continuation.resume(P2pResult.Success)
             }
-
-            override fun onFailure(reason: Int) {
-                if (continuation.isActive) {
-                    continuation.resume(P2pResult.Failure(reason))
-                }
-            }
-        })
-
-        continuation.invokeOnCancellation {
-            TODO("To implement awaitP2pAction -> invokeOnCancellation")
         }
+
+        override fun onFailure(reason: Int) {
+            if (continuation.isActive) {
+                continuation.resume(P2pResult.Failure(reason))
+            }
+        }
+    })
+
+    continuation.invokeOnCancellation {
+        logd(TAG, "awaitP2pAction: continuation.invokeOnCancellation")
+    }
+}
+
+suspend inline fun <T>WTWiFiDirect.awaitP2pRequest(
+    crossinline action: ((T) -> Unit) -> Unit
+): T = suspendCancellableCoroutine { continuation ->
+    action { out: T ->
+        if (continuation.isActive) {
+            continuation.resume(out)
+        }
+    }
+
+    continuation.invokeOnCancellation {
+        logd(TAG, "awaitP2pRequest: continuation.invokeOnCancellation")
     }
 }

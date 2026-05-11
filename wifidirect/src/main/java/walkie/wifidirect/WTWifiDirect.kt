@@ -6,13 +6,13 @@ import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pConfig.GROUP_OWNER_INTENT_MAX
 import android.net.wifi.p2p.WifiP2pConfig.GROUP_OWNER_INTENT_MIN
 import android.net.wifi.p2p.WifiP2pDevice
+import android.net.wifi.p2p.WifiP2pDeviceList
 import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.net.wifi.p2p.WifiP2pManager.Channel
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.sync.Semaphore
 import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.GenericList
@@ -370,106 +370,103 @@ class WTWiFiDirect(
         return (true == typedCall<Boolean>(RemoteCallId.RCCheckWifiDPermission))
     }
 
-    suspend fun requestPeersInfo(sync: Boolean = true): MutableList<WifiP2pDevice> {
+    suspend fun requestPeersInfo(): MutableList<WifiP2pDevice> {
         val tag = "requestPeersInfo/${randomString(2u)}"
-        val sem = Semaphore(1, 1)
+        var peerList: WifiP2pDeviceList
+        var str = ""
 
         if (checkWifiDPermission()) {
-            manager.requestPeers(channel) { peerList ->
-                var str = ""
-                peerList.deviceList.forEach { wifiDevice ->
-                    str += wifiDevice.deviceName + "/${wifiDevice.deviceAddress}" + " "
+            peerList = awaitP2pRequest { callback ->
+                manager.requestPeers(channel) { peerList ->
+                    callback(peerList)
                 }
-                logd(
-                    TAGKClass,
-                    tag,
-                    "NEW Peers: $str"
-                )
-                directWifiPeersN.addAll(peerList.deviceList)
-                if (sync) sem.release()
             }
-            if (sync) sem.acquire()
+
+            peerList.deviceList.forEach { wifiDevice ->
+                str += wifiDevice.deviceName + "/${wifiDevice.deviceAddress}" + " "
+            }
+            logd(
+                TAGKClass,
+                tag,
+                "NEW Peers: $str"
+            )
+            directWifiPeersN.addAll(peerList.deviceList)
         }
+
         return directWifiPeersN
     }
 
-    suspend fun requestDeviceInfo(sync: Boolean = true): WifiP2pDevice? {
+    suspend fun requestDeviceInfo(): WifiP2pDevice? {
         val tag = "requestDeviceInfo/${randomString(2u)}"
-        var ret: WifiP2pDevice? = null
+        var device: WifiP2pDevice? = null
 
-        val sem = Semaphore(1, 1)
         if (checkWifiDPermission()) {
-            manager.requestDeviceInfo(channel) { device ->
-                ret = device
-                /* onDeviceInfoAvailable(device) */
-                logd(
-                    tag, "processBcastReceiverMessage: P2P this device changed:" +
-                            "\n\t\t\t\tGO: ${device?.isGroupOwner}" +
-                            "\n\t\t\t\tdeviceName: ${device?.deviceName}" +
-                            "\n\t\t\t\tdeviceAddress${device?.deviceAddress}"
-                )
-                if (sync) sem.release()
+            device = awaitP2pRequest<WifiP2pDevice?> { callback ->
+                manager.requestDeviceInfo(channel) { device ->
+                    callback(device)
+                }
             }
-            if (sync) sem.acquire()
         }
-        return ret
+
+        logd(
+            tag, "processBcastReceiverMessage: P2P this device changed:" +
+                    "\n\t\t\t\tGO: ${device?.isGroupOwner}" +
+                    "\n\t\t\t\tdeviceName: ${device?.deviceName}" +
+                    "\n\t\t\t\tdeviceAddress${device?.deviceAddress}"
+        )
+
+        return device
     }
 
-    suspend fun requestGroupInfo(sync: Boolean = true): WifiP2pGroup? {
+    suspend fun requestGroupInfo(): WifiP2pGroup? {
         val tag = "requestGroupInfo/${randomString(2u)}"
-        var ret: WifiP2pGroup? = null
-        val sem = Semaphore(1, 1)
+        var groupInfo: WifiP2pGroup? = null
+        var str = ""
 
         logd(tag, "Entry+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 
         if (checkWifiDPermission()) {
-            manager.requestGroupInfo(channel) { group ->
-                if (null != group) {
-                    var str = ""
-                    group.clientList.forEach { dev ->
-                        str += dev.deviceName + " "
-                    }
+            groupInfo = awaitP2pRequest { callback ->
+                manager.requestGroupInfo(channel) { groupInfo ->
+                    callback(groupInfo)
+                }
+            }
 
-                    logd(
-                        tag,
-                        "Callback: sync: $sync" +
-                                "\n Owner: [${group.owner.deviceName}] [$deviceId] [${group.owner.deviceAddress}]" +
-                                "\n Passwd: ${group.passphrase}" +
-                                "\n GO: ${group.isGroupOwner}" +
-                                "\n Interface Name: ${group.`interface`} / ${
-                                    getInterfaceIpAddress(
-                                        group.`interface`
-                                    )
-                                }" +
-                                "\n ClientList: $str"
-                    )
-                } else {
-                    logd(tag, "requestGroupInfo got NULL")
+            if (null != groupInfo) {
+                groupInfo.clientList.forEach { dev ->
+                    str += dev.deviceName + " "
                 }
 
-                if (wtWifiGroupInfoN.get() != group) wtWifiGroupInfoN.getAndSet(group)
-
-                ret = group
-
-                if (sync)
-                    sem.release()
+                logd(
+                    tag,
+                    "Callback:"  +
+                            "\n Owner: [${groupInfo.owner.deviceName}] [$deviceId] [${groupInfo.owner.deviceAddress}]" +
+                            "\n Passwd: ${groupInfo.passphrase}" +
+                            "\n GO: ${groupInfo.isGroupOwner}" +
+                            "\n Interface Name: ${groupInfo.`interface`} / ${
+                                getInterfaceIpAddress(
+                                    groupInfo.`interface`
+                                )
+                            }" +
+                            "\n ClientList: $str"
+                )
+            } else {
+                logd(tag, "requestGroupInfo got NULL")
             }
-            if (sync) sem.acquire()
-        }
 
-        logd(tag, "Exit(0)-----------------------------------------------------------------")
+            if (wtWifiGroupInfoN.get() != groupInfo) wtWifiGroupInfoN.getAndSet(groupInfo)
+        }
 
         logd(
             tag,
-            "sync: $sync" +
-                    "\n Owner: [${ret?.owner?.deviceName}] [$deviceId] [${ret?.owner?.deviceAddress}]" +
-                    "\n Passwd: ${ret?.passphrase}" +
-                    "\n GO: ${ret?.isGroupOwner}" +
-                    "\n Interface Name: ${ret?.`interface`} / ${ret?.`interface`?.let { getInterfaceIpAddress(it) }}"
+                    "\n Owner: [${groupInfo?.owner?.deviceName}] [$deviceId] [${groupInfo?.owner?.deviceAddress}]" +
+                    "\n Passwd: ${groupInfo?.passphrase}" +
+                    "\n GO: ${groupInfo?.isGroupOwner}" +
+                    "\n Interface Name: ${groupInfo?.`interface`} / ${groupInfo?.`interface`?.let { getInterfaceIpAddress(it) }}"
         )
-        logd(tag, "Exit(1)-----------------------------------------------------------------")
+        logd(tag, "Exit-----------------------------------------------------------------")
 
-        return ret
+        return groupInfo
     }
 
     suspend fun removeGroup() {
@@ -609,10 +606,8 @@ class WTWiFiDirect(
         }
     }
 
-    suspend fun connectTo(device: WTWifiDirectPeerInfo, sync: Boolean = true): ConnectionStatus {
+    suspend fun connectTo(device: WTWifiDirectPeerInfo): ConnectionStatus {
         val tag = "connectTo/${randomString(2u)}"
-        val sem = Semaphore(1, 1)
-        var synC = false
         var c = 0
 
         logd(tag, "($c)connect to ${device.uniqueWifiId()} ${device.wtService()} ${device.directWifiConnection}").also { c++ }
@@ -654,7 +649,6 @@ class WTWiFiDirect(
                 if (!device.wtService()) device.directWifiConnection = ConnectionStatus.NoWTService
 
                 if (device.wtService() && wifiP2PEngineOk()) {
-                    synC = sync
                     device.directWifiConnection = connect(device.p2pInfo, config)
                     when (device.directWifiConnection) {
                         ConnectionStatus.InProgress -> {
@@ -670,7 +664,6 @@ class WTWiFiDirect(
                             throw (NotImplementedError("$tag Connecting to {device.name}  ${device.address} GO = ${device.isGroupOwner} Not Expected result"))
                         }
                     }
-                    if (synC) sem.release()
                 }
             }
             ConnectionStatus.Fail -> {
@@ -734,55 +727,41 @@ class WTWiFiDirect(
             }
         }
 
-        logd(tag, "($c)Exit(0)--------------------------------------------------------------").also { c++ }
-        if (synC) {
-            sem.acquire()
-        }
-        logd(tag, "($c)Exit(1)--------------------------------------------------------------").also { c++ }
         logd(tag, "($c)Exit connect to ${device.uniqueWifiId()} ${device.wtService()} ${device.directWifiConnection}").also { c++ }
 
         return device.directWifiConnection
     }
 
-    suspend fun requestConnectionInfo(sync: Boolean = true): WifiP2pInfo? {
+    suspend fun requestConnectionInfo(): WifiP2pInfo? {
         val tag = "requestConnectionInfo/${randomString(2u)}"
-        var ret: WifiP2pInfo? = null
-        val sem = Semaphore(1, 1)
-        var reqGroup = false
 
         logd(
             TAGKClass,
             tag,
-            "Entry sync: $sync+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
+            "Entry+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
         )
 
         wtWifiP2pInfoN.get()?.logD(tag)
 
-        manager.requestConnectionInfo(channel) { info ->
-            logd(
+        var wifiP2pInfo: WifiP2pInfo = awaitP2pRequest { callback ->
+            manager.requestConnectionInfo(channel) { info ->
+                callback(info)
+            }
+        }
+        logd(
             TAGKClass,
             tag,
-            "Entry: ${info.groupFormed}  ${info.isGroupOwner} ${info.groupOwnerAddress}"
-            )
+            "Entry: ${wifiP2pInfo.groupFormed}  ${wifiP2pInfo.isGroupOwner} ${wifiP2pInfo.groupOwnerAddress}"
+        )
 
-            ret = info
-            if (ret != wtWifiP2pInfoN.get()) {
-                wtWifiP2pInfoN.compareAndSet(wtWifiP2pInfoN.get(), ret)
-                reqGroup = true
-            }
-
-            if (sync) sem.release()
+        if (wifiP2pInfo != wtWifiP2pInfoN.get()) {
+            wtWifiP2pInfoN.compareAndSet(wtWifiP2pInfoN.get(), wifiP2pInfo)
         }
-
         logd(
             TAGKClass,
             tag,
             "Exit(0)-----------------------------------------------------------"
         )
-
-        if (sync) {
-            sem.acquire()
-        }
 
         wtWifiP2pInfoN.get()?.logD(tag)
         logd(
@@ -791,6 +770,6 @@ class WTWiFiDirect(
             "Exit(1)-----------------------------------------------------------"
         )
 
-        return ret
+        return wifiP2pInfo
     }
 }
