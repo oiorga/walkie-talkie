@@ -33,12 +33,16 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import walkie.chat.ChatDiscussion
 import walkie.chat.ChatDiscussionMap
 import walkie.chat.ChatGroupId
@@ -150,7 +154,7 @@ class WalkieTalkie(
     private suspend fun wifiCleanUp() {
         val tag = "WalkieTalkie.Overrides/${randomString(2U)}"
         logd(tag, "wifiCleanUp")
-        wtCommonData().wtScope.cancel()
+        //wtCommonData().wtScope.cancel()
         wtCommonData().wtWifiD.wtWifiDirectStop()
     }
 
@@ -187,14 +191,15 @@ class WalkieTalkie(
     }
 
     private fun kill() {
-        wtCommonData().wtScope.launch {
-            wifiCleanUp()
+        lifecycleScope.launch() {
+            withContext(NonCancellable) {
+                wifiCleanUp()
+                wtCommonData().wtScope.cancel()
+                finishAffinity()
+                finishAndRemoveTask()
+                exitProcess(0)
+            }
         }
-        sleep(1000L)
-        this.finish()
-        this.finishAffinity()
-        this.finishAndRemoveTask()
-        exitProcess(0);
     }
 
     override fun onResume() {

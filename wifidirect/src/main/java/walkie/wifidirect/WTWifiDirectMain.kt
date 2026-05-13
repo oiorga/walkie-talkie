@@ -510,6 +510,8 @@ suspend fun WTWiFiDirect.connectToPeers(delay: Long = 1000L) {
                 "\n\t\twtIsGroupFormed: $wtIsGroupFormed" +
                 "\n\t\tisWifiP2pEnabled: $wifiP2pEnable" +
                 "\n\t\tconnectCountdown: $connectCountdown" +
+                "\n\t\tconnectingAllowed: ${connectingAllowed()}" +
+                "\n\t\tdirectWifiPeers: ${directWifiPeers.keys}" +
                 "\n\t\tdiscoverPeersProcessActive: ${serviceDiscoveryActive()}").
     also { c++ }
 
@@ -518,8 +520,16 @@ suspend fun WTWiFiDirect.connectToPeers(delay: Long = 1000L) {
         connectingAllowed()
     ) {
         val tmpPeers: MutableMap<String, WTWifiDirectPeerInfo> = directWifiPeers.toMutableMap()
-
         val groupOwner = wtGroupOwner
+        val peersList = tmpPeers.filter { (_, device) -> device != groupOwner }.toList()
+
+        logd(tag,
+            "($c):\n" +
+                    "\n\t\tgroupOwner: ${groupOwner?.name}" +
+                    "\n\t\tdirectWifiPeers: ${tmpPeers.keys}" +
+                    "\n\t\tpeersList: ${peersList.map { pair -> pair.first }}"
+        ).also { c++ }
+
         if (null != groupOwner &&
             groupOwner.wtService() &&
             groupOwner.p2pInfo.deviceName != thisDevice!!.deviceName &&
@@ -528,7 +538,7 @@ suspend fun WTWiFiDirect.connectToPeers(delay: Long = 1000L) {
             logd(
                 tag,
                 "$tag($c): Connect to Group Owner: [${groupOwner.name}.${groupOwner.address}] " +
-                        "[GO: ${wtIsGroupFormed} / ${wtIsGroupOwner} / ${groupOwner.isGroupOwner}] " +
+                        "[GO: $wtIsGroupFormed / $wtIsGroupOwner / ${groupOwner.isGroupOwner}] " +
                         "[connectionStatus: ${groupOwner.directWifiConnection}]"
             ).also { c++ }
             connectTo(groupOwner)
@@ -540,7 +550,6 @@ suspend fun WTWiFiDirect.connectToPeers(delay: Long = 1000L) {
             return
         }
 
-        val peersList = tmpPeers.filter { (_, device) -> device != groupOwner }.toList()
         when (connectToDevice?.directWifiConnection) {
             ConnectionStatus.InProgress, ConnectionStatus.Fail, ConnectionStatus.NotConnected,
             ConnectionStatus.AgedOut, ConnectionStatus.Renew -> {
