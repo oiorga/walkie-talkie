@@ -1,4 +1,4 @@
-package walkie.app.api.wtmisc
+package walkie.talkie.api.wtmisc
 
 import kotlinx.serialization.Serializable
 import walkie.util.generic.GenericMapAbs

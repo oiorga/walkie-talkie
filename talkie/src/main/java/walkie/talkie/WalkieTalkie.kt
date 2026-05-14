@@ -17,7 +17,6 @@ import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION
 import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
-import android.os.SystemClock.sleep
 import android.provider.Settings
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -41,8 +40,8 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import walkie.talkie.api.wtdebug.WTDebugInt
 import walkie.chat.ChatDiscussion
 import walkie.chat.ChatDiscussionMap
 import walkie.chat.ChatGroupId
@@ -54,15 +53,14 @@ import walkie.chat.ChatMessageItemList
 import walkie.chat.Receiver
 import walkie.chat.Sender
 import walkie.comm.WTComm
+import walkie.talkie.api.wtchat.ChatGroupType
+import walkie.talkie.api.wtmisc.InfoMap
+import walkie.talkie.api.wtmisc.WTNavigation
 import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.registerAsReceiver
 import walkie.util.generic.registerSenders
-import walkie.app.api.wtchat.ChatGroupType
-import walkie.app.api.wtdebug.WTDebugInt
 import walkie.util.generic.genericListOf
-import walkie.app.api.wtmisc.InfoMap
-import walkie.app.api.wtmisc.WTNavigation
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.common.WTCommonData
 import walkie.talkie.globalmap.DiscussionMap

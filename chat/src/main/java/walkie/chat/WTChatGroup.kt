@@ -1,14 +1,14 @@
 package walkie.chat
 
 import android.util.Log
-import walkie.app.api.wtchat.AuthorInt
-import walkie.app.api.wtchat.ChatGroupIdInt
-import walkie.app.api.wtchat.ChatGroupListAbs
-import walkie.app.api.wtchat.ChatGroupMapAbs
-import walkie.app.api.wtchat.ChatGroupType
-import walkie.app.api.wtchat.ReceiverInt
-import walkie.app.api.wtchat.SenderInt
-import walkie.app.api.wtsystem.NodeIdInt
+import walkie.talkie.api.wtchat.AuthorInt
+import walkie.talkie.api.wtchat.ChatGroupIdInt
+import walkie.talkie.api.wtchat.ChatGroupListAbs
+import walkie.talkie.api.wtchat.ChatGroupMapAbs
+import walkie.talkie.api.wtchat.ChatGroupType
+import walkie.talkie.api.wtchat.ReceiverInt
+import walkie.talkie.api.wtchat.SenderInt
+import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.util.logd
 import walkie.util.logging
 

@@ -16,7 +16,7 @@ import walkie.chat.ChatMessageItemList
 import walkie.chat.Receiver
 import walkie.chat.Sender
 import walkie.comm.uid
-import walkie.app.api.wtchat.ChatGroupType
+import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.WalkieTalkie
 import walkie.talkie.node.NodeId
 import walkie.util.randomString

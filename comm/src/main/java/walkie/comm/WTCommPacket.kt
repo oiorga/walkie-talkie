@@ -2,11 +2,11 @@ package  walkie.comm
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import walkie.app.api.wtcomm.WTMedium
-import walkie.app.api.wtcomm.WTPeerInt
-import walkie.app.api.wtsystem.nodeUniqueId
-import walkie.app.api.wtsystem.uidToId
-import walkie.app.api.wtsystem.uidToUnique
+import walkie.talkie.api.wtcomm.WTMedium
+import walkie.talkie.api.wtcomm.WTPeerInt
+import walkie.talkie.api.wtsystem.nodeUniqueId
+import walkie.talkie.api.wtsystem.uidToId
+import walkie.talkie.api.wtsystem.uidToUnique
 import walkie.util.`try`
 import walkie.util.logd
 import walkie.util.logging

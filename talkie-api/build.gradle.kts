@@ -7,7 +7,7 @@ plugins {
 }
 
 android {
-    namespace = "walkie.apps.api"
+    namespace = "walkie.talkie.api"
     compileSdk = 36
 
     defaultConfig {

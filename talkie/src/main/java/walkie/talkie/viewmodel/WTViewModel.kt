@@ -10,10 +10,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import walkie.chat.ChatMessage
-import walkie.app.api.wtchat.ChatGroupIdInt
-import walkie.app.api.wtchat.DiscussionAbs
-import walkie.app.api.wtchat.DiscussionMapAbs
-import walkie.app.api.wtmisc.WTNavigation
+import walkie.talkie.api.wtchat.ChatGroupIdInt
+import walkie.talkie.api.wtchat.DiscussionAbs
+import walkie.talkie.api.wtchat.DiscussionMapAbs
+import walkie.talkie.api.wtmisc.WTNavigation
 import walkie.talkie.common.WTCommonData
 import walkie.talkie.node.NodeId
 import walkie.talkie.ui.nav.WTNavGraph

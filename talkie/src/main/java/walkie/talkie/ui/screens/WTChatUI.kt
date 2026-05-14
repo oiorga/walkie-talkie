@@ -35,9 +35,9 @@ import walkie.chat.ChatMessage
 import walkie.chat.ChatMessageItem
 import walkie.chat.Receiver
 import walkie.chat.Sender
-import walkie.app.api.wtchat.ChatGroupType
-import walkie.app.api.wtchat.ChatMessageAbs
-import walkie.app.api.wtmisc.WTNavigation
+import walkie.talkie.api.wtchat.ChatGroupType
+import walkie.talkie.api.wtchat.ChatMessageAbs
+import walkie.talkie.api.wtmisc.WTNavigation
 import walkie.talkie.WalkieTalkie
 import walkie.talkie.ui.nav.WTNavNode
 import walkie.talkie.ui.nav.wtChatTypeToNavScreen

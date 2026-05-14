@@ -16,7 +16,7 @@ import kotlinx.coroutines.Job
 import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.GenericList
-import walkie.app.api.wtsystem.NodeIdInt
+import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType

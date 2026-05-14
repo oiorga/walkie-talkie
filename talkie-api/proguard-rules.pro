@@ -20,10 +20,6 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
--keep class walkie.comm.WTComm
--keep class walkie.comm.WTCommPacketKt
--keep class walkie.comm.WTCommPeerInfo
--keep class walkie.comm.prm.WTPRMComm
 -keep class walkie.util.generic.ChannelMux
 -keep class walkie.util.generic.ChannelMuxInt
 -keep class walkie.util.generic.WTChannelId
@@ -73,9 +69,6 @@
 -keep class walkie.api.wtutil.WTLifeCycleObserver
 -keep class walkie.api.wtutil.WTUtilBinaryGamesKt
 -keep class walkie.api.wtutil.WTUtilKt
--keep class walkie.wifidirect.WTWiFiDirect
--keep class walkie.wifidirect.WTWifiDirectMainKt
--keep class walkie.wifidirect.WiFiDirectBroadcastReceiver
 # This is generated automatically by the Android Gradle plugin.
 -keep class walkie.util.generic.WTCallBackInt
 -keep class walkie.talkie.api.wtcomm.WTCommChatMessageIn

@@ -1,4 +1,4 @@
-package walkie.app.api.wtchat
+package walkie.talkie.api.wtchat
 
 import walkie.util.generic.GenericListAbs
 import walkie.util.generic.GenericMapAbs

@@ -29,5 +29,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "walkie-talkie"
-include(":app-api", ":talkie", ":comm", ":chat", ":wifidirect", ":util", ":util-api")
+include(":talkie-api", ":talkie", ":comm", ":chat", ":wifidirect", ":util", ":util-api")
 

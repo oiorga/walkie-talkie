@@ -1,9 +1,9 @@
-package walkie.app.api.wtchat
+package walkie.talkie.api.wtchat
 
 import android.util.Log
 import walkie.util.generic.GenericListAbs
-import walkie.app.api.wtcomm.CommPacketInt
-import walkie.app.api.wtsystem.NodeIdInt
+import walkie.talkie.api.wtcomm.CommPacketInt
+import walkie.talkie.api.wtsystem.NodeIdInt
 
 abstract class ChatMessageAbs (
     open val receiver: ReceiverInt,

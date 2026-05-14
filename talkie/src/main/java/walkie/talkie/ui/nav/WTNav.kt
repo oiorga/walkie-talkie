@@ -8,8 +8,8 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import walkie.app.api.wtchat.ChatGroupType
-import walkie.app.api.wtmisc.WTNavigation
+import walkie.talkie.api.wtchat.ChatGroupType
+import walkie.talkie.api.wtmisc.WTNavigation
 import walkie.talkie.WalkieTalkie
 import walkie.talkie.ui.nav.WTNavGraph.Companion.TAG
 import walkie.talkie.ui.nav.WTNavGraph.Companion.TAGKClass

@@ -24,8 +24,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import walkie.chat.ChatGroupId
-import walkie.app.api.wtchat.ChatGroupType
-import walkie.app.api.wtmisc.WTNavigation
+import walkie.talkie.api.wtchat.ChatGroupType
+import walkie.talkie.api.wtmisc.WTNavigation
 import walkie.talkie.WalkieTalkie
 import walkie.talkie.WalkieTalkie.Companion.TAGKClass
 import walkie.talkie.ui.nav.WTNavNode

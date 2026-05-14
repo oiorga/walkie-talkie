@@ -57,9 +57,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
-import walkie.app.api.wtchat.ChatMessageAbs
-import walkie.app.api.wtchat.ChatMessageItemInt
-import walkie.app.api.wtmisc.WTNavigation
+import walkie.talkie.api.wtchat.ChatMessageAbs
+import walkie.talkie.api.wtchat.ChatMessageItemInt
+import walkie.talkie.api.wtmisc.WTNavigation
 import walkie.talkie.WalkieTalkie
 import walkie.talkie.ui.screens.WTUITheme
 import walkie.talkie.ui.theme.UiTheme

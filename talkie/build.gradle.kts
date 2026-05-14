@@ -184,7 +184,7 @@ dependencies {
 
     implementation(project(":util-api"))
     implementation(project(":util"))
-    implementation(project(":app-api"))
+    implementation(project(":talkie-api"))
     implementation(project(":comm"))
     implementation(project(":chat"))
     implementation(project(":wifidirect"))

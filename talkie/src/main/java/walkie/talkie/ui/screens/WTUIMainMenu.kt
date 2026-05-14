@@ -12,7 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import walkie.app.api.wtmisc.WTNavigation
+import walkie.talkie.api.wtmisc.WTNavigation
 import walkie.talkie.WalkieTalkie
 import walkie.talkie.ui.nav.WTNavNode
 import walkie.talkie.ui.util.BottomBarUI
