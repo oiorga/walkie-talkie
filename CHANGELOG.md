@@ -1,5 +1,16 @@
 # Captain's log
 
+## 2026-05-15 - Add wrapper for structured coroutine execution and runtime dispatch selection
+
+# Commits
+- 28ddd70
+
+
+## 2026-05-11 - Refactor Wi-Fi P2P async callbacks to coroutine suspension model
+
+# Commits
+- ca9b5f0, d18bf28, 4cac504
+
 
 ## 2026-05-07 - Add CHANGELOG.md file 
 
