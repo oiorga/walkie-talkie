@@ -69,6 +69,7 @@ import walkie.talkie.playground.CounterLive
 import walkie.talkie.playground.commSquirrelWheel
 import walkie.talkie.ui.nav.WTNavInit
 import walkie.talkie.viewmodel.WTViewModel
+import walkie.talkie.viewmodel.WTViewModelFactory
 import walkie.util.LifeCycleObserver
 import walkie.util.Logging
 import walkie.util.api.ChannelId
@@ -85,6 +86,7 @@ import walkie.wifidirect.WTWiFiDirect
 import walkie.wifidirect.WiFiDirectBroadcastReceiver
 import walkie.wifidirect.wtWifiDirectMain
 import walkie.wifidirect.wtWifiDirectStop
+import kotlin.getValue
 import kotlin.random.Random
 import kotlin.system.exitProcess
 
@@ -118,8 +120,17 @@ class WTActivity(
 
     val tag = TAG
 
-    private var wtCommonData: WTCommonData = WTCommonData.ONE
-    private val wtVModel by viewModels<WTViewModel>()
+    private val walkieTalkie by lazy {
+        application as WalkieTalkie
+    }
+
+    private val wtCommonData by lazy {
+        walkieTalkie.wtCommonData
+    }
+
+    private val wtVModel by viewModels<WTViewModel> {
+        WTViewModelFactory(wtCommonData)
+    }
 
     internal fun wtComm() : WTComm {
         return wtCommonData().wtComm
@@ -235,7 +246,6 @@ class WTActivity(
         wtCommDataInit(stage = 1)
 
         wtVModel.lateInit()
-        wtVModel.coroutineScope = wtCommonData.wtScope
 
         wtCommDataInit(stage = 2)
 
@@ -477,7 +487,7 @@ internal fun WTActivity.wtCommDataInit(stage: Int) : WTCommonData {
     if (WTCommonData.initStage[stage]) {
         logd(
             tag,
-            "WTActivity.wtCommDataInit stage: $stage already Inited?"
+            "WTActivity.wtCommDataInit stage: $stage already initialized?"
         )
         return wtCommonData
     }

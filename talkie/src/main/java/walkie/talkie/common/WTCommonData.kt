@@ -49,7 +49,7 @@ class WTCommonData private constructor (
         /* registerRemoteCall(RemoteCallId.RCUpdateUI) { run { updateUiLiveData.update() } } */
     }
 
-    lateinit var wtVModel: WTViewModel
+    var wtVModel: WTViewModel? = null
 
     lateinit var wtSystemNodeId: NodeIdInt
     lateinit var wtDeviceName: String
@@ -111,7 +111,7 @@ internal fun WTCommonData.updateUI(
     var updateUI = false
     updateUI = when (uiScreenMajor) {
         ChannelMessageType.RCUpdateChatUI -> {
-            wtChatUpdateUI(uiScreenMinor as ChatGroupType, wtVModel.currentScreen())
+            wtChatUpdateUI(uiScreenMinor as ChatGroupType, wtVModel?.currentScreen())
         }
         else -> {
             true
