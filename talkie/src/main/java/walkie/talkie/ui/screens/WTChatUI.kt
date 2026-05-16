@@ -38,7 +38,7 @@ import walkie.chat.Sender
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
 import walkie.talkie.api.wtmisc.WTNavigation
-import walkie.talkie.WalkieTalkie
+import walkie.talkie.WTActivity
 import walkie.talkie.ui.nav.WTNavNode
 import walkie.talkie.ui.nav.wtChatTypeToNavScreen
 import walkie.talkie.ui.util.BottomBarUI
@@ -53,7 +53,7 @@ import walkie.talkie.viewmodel.WTViewModel
 import walkie.util.logd
 import walkie.util.randomString
 
-val WalkieTalkie.WTChatUITheme: WTUITheme
+val WTActivity.WTChatUITheme: WTUITheme
     get() =
         WTUITheme(
             topTitle = this.wtVModel().chatDiscussionId?.groupName,
@@ -62,7 +62,7 @@ val WalkieTalkie.WTChatUITheme: WTUITheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WalkieTalkie.WTChat (wtNavNode: WTNavNode? = null) {
+fun WTActivity.WTChat (wtNavNode: WTNavNode? = null) {
     val tag = "WTChat/${randomString(2U)}"
     val chatVModel = this.wtVModel()
     val navDest: WTNavigation = wtChatTypeToNavScreen(chatVModel.nextDiscussionId!!.type)
@@ -100,7 +100,7 @@ fun WalkieTalkie.WTChat (wtNavNode: WTNavNode? = null) {
 }
 
 @Composable
-internal fun WalkieTalkie.ChatBox(
+internal fun WTActivity.ChatBox(
     chatVModel: WTViewModel,
     modifier: Modifier,
     wtUITheme: WTUITheme = WTChatUITheme
@@ -192,7 +192,7 @@ internal fun WalkieTalkie.ChatBox(
 }
 
 @Composable
-internal fun WalkieTalkie.ChatItem(
+internal fun WTActivity.ChatItem(
     modifier: Modifier,
     chatVModel: WTViewModel,
     chatMessage: ChatMessageAbs,
@@ -223,13 +223,13 @@ internal fun WalkieTalkie.ChatItem(
 }
 
 @Composable
-internal fun WalkieTalkie.ChatScreen(
+internal fun WTActivity.ChatScreen(
     modifier: Modifier,
     chatVModel: WTViewModel,
     wtUITheme: WTUITheme = WTChatUITheme
     ) {
     val type = chatVModel.chatDiscussion.discussionId.type
-    val tag = "WalkieTalkieChat.Screen"
+    val tag = "WTActivityChat.Screen"
     val navList = mutableListOf<WTNavNode>()
 
     logd(tag, "Entry:")

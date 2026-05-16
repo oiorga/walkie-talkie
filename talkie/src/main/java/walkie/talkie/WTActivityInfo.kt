@@ -26,7 +26,7 @@ import walkie.util.logd
 import walkie.util.randomString
 
 @Composable
-fun WalkieTalkie.WTInfo(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WTUITheme()) {
+fun WTActivity.WTInfo(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WTUITheme()) {
     val pInfo: PackageInfo = packageManager.getPackageInfo(packageName, 0)
 
     val hostInfoMap = mapOf(
@@ -192,7 +192,7 @@ fun WalkieTalkie.WTInfo(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WT
 }
 
 @Composable
-fun WalkieTalkie.WTDebug(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WTUITheme()) {
+fun WTActivity.WTDebug(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WTUITheme()) {
     val tag = "WTDebug/${randomString(2U)}"
     var clickCount = remember { 0 }
     val spaces = "                        "
@@ -234,7 +234,7 @@ private const val WTHelp = "Welcome to the Walky Talky chat app!" +
 private const val WTCopyright = "Copyright (c) 2024–2026 Ovidiu Iorga" + "\nLicensed under the MIT License"
 
 @Composable
-fun WalkieTalkie.WTHelp(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WTUITheme()) {
+fun WTActivity.WTHelp(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WTUITheme()) {
 
     Box(
         modifier = modifier

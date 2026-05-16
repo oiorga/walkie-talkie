@@ -269,7 +269,7 @@ internal fun WTPRMComm.peersUpdateSendDebugInfo() {
         str += "\n\tDest: " + directUnderlay(k)?.uid  + " IP Address: " + directUnderlay(k)?.umCI
     }
     channelSend(
-        ChannelId.RCToWalkieTalkie,
+        ChannelId.RCToWTActivity,
         ChannelMessageType.RCWTMeshDebugInfoMessage,
         str)
 }

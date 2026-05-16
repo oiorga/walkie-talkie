@@ -57,7 +57,7 @@ suspend fun WTWiFiDirect.scanPeers(coroutineScope: CoroutineScope = MainScope(),
     s.scanPeersS = true
 
     channelSend(
-        ChannelId.RCToWalkieTalkie,
+        ChannelId.RCToWTActivity,
         ChannelMessageType.RCWifiDebugInfoMessage,
         wtWifiDirectInfo()
     )
@@ -120,7 +120,7 @@ suspend fun WTWiFiDirect.scanPeers(coroutineScope: CoroutineScope = MainScope(),
         oldP2pInfo = tP2pInfo
 
         channelSend(
-            ChannelId.RCToWalkieTalkie,
+            ChannelId.RCToWTActivity,
             ChannelMessageType.RCWifiDebugInfoMessage,
             wtWifiDirectInfo()
         )
@@ -390,7 +390,7 @@ fun WTWiFiDirect.updateGroupInfo() {
 
     if (changed) {
         channelSend(
-            ChannelId.RCToWalkieTalkie,
+            ChannelId.RCToWTActivity,
             ChannelMessageType.RCWifiDebugInfoMessage,
             wtWifiDirectInfo())
     }
@@ -1097,7 +1097,7 @@ suspend fun WTWiFiDirect.wtWifiDirectStop(delay: Long = 1000L) {
     resetData()
 
     channelSend(
-        ChannelId.RCToWalkieTalkie,
+        ChannelId.RCToWTActivity,
         ChannelMessageType.RCWifiDebugInfoMessage,
         wtWifiDirectInfo()
     )
@@ -1107,7 +1107,7 @@ suspend fun WTWiFiDirect.wtWifiDirectStop(delay: Long = 1000L) {
     logd(tag, "wtWifiDirectStop 4: ${s.scanPeersS}")
     delay(delay/divider)
     channelSend(
-        ChannelId.RCToWalkieTalkie,
+        ChannelId.RCToWTActivity,
         ChannelMessageType.RCWifiRestartChannel
     )
     logd(tag, "wtWifiDirectStop 5: ${s.scanPeersS}")

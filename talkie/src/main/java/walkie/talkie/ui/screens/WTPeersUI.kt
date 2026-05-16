@@ -31,8 +31,8 @@ import walkie.comm.WTCommPeerInfo
 import walkie.comm.uid
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtmisc.WTNavigation
-import walkie.talkie.WalkieTalkie
-import walkie.talkie.WalkieTalkie.Companion.TAGKClass
+import walkie.talkie.WTActivity
+import walkie.talkie.WTActivity.Companion.TAGKClass
 import walkie.talkie.node.NodeId
 import walkie.talkie.ui.nav.WTNavNode
 import walkie.talkie.ui.util.BottomBarUI
@@ -52,8 +52,8 @@ private val WTPeersUITheme: WTUITheme = WTUITheme(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun WalkieTalkie.WalkieTalkiePeersUI(wtNavNode: WTNavNode? = null) {
-    val tag = "WalkieTalkiePeersUI/${randomString(2u)}"
+internal fun WTActivity.WTActivityPeersUI(wtNavNode: WTNavNode? = null) {
+    val tag = "WTActivityPeersUI/${randomString(2u)}"
     val mainVModel = this.wtVModel()
     val switchScreen: Boolean by remember { derivedStateOf { mainVModel.switchScreen() } }
 
@@ -91,7 +91,7 @@ internal fun WalkieTalkie.WalkieTalkiePeersUI(wtNavNode: WTNavNode? = null) {
 }
 
 @Composable
-internal fun WalkieTalkie.PeersUiMainEntry(
+internal fun WTActivity.PeersUiMainEntry(
     modifier: Modifier,
     mainVModel: WTViewModel,
     wtUITheme: WTUITheme = WTPeersUITheme,
@@ -141,7 +141,7 @@ internal fun WalkieTalkie.PeersUiMainEntry(
 }
 
 @Composable
-internal fun WalkieTalkie.PeersUiEntry(
+internal fun WTActivity.PeersUiEntry(
     modifier: Modifier,
     mainVModel: WTViewModel,
     peer: WTCommPeerInfo,
@@ -217,7 +217,7 @@ internal fun WalkieTalkie.PeersUiEntry(
     }
 }
 
-internal fun WalkieTalkie.openChatOnClickPrep(
+internal fun WTActivity.openChatOnClickPrep(
     mainVModel: WTViewModel,
     peer: WTCommPeerInfo
 ) {
@@ -238,7 +238,7 @@ internal fun WalkieTalkie.openChatOnClickPrep(
     logd(tag, "(1): ${mainVModel.currentScreen()} dId: ${mainVModel.nextDiscussionId}")
 }
 
-internal fun WalkieTalkie.openChatOnClick(
+internal fun WTActivity.openChatOnClick(
     mainVModel: WTViewModel,
     peer: WTCommPeerInfo
 ) {
@@ -247,7 +247,7 @@ internal fun WalkieTalkie.openChatOnClick(
 }
 
 @Composable
-internal fun WalkieTalkie.PeersMainScreen(
+internal fun WTActivity.PeersMainScreen(
     mainVModel: WTViewModel,
     modifier: Modifier,
     wtUITheme: WTUITheme = WTPeersUITheme,
@@ -297,7 +297,7 @@ internal fun WalkieTalkie.PeersMainScreen(
 }
 
 @Composable
-internal fun WalkieTalkie.Searching(
+internal fun WTActivity.Searching(
     modifier: Modifier,
     mainVModel: WTViewModel,
     wtUITheme: WTUITheme = WTPeersUITheme
@@ -383,7 +383,7 @@ internal fun WalkieTalkie.Searching(
 }
 
 @Composable
-internal fun WalkieTalkie.Searching01(
+internal fun WTActivity.Searching01(
     modifier: Modifier,
     mainVModel: WTViewModel,
     wtUITheme: WTUITheme = WTPeersUITheme

@@ -39,7 +39,7 @@
         <profileable android:shell="true" />
         <activity
             android:windowSoftInputMode="adjustResize"
-            android:name=".WalkieTalkie"
+            android:name=".WTActivity"
             android:exported="true"
             android:theme="@style/Theme.Splash">
             <!-- android:launchMode="singleInstancePerTask" -->

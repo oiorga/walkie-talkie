@@ -16,8 +16,8 @@ import walkie.chat.ChatMessageItemList
 import walkie.chat.Receiver
 import walkie.chat.Sender
 import walkie.comm.uid
+import walkie.talkie.WTActivity
 import walkie.talkie.api.wtchat.ChatGroupType
-import walkie.talkie.WalkieTalkie
 import walkie.talkie.node.NodeId
 import walkie.util.randomString
 import java.util.Timer
@@ -41,11 +41,11 @@ class WalkiePlayGroundTimer(private val delay: Long = 1000L) {
     }
 }
 
-fun WalkieTalkie.jobby (scope: CoroutineScope = MainScope(),
-                        counter: CounterLive = wtCommonData().counterLive,
-                        delay: Long = 1000L,
-                        index: Int,
-                        sharedInt: IntArray
+fun WTActivity.jobby (scope: CoroutineScope = MainScope(),
+                      counter: CounterLive = wtCommonData().counterLive,
+                      delay: Long = 1000L,
+                      index: Int,
+                      sharedInt: IntArray
 ): Job {
     val tag = "squirrelWheel"
     val job = scope.launch() {
@@ -67,7 +67,7 @@ fun WalkieTalkie.jobby (scope: CoroutineScope = MainScope(),
     return job
 }
 
-fun WalkieTalkie.squirrelWheel (scope: CoroutineScope = MainScope(), counter: CounterLive = wtCommonData().counterLive, delay: Long = 1000L) = runBlocking {
+fun WTActivity.squirrelWheel (scope: CoroutineScope = MainScope(), counter: CounterLive = wtCommonData().counterLive, delay: Long = 1000L) = runBlocking {
     val tag: String = "squirrelWheel"
     val jobList = mutableListOf<Job>()
     val max = 4
@@ -86,7 +86,7 @@ fun WalkieTalkie.squirrelWheel (scope: CoroutineScope = MainScope(), counter: Co
     }
 }
 
-fun WalkieTalkie.commSquirrelWheel (scope: CoroutineScope = MainScope(), delay: Long = 1003L, addRandom: Long = 10L) = runBlocking {
+fun WTActivity.commSquirrelWheel (scope: CoroutineScope = MainScope(), delay: Long = 1003L, addRandom: Long = 10L) = runBlocking {
     val tag: String = "commSquirrelWheel"
     var delaY = 0
 
@@ -106,7 +106,7 @@ fun WalkieTalkie.commSquirrelWheel (scope: CoroutineScope = MainScope(), delay: 
     }
 }
 
-fun WalkieTalkie.wifiLocalRndMsgs(scope: CoroutineScope, delay: Long) {
+fun WTActivity.wifiLocalRndMsgs(scope: CoroutineScope, delay: Long) {
     val message = ChatMessage(
         sender = generateRandomSender(),
         receiver = generateRandomReceiver(receiverType = ChatGroupType.LocalChatTesting),
@@ -120,7 +120,7 @@ fun WalkieTalkie.wifiLocalRndMsgs(scope: CoroutineScope, delay: Long) {
     wtCommonData().sendChatMessage(message)
 }
 
-suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: Long) {
+suspend fun WTActivity.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: Long) {
     delay(0L)
     var delaY = 0
     var i = 0

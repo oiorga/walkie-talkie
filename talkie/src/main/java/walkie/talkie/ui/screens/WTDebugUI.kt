@@ -26,8 +26,8 @@ import androidx.compose.ui.Alignment
 import walkie.chat.ChatGroupId
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtmisc.WTNavigation
-import walkie.talkie.WalkieTalkie
-import walkie.talkie.WalkieTalkie.Companion.TAGKClass
+import walkie.talkie.WTActivity
+import walkie.talkie.WTActivity.Companion.TAGKClass
 import walkie.talkie.ui.nav.WTNavNode
 import walkie.talkie.ui.util.BottomBarUI
 import walkie.talkie.ui.util.LazyScreen
@@ -47,8 +47,8 @@ private val WTDebugUITheme: WTUITheme = WTUITheme(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun WalkieTalkie.WalkieTalkieDebugUI(wtNavNode: WTNavNode? = null) {
-    val tag = "WalkieTalkieDebugUI"
+internal fun WTActivity.WTActivityDebugUI(wtNavNode: WTNavNode? = null) {
+    val tag = "WTActivityDebugUI"
     val mainVModel = this.wtVModel()
     val switchScreen: Boolean by remember { derivedStateOf { mainVModel.switchScreen() } }
 
@@ -85,7 +85,7 @@ internal fun WalkieTalkie.WalkieTalkieDebugUI(wtNavNode: WTNavNode? = null) {
 }
 
 @Composable
-internal fun WalkieTalkie.DebugUiMainEntry(
+internal fun WTActivity.DebugUiMainEntry(
     modifier: Modifier,
     mainVModel: WTViewModel,
     wtUITheme: WTUITheme = WTUITheme(),
@@ -134,7 +134,7 @@ internal fun WalkieTalkie.DebugUiMainEntry(
 }
 
 @Composable
-internal fun WalkieTalkie.DebugMainScreen(
+internal fun WTActivity.DebugMainScreen(
     mainVModel: WTViewModel,
     modifier: Modifier,
     triggerUpdate : Boolean) {

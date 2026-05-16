@@ -27,8 +27,8 @@ import walkie.chat.ChatGroupId
 import walkie.talkie.api.wtchat.ChatGroupIdInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtmisc.WTNavigation
-import walkie.talkie.WalkieTalkie
-import walkie.talkie.WalkieTalkie.Companion.TAGKClass
+import walkie.talkie.WTActivity
+import walkie.talkie.WTActivity.Companion.TAGKClass
 import walkie.talkie.ui.nav.WTNavNode
 import walkie.talkie.ui.nav.wtChatTypeToNavScreen
 import walkie.talkie.ui.util.BottomBarUI
@@ -45,7 +45,7 @@ private val WTMainUITheme: WTUITheme = WTUITheme(
     bottomTitle = ""
 )
 
-val WalkieTalkie.WTMenuUITheme: WTUITheme
+val WTActivity.WTMenuUITheme: WTUITheme
     get() =
         WTUITheme(
             topTitle = this.wtVModel().textInfoId,
@@ -54,8 +54,8 @@ val WalkieTalkie.WTMenuUITheme: WTUITheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun WalkieTalkie.WalkieTalkieMainUI(wtNavNode: WTNavNode? = null) {
-    val tag = "WalkieTalkieMain"
+internal fun WTActivity.WTActivityMainUI(wtNavNode: WTNavNode? = null) {
+    val tag = "WTActivityMain"
     val mainVModel = this.wtVModel()
     val switchScreen: Boolean by remember { derivedStateOf { mainVModel.switchScreen() } }
 
@@ -95,11 +95,11 @@ internal fun WalkieTalkie.WalkieTalkieMainUI(wtNavNode: WTNavNode? = null) {
     }
 }
 
-internal fun WalkieTalkie.onDiscussionItemClick(
+internal fun WTActivity.onDiscussionItemClick(
     mainVModel: WTViewModel,
     discussionItemId: ChatGroupIdInt
 ) {
-    val tag = "WalkieTalkieMainUI"
+    val tag = "WTActivityMainUI"
     logd(tag, "$tag/onDiscussionItemClick(0): ${mainVModel.currentScreen()} dId: ${mainVModel.nextDiscussionId}")
     mainVModel.nextDiscussionId = discussionItemId
     mainVModel.changeScreen(wtChatTypeToNavScreen(discussionItemId.type))
@@ -107,7 +107,7 @@ internal fun WalkieTalkie.onDiscussionItemClick(
 }
 
 @Composable
-internal fun WalkieTalkie.DiscussionItemEntry(
+internal fun WTActivity.DiscussionItemEntry(
     modifier: Modifier,
     mainVModel: WTViewModel,
     wtUITheme: WTUITheme = WTUITheme(),
@@ -206,12 +206,12 @@ internal fun WalkieTalkie.DiscussionItemEntry(
 }
 
 @Composable
-internal fun WalkieTalkie.MainScreen(
+internal fun WTActivity.MainScreen(
     modifier: Modifier,
     mainVModel: WTViewModel,
     /* triggerUpdate: Any? = null */
 ) {
-    val tag = "WalkieTalkieMain.Screen"
+    val tag = "WTActivityMain.Screen"
 
     /* run { triggerUpdate } */
 
@@ -226,7 +226,7 @@ internal fun WalkieTalkie.MainScreen(
         })
 }
 
-internal fun WalkieTalkie.mainScreenList(
+internal fun WTActivity.mainScreenList(
     mainVModel: WTViewModel
 ) : MutableList<WTNavNode> {
     val tag = "mainScreenList/${randomString(2U)}"
