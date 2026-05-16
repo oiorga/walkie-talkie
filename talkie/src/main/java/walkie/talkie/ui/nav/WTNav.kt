@@ -8,16 +8,16 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import walkie.talkie.WTActivity
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtmisc.WTNavigation
-import walkie.talkie.WalkieTalkie
 import walkie.talkie.ui.nav.WTNavGraph.Companion.TAG
 import walkie.talkie.ui.nav.WTNavGraph.Companion.TAGKClass
 import walkie.talkie.ui.screens.MenuTextInfo
+import walkie.talkie.ui.screens.WTActivityDebugUI
+import walkie.talkie.ui.screens.WTActivityMainUI
+import walkie.talkie.ui.screens.WTActivityPeersUI
 import walkie.talkie.ui.screens.WTChat
-import walkie.talkie.ui.screens.WalkieTalkieDebugUI
-import walkie.talkie.ui.screens.WalkieTalkieMainUI
-import walkie.talkie.ui.screens.WalkieTalkiePeersUI
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -138,17 +138,17 @@ data class WTNavGraph (
 }
 
 @Composable
-internal fun WalkieTalkie.WTUI(route: WTNavigation) {
+internal fun WTActivity.WTUI(route: WTNavigation) {
     when (route) {
         WTNavigation.Root,
         WTNavigation.WT,
-        WTNavigation.Main -> { WalkieTalkieMainUI() }
+        WTNavigation.Main -> { WTActivityMainUI() }
         WTNavigation.RemoteChat,
         WTNavigation.RemoteChatTesting,
         WTNavigation.LocalDebugItem,
         WTNavigation.LocalChatTesting -> { WTChat() }
-        WTNavigation.MainDebug -> { WalkieTalkieDebugUI() }
-        WTNavigation.MainPeers -> { WalkieTalkiePeersUI() }
+        WTNavigation.MainDebug -> { WTActivityDebugUI() }
+        WTNavigation.MainPeers -> { WTActivityPeersUI() }
         WTNavigation.Back -> { }
         WTNavigation.None -> { }
         WTNavigation.TextInfo -> { MenuTextInfo() }
@@ -156,7 +156,7 @@ internal fun WalkieTalkie.WTUI(route: WTNavigation) {
 }
 
 @Composable
-internal fun WalkieTalkie.WTPreUI(route: WTNavigation) {
+internal fun WTActivity.WTPreUI(route: WTNavigation) {
     when (route) {
         WTNavigation.Root,
         WTNavigation.WT,
@@ -174,7 +174,7 @@ internal fun WalkieTalkie.WTPreUI(route: WTNavigation) {
 }
 
 @Composable
-internal fun WalkieTalkie.WTPostUI(route: WTNavigation) {
+internal fun WTActivity.WTPostUI(route: WTNavigation) {
     when (route) {
         WTNavigation.Root,
         WTNavigation.WT,
@@ -192,7 +192,7 @@ internal fun WalkieTalkie.WTPostUI(route: WTNavigation) {
 }
 
 @Composable
-internal fun WalkieTalkie.WTNavInit(
+internal fun WTActivity.WTNavInit(
     navController: NavHostController = rememberNavController(),
     startDestination: WTNavigation
 ) {

@@ -57,10 +57,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
+import walkie.talkie.WTActivity
 import walkie.talkie.api.wtchat.ChatMessageAbs
 import walkie.talkie.api.wtchat.ChatMessageItemInt
 import walkie.talkie.api.wtmisc.WTNavigation
-import walkie.talkie.WalkieTalkie
 import walkie.talkie.ui.screens.WTUITheme
 import walkie.talkie.ui.theme.UiTheme
 import walkie.talkie.viewmodel.WTViewModel
@@ -81,7 +81,7 @@ fun ChatDivider(modifier: Modifier) {
 }
 
 @Composable
-fun WalkieTalkie.ComposableChatItem(
+fun WTActivity.ComposableChatItem(
     chatMessage: ChatMessageAbs,
     modifier: Modifier,
     wtUITheme: WTUITheme,
@@ -138,11 +138,11 @@ fun WalkieTalkie.ComposableChatItem(
         }
     }
 
-    WalkieTalkie.logd(tag, "Exit")
+    WTActivity.logd(tag, "Exit")
 }
 
 @Composable
-fun WalkieTalkie.ComposableChatItem(modifier: Modifier, item: ChatMessageItemInt, debug: Boolean) {
+fun WTActivity.ComposableChatItem(modifier: Modifier, item: ChatMessageItemInt, debug: Boolean) {
     when (item.type) {
         "String" -> ComposableChatItemString(
             modifier = modifier,
@@ -438,7 +438,7 @@ inline fun<reified T, reified K> T.Compose(key: K? = null, content: @Composable(
 }
 
 @Composable
-internal fun WalkieTalkie.TopBarBack(
+internal fun WTActivity.TopBarBack(
     modifier: Modifier = Modifier,
     mainVModel: WTViewModel,
     wtUITheme: WTUITheme = WTUITheme()

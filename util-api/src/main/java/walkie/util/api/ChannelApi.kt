@@ -38,6 +38,6 @@ enum class ChannelId : ChannelIdInt {
     RCCommToChat,
     RCToPRMComm,
     RCToIpComm,
-    RCToWalkieTalkie,
+    RCToWTActivity,
     RCTOCommonData
 }

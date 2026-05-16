@@ -13,7 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import walkie.talkie.api.wtmisc.WTNavigation
-import walkie.talkie.WalkieTalkie
+import walkie.talkie.WTActivity
 import walkie.talkie.ui.nav.WTNavNode
 import walkie.talkie.ui.util.BottomBarUI
 import walkie.talkie.ui.util.DropDownMenu
@@ -25,7 +25,7 @@ import walkie.util.logd
 import walkie.util.randomString
 
 @Composable
-internal fun WalkieTalkie.MainScreenTopBarActionMenu(
+internal fun WTActivity.MainScreenTopBarActionMenu(
     modifier: Modifier,
     mainVModel: WTViewModel,
     wtUITheme: WTUITheme = WTUITheme()
@@ -72,7 +72,7 @@ internal fun WalkieTalkie.MainScreenTopBarActionMenu(
 }
 
 @Composable
-internal fun WalkieTalkie.MenuItemInfo(
+internal fun WTActivity.MenuItemInfo(
     entryId: String,
     modifier: Modifier,
     mainVModel: WTViewModel,
@@ -101,8 +101,8 @@ internal fun WalkieTalkie.MenuItemInfo(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-internal fun WalkieTalkie.MenuTextInfo() {
-    val tag = "WalkieTalkieMenuItem"
+internal fun WTActivity.MenuTextInfo() {
+    val tag = "WTActivityMenuItem"
     val mainVModel = this.wtVModel()
 
     mainVModel.wtViewModelUpdate(WTNavigation.TextInfo)
