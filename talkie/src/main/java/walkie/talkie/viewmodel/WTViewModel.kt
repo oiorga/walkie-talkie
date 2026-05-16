@@ -4,9 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
 import walkie.chat.ChatMessage
@@ -23,14 +22,17 @@ import walkie.util.randomString
 
 enum class UIMessageAction {Send, Receive}
 
-class WTViewModel (
-    var coroutineScope: CoroutineScope =
-        CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
-): ViewModel() {
+class WTViewModelFactory(private val wtCommonData: WTCommonData) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        return WTViewModel(wtCommonData) as T
+    }
+}
+
+class WTViewModel (private val wtCommonData: WTCommonData): ViewModel() {
     companion object {
         const val TAG = "WTViewModel"
     }
-    private val wtCommonData: WTCommonData = WTCommonData.ONE
+
     /* Needed by WTMainUI */
     private var _triggerUIUpdate: Boolean by mutableStateOf(false)
     private var _changed: Boolean = true
@@ -166,6 +168,9 @@ class WTViewModel (
     override fun onCleared() {
         val tag = "onCleared/${randomString(2U)}"
         logd(tag, "$this:$tag onCleared()")
-        coroutineScope.cancel()
+        viewModelScope.cancel()
+        if (wtCommonData.wtVModel === this) {
+            wtCommonData.wtVModel = null
+        }
     }
 }

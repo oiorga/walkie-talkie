@@ -225,7 +225,7 @@ fun wtChatTypeToNavScreen(chatType: ChatGroupType): WTNavigation {
     return navScreen
 }
 
-fun wtChatUpdateUI(chatType: ChatGroupType, navScreen: WTNavigation): Boolean {
+fun wtChatUpdateUI(chatType: ChatGroupType, navScreen: WTNavigation?): Boolean {
     val updateUI: Boolean = when(chatType) {
         ChatGroupType.RemoteChat -> {
             navScreen == WTNavigation.Main || navScreen == WTNavigation.RemoteChat
