@@ -17,6 +17,7 @@ import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.GenericList
 import walkie.talkie.api.wtsystem.NodeIdInt
+import walkie.util.CallbackResult
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
@@ -333,6 +334,7 @@ class WTWiFiDirect(
         wifiP2PEngineFailCoolDown(false)
     }
 
+    /*
     suspend fun discoverPeers() {
         val tag = "discoverPeers/${randomString(2u)}"
             var reasonToStr = "Success"
@@ -363,6 +365,7 @@ class WTWiFiDirect(
 
         logd(TAGKClass, tag, "Exit(1)--------------------------------------------------------------")
     }
+    */
 
     fun checkWifiDPermission(): Boolean {
         val tag = TAG
@@ -495,7 +498,7 @@ class WTWiFiDirect(
         when (val res = awaitP2pAction { listener ->
             manager.removeGroup(channel, listener)
         }) {
-            P2pResult.Success -> {
+            is CallbackResult.Success -> {
                 logd(
                     TAGKClass,
                     tag,
@@ -505,8 +508,8 @@ class WTWiFiDirect(
                 wtWifiGroupInfoN.getAndSet(null)
                 wtWifiFailure("$tag/$reasonToStr")
             }
-            is P2pResult.Failure -> {
-                reasonToStr = errToString(res.reason)
+            is CallbackResult.Failure -> {
+                reasonToStr = errToString(res.reason!!)
 
                 logd(
                     TAGKClass,
@@ -553,7 +556,7 @@ class WTWiFiDirect(
                         listener
                     )
                 }) {
-                    P2pResult.Success -> {
+                    is CallbackResult.Success -> {
                         logd(
                             TAGKClass,
                             tag,
@@ -563,8 +566,8 @@ class WTWiFiDirect(
                         ret = ConnectionStatus.InProgress
                         wtWifiFailure("$tag/$reasonToStr")
                     }
-                    is P2pResult.Failure -> {
-                        reasonToStr = errToString(res.reason)
+                    is CallbackResult.Failure -> {
+                        reasonToStr = errToString(res.reason!!)
                         logd(
                             TAGKClass,
                             tag,
@@ -592,12 +595,12 @@ class WTWiFiDirect(
         when (val res = awaitP2pAction { listener ->
             manager.cancelConnect(channel, listener)
         }) {
-            P2pResult.Success -> {
+            is CallbackResult.Success -> {
                 logd(TAGKClass, tag, "onSuccess:")
                 wtWifiFailure("$tag/$reasonToStr")
             }
-            is P2pResult.Failure -> {
-                reasonToStr = errToString(res.reason)
+            is CallbackResult.Failure -> {
+                reasonToStr = errToString(res.reason!!)
                 logd(
                     TAGKClass, tag, "onFailure: Reason(${res.reason}): $reasonToStr"
                 )

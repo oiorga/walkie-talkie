@@ -3,15 +3,12 @@ package walkie.wifidirect
 import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
-import android.os.Build
 import android.util.Log
-import androidx.annotation.RequiresApi
-import kotlinx.coroutines.suspendCancellableCoroutine
+import walkie.util.CallbackResult
+import walkie.util.awaitResult
+import walkie.util.awaitValue
 import walkie.util.getInterfaceIpAddress
-import walkie.util.logd
-import walkie.wifidirect.WTWiFiDirect.Companion.TAG
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
+
 
 internal fun WifiP2pGroup.logD(tag: String = "WifiP2pGroup") {
     Log.d(
@@ -93,43 +90,19 @@ internal fun WTWiFiDirect.wtWifiDirectInfo() : String {
     return info
 }
 
-sealed class P2pResult {
-    data object Success : P2pResult()
-    data class Failure(val reason: Int) : P2pResult()
-}
-
-suspend inline fun WTWiFiDirect.awaitP2pAction(
+suspend inline fun awaitP2pAction(
     crossinline action: (WifiP2pManager.ActionListener) -> Unit
-): P2pResult = suspendCancellableCoroutine { continuation ->
+): CallbackResult<Unit, Int> = awaitResult<Unit, Int> { listener ->
     action(object : WifiP2pManager.ActionListener {
         override fun onSuccess() {
-            if (continuation.isActive) {
-                continuation.resume(P2pResult.Success)
-            }
+            listener.onSuccess(Unit)
         }
-
         override fun onFailure(reason: Int) {
-            if (continuation.isActive) {
-                continuation.resume(P2pResult.Failure(reason))
-            }
+            listener.onFailure(reason)
         }
     })
-
-    continuation.invokeOnCancellation {
-        logd(TAG, "awaitP2pAction: continuation.invokeOnCancellation")
-    }
 }
 
-suspend inline fun <T>WTWiFiDirect.awaitP2pRequest(
+suspend inline fun <T>awaitP2pRequest(
     crossinline action: ((T) -> Unit) -> Unit
-): T = suspendCancellableCoroutine { continuation ->
-    action { out: T ->
-        if (continuation.isActive) {
-            continuation.resume(out)
-        }
-    }
-
-    continuation.invokeOnCancellation {
-        logd(TAG, "awaitP2pRequest: continuation.invokeOnCancellation")
-    }
-}
+): T = awaitValue (action)

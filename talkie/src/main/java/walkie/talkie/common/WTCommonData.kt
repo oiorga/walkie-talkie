@@ -49,6 +49,7 @@ class WTCommonData private constructor (
         /* registerRemoteCall(RemoteCallId.RCUpdateUI) { run { updateUiLiveData.update() } } */
     }
 
+    // They say view model should not be exposed here, in the global data structures that keeps general info related to app modules
     var wtVModel: WTViewModel? = null
 
     lateinit var wtSystemNodeId: NodeIdInt

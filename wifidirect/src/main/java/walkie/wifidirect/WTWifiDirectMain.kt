@@ -18,6 +18,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
+import walkie.util.CallbackResult
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelMessageType
 import walkie.util.api.RemoteCallId
@@ -641,15 +642,15 @@ suspend fun WTWiFiDirect.removeLocalService() {
                     wtLocalServiceRecord),
                 listener)
         }) {
-            P2pResult.Success -> {
+            is CallbackResult.Success -> {
                 logd(TAGKClass, tag, "Success removing local service")
                 wtLocalServiceRecord = null
             }
-            is P2pResult.Failure -> {
+            is CallbackResult.Failure -> {
                 logd(
                     TAGKClass,
                     tag,
-                    "Failed removing local service: ${res.reason}: ${errToString(res.reason)}"
+                    "Failed removing local service: ${res.reason}: ${errToString(res.reason!!)}"
                 )
                 wifiP2PEngineFailCoolDown(true)
             }
@@ -694,14 +695,14 @@ suspend fun WTWiFiDirect.addLocalService(removeFirst: Boolean = false) {
                 ),
                 listener)
         }) {
-            P2pResult.Success -> {
+            is CallbackResult.Success -> {
                 logd(TAGKClass, tag, "Success adding local service")
             }
-            is P2pResult.Failure -> {
+            is CallbackResult.Failure -> {
                 logd(
                     TAGKClass,
                     tag,
-                    "Failed adding local service: ${res.reason}: ${errToString(res.reason)}"
+                    "Failed adding local service: ${res.reason}: ${errToString(res.reason!!)}"
                 )
                 wifiP2PEngineFailCoolDown(true)
             }
@@ -726,18 +727,18 @@ suspend fun WTWiFiDirect.removeServiceRequest() {
             serviceRequest,
             listener)
     }) {
-        P2pResult.Success -> {
+        is CallbackResult.Success -> {
             logd(
                 TAGKClass,
                 tag,
                 "Success removing service request"
             )
         }
-        is P2pResult.Failure -> {
+        is CallbackResult.Failure -> {
             logd(
                 TAGKClass,
                 tag,
-                "Failed removing service request: ${res.reason}: ${errToString(res.reason)}"
+                "Failed removing service request: ${res.reason}: ${errToString(res.reason!!)}"
             )
             wifiP2PEngineFailCoolDown(true)
         }
@@ -765,18 +766,18 @@ suspend fun WTWiFiDirect.addServiceRequest(removeFirst: Boolean = false) {
             serviceRequest,
             listener)
     }) {
-        P2pResult.Success -> {
+        is CallbackResult.Success -> {
             logd(
                 TAGKClass,
                 tag,
                 "Success adding service request"
             )
         }
-        is P2pResult.Failure -> {
+        is CallbackResult.Failure -> {
             logd(
                 TAGKClass,
                 tag,
-                "Failed adding service request: ${res.reason}: ${errToString(res.reason)}"
+                "Failed adding service request: ${res.reason}: ${errToString(res.reason!!)}"
             )
             wifiP2PEngineFailCoolDown(true)
         }
@@ -871,18 +872,18 @@ suspend fun WTWiFiDirect.stopPeerDiscovery() {
             channel,
             listener)
     }) {
-        P2pResult.Success -> {
+        is CallbackResult.Success -> {
             logd(
                 TAGKClass,
                 tag,
                 "Success stopping peers discovery"
             )
         }
-        is P2pResult.Failure -> {
+        is CallbackResult.Failure -> {
             logd(
                 TAGKClass,
                 tag,
-                "Failed stopping peers discovery: ${res.reason}: ${errToString(res.reason)}"
+                "Failed stopping peers discovery: ${res.reason}: ${errToString(res.reason!!)}"
             )
             wifiP2PEngineFailCoolDown(true)
         }
@@ -901,18 +902,18 @@ suspend fun WTWiFiDirect.discoverServices() {
                 channel,
                 listener)
         }) {
-            P2pResult.Success -> {
+            is CallbackResult.Success -> {
                 logd(
                     TAGKClass,
                     tag,
                     "Success starting discoverServices"
                 )
             }
-            is P2pResult.Failure -> {
+            is CallbackResult.Failure -> {
                 logd(
                     TAGKClass,
                     tag,
-                    "Failed starting discoverServices: ${res.reason}: ${errToString(res.reason)}"
+                    "Failed starting discoverServices: ${res.reason}: ${errToString(res.reason!!)}"
                 )
                 wifiP2PEngineFailCoolDown(true)
             }
@@ -931,16 +932,16 @@ suspend fun WTWiFiDirect.clearAllServices() {
         manager.clearServiceRequests(
             channel, listener)
     }) {
-        P2pResult.Success -> {
+        is CallbackResult.Success -> {
             logd(TAGKClass,
                 tag,
                 "Success clearServiceRequests"
             )
         }
-        is P2pResult.Failure -> {
+        is CallbackResult.Failure -> {
             logd(TAGKClass,
                 tag,
-                "Failed clearServiceRequests: ${res.reason}: ${errToString(res.reason)}"
+                "Failed clearServiceRequests: ${res.reason}: ${errToString(res.reason!!)}"
             )
             wifiP2PEngineFailCoolDown(true)
         }
@@ -953,17 +954,17 @@ suspend fun WTWiFiDirect.clearAllServices() {
             channel,
             listener)
     }) {
-        P2pResult.Success -> {
+        is CallbackResult.Success -> {
             logd(TAGKClass,
                 tag,
                 "Success clearLocalServices"
             )
         }
-        is P2pResult.Failure -> {
+        is CallbackResult.Failure -> {
             wifiP2PEngineFailCoolDown(true)
             logd(TAGKClass,
                 tag,
-                "Failed clearLocalServices: ${res.reason}: ${errToString(res.reason)}"
+                "Failed clearLocalServices: ${res.reason}: ${errToString(res.reason!!)}"
             )
             wifiP2PEngineFailCoolDown(true)
         }

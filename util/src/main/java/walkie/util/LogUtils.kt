@@ -117,30 +117,6 @@ inline fun <reified T> T.logging(enable: Boolean = true,
         extraCall)
 }
 
-/*
-fun getClassSimpleName(enclosingClass: KClass<*>): String? {
-    val ret: String? = (enclosingClass.simpleName)
-    Log.d(Logging.TAG, "getClassSimpleName: enclosingClass: $enclosingClass simpleName: $ret")
-    return ret
-}
-
-fun logging(enclosingClass: KClass<*>,
-            enable: Boolean = true,
-            extraCall: ((String, String) -> Unit)? = null) {
-    val simpleName = getClassSimpleName(enclosingClass)
-    Log.d(Logging.TAG, "$enclosingClass/$simpleName Calling logging $enable")
-    if (null == simpleName) {
-        throw (NotImplementedError("${Logging.TAG} $enclosingClass/null calling logging $enable for NULL"))
-    } else {
-        Logging.ONE.registerLog(
-            simpleName,
-            enable,
-            extraCall
-        )
-    }
-}
-*/
-
 class Logging private constructor () {
     private var globalEnable: Boolean = false
     private val enableMap: MutableMap<String, Boolean> by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { mutableMapOf() }
