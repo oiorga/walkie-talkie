@@ -4,17 +4,19 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 sealed class CorRuntime(
     val rootJob: RunJob,
     val dispatcher: RunDispatcher
 ) {
-
+    /*
     object Main : CorRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.Main)
     object UI : CorRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.UI)
     object IO : CorRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.IO)
     object CPU : CorRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.CPU)
+    */
 
     enum class RunDispatcher {
         Main, UI, IO, CPU
@@ -26,7 +28,7 @@ sealed class CorRuntime(
 
     private val mapDispatcher = mapOf(
         RunDispatcher.Main to Dispatchers.Main,
-        RunDispatcher.UI to Dispatchers.Main,
+        RunDispatcher.UI to Dispatchers.Main.immediate,
         RunDispatcher.IO to Dispatchers.IO,
         RunDispatcher.CPU to Dispatchers.Default
     )
@@ -45,8 +47,16 @@ sealed class CorRuntime(
     fun launch(
         dispatcher: RunDispatcher = this.dispatcher,
         block: suspend CoroutineScope.() -> Unit
-    ) {
-        rootScope.launch(mapDispatcher[dispatcher]!!, block = block)
+    ): Job {
+        return rootScope.launch(mapDispatcher[dispatcher]!!, block = block)
+    }
+
+    fun cancel() {
+        rootScope.cancel()
+    }
+
+    fun scope(): CoroutineScope {
+        return rootScope
     }
 }
 

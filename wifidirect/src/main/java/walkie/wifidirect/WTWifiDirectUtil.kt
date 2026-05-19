@@ -63,7 +63,7 @@ internal fun WTWiFiDirect.wtWifiDirectInfo() : String {
             //"\n\tIPAddress: " + this.wtWifiGroupInfo?.`interface`?.let { getInterfaceIpAddress(it) }
 
     info += "\nWIFI Peers List "
-    info += "\n discoverPeers: ($discoveryCountdown/${serviceDiscoveryActive()}) " + if (peersDiscoveryReset()) "Reset" else if (serviceDiscoveryActive()) "Active" else "Paused"
+    info += "\n discoverPeers: ($discoveryCountdown/${serviceDiscoveryActive()}) " + if (peersDiscoveryState()) "Reset" else if (serviceDiscoveryActive()) "Active" else "Paused"
     info += "\n advertise Service: ${serviceAdvAdd()}"
     info += "\n connectingAllowed: newWT: ${newWTDevice(newWTDevice())} ($discoveryCountdown) " + if (connectingAllowed()) "Yes" else "No"
     info += "\n connectTo: ${connectToDevice?.uniqueWifiId()} ${connectToDevice?.directWifiConnection}"

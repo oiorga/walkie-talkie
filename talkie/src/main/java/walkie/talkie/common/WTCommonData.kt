@@ -20,6 +20,7 @@ import walkie.talkie.ui.screens.WTUITheme
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.BuildConfig
 import walkie.util.LifeCycleObserver
+import walkie.util.RndRuntime
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
@@ -64,7 +65,7 @@ class WTCommonData private constructor (
     lateinit var wtWifiD: WTWiFiDirect
     lateinit var wtBcastReceiver: WiFiDirectBroadcastReceiver
 
-    lateinit var wtScope: CoroutineScope
+    lateinit var wtScope: RndRuntime
     lateinit var wtLCObs: LifeCycleObserver
 
     private var wtDebug: Boolean? = BuildConfig.DEBUG

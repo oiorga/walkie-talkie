@@ -45,7 +45,7 @@ class WTWiFiDirectStatic private constructor() {
     var scanPeersS: Boolean = false
 }
 
-suspend fun WTWiFiDirect.scanPeers(coroutineScope: CoroutineScope = MainScope(), delay: Long = 1000L) {
+suspend fun WTWiFiDirect.scanPeers(delay: Long = 1000L) {
     val tag = "scanPeers/${randomString(2u)}"
     val s = WTWiFiDirectStatic.INSTANCE
     val divider = 5
@@ -119,7 +119,7 @@ suspend fun WTWiFiDirect.scanPeers(coroutineScope: CoroutineScope = MainScope(),
         val tP2pInfo = Triple(wtGroupIp, wtLocalIp, wtGroupServerPort)
         notifyOfChange(oldP2pInfo, tP2pInfo)
         oldP2pInfo = tP2pInfo
-
+        
         channelSend(
             ChannelId.RCToWTActivity,
             ChannelMessageType.RCWifiDebugInfoMessage,
@@ -184,13 +184,13 @@ fun WTWiFiDirect.updateThisDevice() {
 suspend fun WTWiFiDirect.discoverPeersJob(delay: Long = 100L) {
     val tag = "discoverPeersJob/${randomString(2u)}"
 
-    logd(tag, "Entry isWifiP2pEnabled: $wifiP2pEnable resetPeersDiscovery: ${peersDiscoveryReset()} discoveryCountdown: $discoveryCountdown")
+    logd(tag, "Entry isWifiP2pEnabled: $wifiP2pEnable resetPeersDiscovery: ${peersDiscoveryState()} discoveryCountdown: $discoveryCountdown")
     if (!checkWifiDPermission()) {
         logd(tag, "Not enough WIFI-D permissions.")
     } else if (wifiP2pEnable) {
         var str = ""
 
-        if (peersDiscoveryReset()) {
+        if (peersDiscoveryState()) {
             serviceDiscoveryActive(true)
 
             if (wtIsGroupFormed && !wtIsGroupOwner) {
@@ -235,7 +235,7 @@ suspend fun WTWiFiDirect.discoverPeersJob(delay: Long = 100L) {
 
         logd(
             tag,
-            "isGroupOwner: ${wtIsGroupOwner}, discoveryCountdown: $discoveryCountdown resetPeersDiscovery: ${peersDiscoveryReset()} peers: $str"
+            "isGroupOwner: ${wtIsGroupOwner}, discoveryCountdown: $discoveryCountdown resetPeersDiscovery: ${peersDiscoveryState()} peers: $str"
         )
     }
 }
@@ -448,7 +448,7 @@ fun WTWiFiDirect.notifyOfChange(
                 wtLocalIp)
             localIpAlreadyChanged = true
             restartChannelCountdown(true)
-            peersDiscoveryReset(true)
+            peersDiscoveryState(true)
         }
 
         if (localIpAlreadyChanged) {
@@ -462,7 +462,7 @@ fun WTWiFiDirect.notifyOfChange(
                  wtLocalIp)
             if (null != wtLocalIp) {
                 restartChannelCountdown(true)
-                peersDiscoveryReset(true)
+                peersDiscoveryState(true)
             }
         }
     }
@@ -845,9 +845,9 @@ suspend fun WTWiFiDirect.wtServicesInit() {
     logd(tag, "Entry")
 
     registerServiceListeners()
-    delay(1000L)
+    delay(100L)
     clearAllServices()
-    delay(1000L)
+    delay(100L)
     /*
     /* addLocalService() */
     delay(1000L)
@@ -856,10 +856,9 @@ suspend fun WTWiFiDirect.wtServicesInit() {
     /* discoverServices() */
     delay(1000L)
     */
-    peersDiscoveryReset(true)
+    peersDiscoveryState(true)
 }
 
-/* For some reason is not working */
 @SuppressLint("NewApi")
 suspend fun WTWiFiDirect.stopPeerDiscovery() {
     val tag = "stopPeerDiscovery/${randomString(2u)}"
@@ -1044,7 +1043,7 @@ suspend fun WTWiFiDirect.processBcastReceiverMessage(intent: Intent) {
     }
 }
 
-fun WTWiFiDirect.wtWifiDirectMain(scope: CoroutineScope = MainScope(), scanInterval: Long = 1000L) {
+fun WTWiFiDirect.wtWifiDirectMain(scanInterval: Long = 1000L) {
     val tag = "wtWifiDirectMain/${randomString(2u)}"
 
     logd(tag, "wtWifiDirectMain Entry 0")
@@ -1053,9 +1052,9 @@ fun WTWiFiDirect.wtWifiDirectMain(scope: CoroutineScope = MainScope(), scanInter
 
     logd(tag, "wtWifiDirectMain Entry 1")
 
-    scanPeersJob = scope.launch {
+    scanPeersJob = runtime.launch {
         logd(TAGKClass, tag, "wtWifiDirectMain Starting Peers Scanning")
-        scanPeers(scope, scanInterval)
+        scanPeers(scanInterval)
     }
 
     logd(tag, "wtWifiDirectMain Entry 2 scanPeersJob: ${scanPeersJob.toString()}")

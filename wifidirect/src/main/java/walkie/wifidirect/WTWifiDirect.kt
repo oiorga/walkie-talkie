@@ -18,6 +18,7 @@ import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.GenericList
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.util.CallbackResult
+import walkie.util.CorRuntime
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
@@ -36,6 +37,7 @@ class WTWiFiDirect(
     val manager: WifiP2pManager,
     var channel: Channel,
     val node: NodeIdInt,
+    val runtime: CorRuntime,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
 ) :
@@ -155,9 +157,9 @@ class WTWiFiDirect(
         return _newWTDevice
     }
     var discoveryCountdown: Int = 0
-    fun peersDiscoveryReset(yes: Boolean? = null): Boolean {
-        if (null != yes) {
-            discoveryCountdown = if (yes) 0 else DiscoveryCountdown
+    fun peersDiscoveryState(enabled: Boolean? = null): Boolean {
+        if (null != enabled) {
+            discoveryCountdown = if (enabled) 0 else DiscoveryCountdown
         }
         return (0 == discoveryCountdown.toInt())
     }
@@ -321,7 +323,7 @@ class WTWiFiDirect(
         newWTDevice(false)
 
         /* indicate whether the discovery process is active */
-        peersDiscoveryReset(true)
+        peersDiscoveryState(true)
         connectCountdown = ConnectCountdown
 
         restartChannelCountdown = RestartChannelTimeout
@@ -356,9 +358,7 @@ class WTWiFiDirect(
             }
         }
 
-        logd(TAGKClass, tag, "Exit(0)--------------------------------------------------------------")
-
-        logd(TAGKClass, tag, "Exit(1)--------------------------------------------------------------")
+        logd(TAGKClass, tag, "Exit-----------------------------------------------------------------")
     }
     */
 
@@ -519,9 +519,7 @@ class WTWiFiDirect(
             }
         }
 
-        logd("Exit(0)------------------------------------------------------")
-
-        logd("Exit(1)------------------------------------------------------")
+        logd("Exit--------------------------------------------------------")
     }
 
     private fun connectedToGroup(): Boolean {
@@ -755,17 +753,12 @@ class WTWiFiDirect(
         if (wifiP2pInfo != wtWifiP2pInfoN.get()) {
             wtWifiP2pInfoN.compareAndSet(wtWifiP2pInfoN.get(), wifiP2pInfo)
         }
-        logd(
-            TAGKClass,
-            tag,
-            "Exit(0)-----------------------------------------------------------"
-        )
 
         wtWifiP2pInfoN.get()?.logD(tag)
         logd(
             TAGKClass,
             tag,
-            "Exit(1)-----------------------------------------------------------"
+            "Exit--------------------------------------------------------------"
         )
 
         return wifiP2pInfo

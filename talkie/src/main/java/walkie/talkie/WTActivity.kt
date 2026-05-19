@@ -70,8 +70,11 @@ import walkie.talkie.playground.commSquirrelWheel
 import walkie.talkie.ui.nav.WTNavInit
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.viewmodel.WTViewModelFactory
+import walkie.util.CorRuntime
+import walkie.util.CorRuntime.RunDispatcher
 import walkie.util.LifeCycleObserver
 import walkie.util.Logging
+import walkie.util.RndRuntime
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
@@ -134,10 +137,6 @@ class WTActivity(
 
     internal fun wtComm() : WTComm {
         return wtCommonData().wtComm
-    }
-
-    internal fun wtWifiD() : WTWiFiDirect {
-        return wtCommonData().wtWifiD
     }
 
     internal fun wtVModel() : WTViewModel {
@@ -252,12 +251,11 @@ class WTActivity(
         val uiObserver = Observer<Long> { wtVModel.changed() }
         wtCommonData.updateUiLiveData.counter.observe(this, uiObserver)
 
-        /* Need ComponentActivity, not Activity */
-        lifecycle.addObserver(wtCommonData.wtLCObs)
-
+        /* Do I need this? */
+        /* lifecycle.addObserver(wtCommonData.wtLCObs) */
         /* application.registerActivityLifecycleCallbacks(WTLifeCycleLogs); */
 
-        commSquirrelWheel(scope = wtCommonData.wtScope, delay = 6000L, addRandom = 5L)
+        commSquirrelWheel(scope = wtCommonData.wtScope.scope(), delay = 6000L, addRandom = 5L)
 
         enableEdgeToEdge()
 
@@ -286,7 +284,7 @@ class WTActivity(
             }
         }
 
-        wtCommonData().wtWifiD.wtWifiDirectMain(wtCommonData.wtScope, scanInterval = 1000L)
+        wtCommonData().wtWifiD.wtWifiDirectMain(scanInterval = 1000L)
     }
 
     private val groupIdWDI = "WIFI Direct Info"
@@ -379,7 +377,7 @@ internal fun WTActivity.wifiDInit() {
     val channel: WifiP2pManager.Channel? =
         manager.initialize(this.applicationContext, mainLooper, null /* channelListener - to pass a channel listener to shadow */)
     channel?.also { chanel ->
-        wtCommonData().wtWifiD = WTWiFiDirect(manager, chanel, wtCommonData().wtSystemNodeId )
+        wtCommonData().wtWifiD = WTWiFiDirect(manager, chanel, wtCommonData().wtSystemNodeId, wtCommonData().wtScope)
         wtCommonData().wtBcastReceiver = WiFiDirectBroadcastReceiver()
         ContextCompat.registerReceiver(this, wtCommonData().wtBcastReceiver, intentFilter, ContextCompat.RECEIVER_EXPORTED)
         registerRemoteCall(RemoteCallId.RCCheckWifiDPermission) { _ -> hasWifiDPermission() }
@@ -411,7 +409,7 @@ internal fun WTActivity.wifiDRestartChannel() {
     }
 
     logd(tag, "Restarting peers scanning")
-    wtCommonData().wtWifiD.wtWifiDirectMain(wtCommonData().wtScope, scanInterval = 1000L)
+    wtCommonData().wtWifiD.wtWifiDirectMain(scanInterval = 1000L)
 }
 
 internal fun WTActivity.wtDeviceName() : String{
@@ -497,13 +495,15 @@ internal fun WTActivity.wtCommDataInit(stage: Int) : WTCommonData {
             wtDebug(onOff = BuildConfig.DEBUG)
             wtCommonData.wtDeviceName = Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME)
             wtCommonData.wtSystemNodeId = NodeId(wtCommonData.wtDeviceName, randomString(4U))
-            wtCommonData.wtLCObs = LifeCycleObserver(this, lifecycle)
+            wtCommonData.wtScope = RndRuntime(CorRuntime.RunJob.Supervisor,RunDispatcher.Main)
+
+            /* Do I need this? */
+            /* wtCommonData.wtLCObs = LifeCycleObserver(this, lifecycle) */
             customComposablesInit()
         }
 
         1 -> {
             wifiDInit()
-            wtCommonData.wtScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
             wtCommonData.counterLive = CounterLive()
             wtCommonData.updateUiLiveData = UpdateUiLiveData()
 
