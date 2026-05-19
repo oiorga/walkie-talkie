@@ -33,8 +33,8 @@ import java.net.InetAddress
 import kotlin.random.Random
 
 class WTWiFiDirect(
-    private val _manager: WifiP2pManager,
-    private var _channel: Channel,
+    val manager: WifiP2pManager,
+    var channel: Channel,
     val node: NodeIdInt,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
@@ -233,13 +233,8 @@ class WTWiFiDirect(
         return (0 == failCooldown)
     }
 
-    val manager: WifiP2pManager
-        get() = _manager
-    val channel: Channel
-        get() = _channel
-
     fun channel(channel: Channel) {
-        _channel = channel
+        this.channel = channel
     }
 
     init {

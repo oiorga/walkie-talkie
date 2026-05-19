@@ -1,17 +1,7 @@
 package walkie.talkie
 
-import walkie.talkie.api.wtdebug.WTDebugInt
-import walkie.util.api.ChannelMessageType
-import walkie.util.api.RemoteCallMuxInt
-import walkie.util.generic.ChannelMux
-import walkie.util.generic.ChannelMuxInt
-import walkie.util.generic.RemoteCallMux
-
 import android.app.Application
-import androidx.activity.viewModels
 import walkie.talkie.common.WTCommonData
-import walkie.talkie.viewmodel.WTViewModel
-import kotlin.getValue
 
 class WalkieTalkie() : Application() {
     companion object {
