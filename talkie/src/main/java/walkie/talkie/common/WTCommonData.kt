@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import kotlinx.coroutines.CoroutineScope
 import walkie.chat.ChatGroupMap
 import walkie.comm.WTComm
 import walkie.util.generic.ChannelMux
@@ -19,8 +18,8 @@ import walkie.talkie.ui.nav.wtChatUpdateUI
 import walkie.talkie.ui.screens.WTUITheme
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.BuildConfig
-import walkie.util.LifeCycleObserver
-import walkie.util.RndRuntime
+import walkie.talkie.api.wtdebug.WTDebugInt
+import walkie.util.CoroutineRuntime
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
@@ -36,7 +35,8 @@ class WTCommonData private constructor (
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
 ) : RemoteCallMuxInt by _remoteCallMux,
-    ChannelMuxInt<Any, ChannelMessageType> by _channelMux
+    ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
+    WTDebugInt
 {
     companion object {
         val ONE: WTCommonData by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { WTCommonData() }
@@ -65,14 +65,14 @@ class WTCommonData private constructor (
     lateinit var wtWifiD: WTWiFiDirect
     lateinit var wtBcastReceiver: WiFiDirectBroadcastReceiver
 
-    lateinit var wtScope: RndRuntime
-    lateinit var wtLCObs: LifeCycleObserver
+    lateinit var wtRuntime: CoroutineRuntime
+    /* lateinit var wtLCObs: LifeCycleObserver */
 
     private var wtDebug: Boolean? = BuildConfig.DEBUG
 
     var customComposables: MutableMap<String, @Composable (Modifier, WTUITheme) -> Unit> = mutableMapOf()
 
-    fun wtDebug(onOff: Boolean? = null): Boolean {
+    override fun wtDebug(onOff: Boolean? ): Boolean {
         if (null != onOff) wtDebug = onOff
         return (true == wtDebug)
     }

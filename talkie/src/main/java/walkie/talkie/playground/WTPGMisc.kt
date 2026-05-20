@@ -42,7 +42,7 @@ class WalkiePlayGroundTimer(private val delay: Long = 1000L) {
 }
 
 fun WTActivity.jobby (scope: CoroutineScope = MainScope(),
-                      counter: CounterLive = wtCommonData().counterLive,
+                      counter: CounterLive = wtHub.counterLive,
                       delay: Long = 1000L,
                       index: Int,
                       sharedInt: IntArray
@@ -67,7 +67,7 @@ fun WTActivity.jobby (scope: CoroutineScope = MainScope(),
     return job
 }
 
-fun WTActivity.squirrelWheel (scope: CoroutineScope = MainScope(), counter: CounterLive = wtCommonData().counterLive, delay: Long = 1000L) = runBlocking {
+fun WTActivity.squirrelWheel (scope: CoroutineScope = MainScope(), counter: CounterLive = wtHub.counterLive, delay: Long = 1000L) = runBlocking {
     val tag: String = "squirrelWheel"
     val jobList = mutableListOf<Job>()
     val max = 4
@@ -117,7 +117,7 @@ fun WTActivity.wifiLocalRndMsgs(scope: CoroutineScope, delay: Long) {
             )
         )
     )
-    wtCommonData().sendChatMessage(message)
+    wtHub.sendChatMessage(message)
 }
 
 suspend fun WTActivity.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: Long) {
@@ -126,14 +126,14 @@ suspend fun WTActivity.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: Lo
     var i = 0
     val dPeersGroup = ChatGroupId("Direct Peers", type = ChatGroupType.RemoteChatTesting)
 
-    wtComm().directNodesInfo().forEach { peer ->
+    wtComm.directNodesInfo().forEach { peer ->
         val peerGId = ChatGroupId(groupId = peer.uid(), groupName = peer.id, type = ChatGroupType.RemoteChatTesting)
         val peerNodeId = NodeId.Builder().id(peer.id).unique(peer.unique!!).build()
-        wtCommonData().wtGlobalGroupMap.addNode(
+        wtHub.wtGlobalGroupMap.addNode(
             peerGId,
             NodeId.Builder().id(peer.id).unique(peer.unique!!).build()
         )
-        wtCommonData().wtGlobalGroupMap.addNode(
+        wtHub.wtGlobalGroupMap.addNode(
             dPeersGroup,
             peerNodeId
         )
@@ -146,40 +146,40 @@ suspend fun WTActivity.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: Lo
             scope.launch {
                 delay(delay * Random.nextLong((k + 1) * delaY))
                 val message = ChatMessage(
-                    sender = Sender(wtCommonData().wtSystemNodeId),
+                    sender = Sender(wtHub.wtSystemNodeId),
                     receiver = Receiver(peerNodeId, peerGId),
                     groupId = peerGId,
                     chatMessageItemList = ChatMessageItemList(
                         mutableListOf(
                             ChatMessageItem.Builder()
                                 .value(
-                                    "${wtCommonData().wtSystemNodeId.uid()} -> ${peer.uid()}" +
+                                    "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid()}" +
                                             " $c$maxK $k " + "[" + randomString(8U) + "]"
                                 )
                                 .build()
                         )
                     )
                 )
-                wtCommonData().sendChatMessage(message)
+                wtHub.sendChatMessage(message)
             }
 
             scope.launch {
                 delay(delay * Random.nextLong(delaY.toLong()))
                 val message = ChatMessage(
-                    sender = Sender(wtCommonData().wtSystemNodeId),
+                    sender = Sender(wtHub.wtSystemNodeId),
                     receiver = Receiver(peerNodeId, dPeersGroup),
                     groupId = dPeersGroup,
                     chatMessageItemList = ChatMessageItemList(
                         mutableListOf(
                             ChatMessageItem.Builder()
                                 .value(
-                                    "${wtCommonData().wtSystemNodeId.uid()} -> ${peer.uid()} " + "" +
+                                    "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid()} " + "" +
                                             "[" + randomString(8U) + "]")
                                 .build()
                         )
                     )
                 )
-                wtCommonData().sendChatMessage(message)
+                wtHub.sendChatMessage(message)
             }
         }
     }

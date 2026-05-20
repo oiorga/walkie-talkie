@@ -196,8 +196,8 @@ internal fun WTActivity.WTNavInit(
     navController: NavHostController = rememberNavController(),
     startDestination: WTNavigation
 ) {
-    wtVModel().navGraph = WTNavGraph(navController, startDestination)
-    val wtNavGraph = wtVModel().navGraph
+    wtVModel.navGraph = WTNavGraph(navController, startDestination)
+    val wtNavGraph = wtVModel.navGraph
 
     wtNavGraph.node(WTNavigation.WT) { WTUI(WTNavigation.WT) }
     wtNavGraph.node(WTNavigation.Main) { WTUI(WTNavigation.WT) }

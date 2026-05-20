@@ -54,7 +54,7 @@ private val WTPeersUITheme: WTUITheme = WTUITheme(
 @Composable
 internal fun WTActivity.WTActivityPeersUI(wtNavNode: WTNavNode? = null) {
     val tag = "WTActivityPeersUI/${randomString(2u)}"
-    val mainVModel = this.wtVModel()
+    val mainVModel = this.wtVModel
     val switchScreen: Boolean by remember { derivedStateOf { mainVModel.switchScreen() } }
 
     logd(tag, "$tag Entry 0 triggerUpdate: ${mainVModel.triggerUIUpdate} switchScreen: $switchScreen")
@@ -226,11 +226,11 @@ internal fun WTActivity.openChatOnClickPrep(
 
     logd(tag, "(0): ${mainVModel.currentScreen()} dId: ${mainVModel.nextDiscussionId}")
 
-    wtCommonData().wtGlobalGroupMap.addNode(
+   wtHub.wtGlobalGroupMap.addNode(
         chatGroupId,
         NodeId.Builder().id(peer.id).unique(peer.unique!!).build()
     )
-    wtCommonData().wtGlobalDiscussionMap.createDiscussion(chatGroupId)
+   wtHub.wtGlobalDiscussionMap.createDiscussion(chatGroupId)
 
     mainVModel.nextDiscussionId = chatGroupId
     mainVModel.changeScreen(WTNavigation.RemoteChat)
@@ -267,7 +267,7 @@ internal fun WTActivity.PeersMainScreen(
     run { triggerUpdate }
 
     val randomTrue = Random.nextBoolean()
-    wtComm().directNodesInfo().forEach { peerInfo ->
+    wtComm.directNodesInfo().forEach { peerInfo ->
         val navNode = WTNavNode(
             route = WTNavigation.RemoteChat,
             /* value = peerInfo, */

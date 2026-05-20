@@ -18,7 +18,7 @@ import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.GenericList
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.util.CallbackResult
-import walkie.util.CorRuntime
+import walkie.util.CoroutineRuntime
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
@@ -35,9 +35,11 @@ import kotlin.random.Random
 
 class WTWiFiDirect(
     val manager: WifiP2pManager,
+    /*
     var channel: Channel,
     val node: NodeIdInt,
-    val runtime: CorRuntime,
+    val runtime: CoroutineRuntime,
+    */
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
 ) :
@@ -52,6 +54,21 @@ class WTWiFiDirect(
         const val RestartChannelTimeout = (DiscoveryCountdown * 2).toInt()
         const val DiscoveryVsAdvertisementRatio = (2F / 3F)
         val TAGKClass = WTWiFiDirect::class
+    }
+
+    lateinit var nodeId: NodeIdInt
+    fun nodeId(nodeId: NodeIdInt) {
+        this.nodeId = nodeId
+    }
+
+    lateinit var channel: Channel
+    fun channel(channel: Channel) {
+        this.channel = channel
+    }
+
+    lateinit var runtime: CoroutineRuntime
+    fun runtime(runtime: CoroutineRuntime) {
+        this.runtime = runtime
     }
 
     private val errToString = mapOf(
@@ -128,13 +145,13 @@ class WTWiFiDirect(
         }
 
     val deviceUid: String
-        get() = node.uid()
+        get() = nodeId.uid()
 
     val deviceId: String
-        get() = node.id()
+        get() = nodeId.id()
 
     val deviceUnique: String
-        get() = node.unique()
+        get() = nodeId.unique()
 
     var connectToDevice: WTWifiDirectPeerInfo? = null
 
@@ -233,10 +250,6 @@ class WTWiFiDirect(
     }
     fun wifiP2PEngineOk(): Boolean {
         return (0 == failCooldown)
-    }
-
-    fun channel(channel: Channel) {
-        this.channel = channel
     }
 
     init {

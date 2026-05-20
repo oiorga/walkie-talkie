@@ -7,16 +7,17 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
-sealed class CorRuntime(
+sealed class CoroutineRuntime(
     val rootJob: RunJob,
     val dispatcher: RunDispatcher
 ) {
-    /*
-    object Main : CorRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.Main)
-    object UI : CorRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.UI)
-    object IO : CorRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.IO)
-    object CPU : CorRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.CPU)
-    */
+    object Main : CoroutineRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.Main)
+    object UI : CoroutineRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.UI)
+    object IO : CoroutineRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.IO)
+    object CPU : CoroutineRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.CPU)
+
+    /* Breaking the seal */
+    class Custom(rootJob: RunJob, dispatcher: RunDispatcher) : CoroutineRuntime (rootJob, dispatcher)
 
     enum class RunDispatcher {
         Main, UI, IO, CPU
@@ -59,6 +60,3 @@ sealed class CorRuntime(
         return rootScope
     }
 }
-
-/* Breaking the seal */
-class RndRuntime(rootJob: RunJob, dispatcher: RunDispatcher) : CorRuntime (rootJob, dispatcher)

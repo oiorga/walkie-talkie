@@ -70,11 +70,9 @@ import walkie.talkie.playground.commSquirrelWheel
 import walkie.talkie.ui.nav.WTNavInit
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.viewmodel.WTViewModelFactory
-import walkie.util.CorRuntime
-import walkie.util.CorRuntime.RunDispatcher
+import walkie.util.CoroutineRuntime
 import walkie.util.LifeCycleObserver
 import walkie.util.Logging
-import walkie.util.RndRuntime
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
@@ -101,7 +99,8 @@ class WTActivity(
     WTDebugInt,
     ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
     RemoteCallMuxInt by _remoteCallMux {
-    companion object {
+
+        companion object {
         const val TAG = "WTActivity"
         val TAGKClass = WTActivity::class
         const val PERMISSION_REQUEST_CODE = 2
@@ -127,41 +126,34 @@ class WTActivity(
         application as WalkieTalkie
     }
 
-    private val wtCommonData by lazy {
-        walkieTalkie.wtCommonData
+    val wtHub by lazy {
+        walkieTalkie.wtHub
     }
 
-    private val wtVModel by viewModels<WTViewModel> {
-        WTViewModelFactory(wtCommonData)
+    val wtVModel by viewModels<WTViewModel> {
+        WTViewModelFactory(wtHub)
     }
 
-    internal fun wtComm() : WTComm {
-        return wtCommonData().wtComm
-    }
-
-    internal fun wtVModel() : WTViewModel {
-        return wtVModel
-    }
-
-    internal fun wtCommonData() : WTCommonData {
-        return wtCommonData
-    }
+    val wtComm: WTComm
+        get() = wtHub.wtComm
 
     override fun wtDebug (onOff: Boolean?): Boolean {
-        return wtCommonData.wtDebug(onOff)
+        return wtHub.wtDebug(onOff)
     }
 
     init {
+        /*
         Logging.ONE.setGlobal(true)
         logging(true)
         Logging.enable(enclosingClass = LazyListState::class, true)
         Logging.enable(enclosingClass = CoroutineScope::class, true)
+        */
     }
 
     private suspend fun wifiCleanUp() {
         val tag = "wifiCleanUp/${randomString(2U)}"
         logd(tag, "wifiCleanUp")
-        wtCommonData().wtWifiD.wtWifiDirectStop()
+        wtHub.wtWifiD.wtWifiDirectStop()
     }
 
     override fun onStart() {
@@ -200,7 +192,7 @@ class WTActivity(
         lifecycleScope.launch() {
             withContext(NonCancellable) {
                 wifiCleanUp()
-                wtCommonData().wtScope.cancel()
+                wtHub.wtRuntime.cancel()
                 finishAffinity()
                 finishAndRemoveTask()
                 exitProcess(0)
@@ -213,7 +205,7 @@ class WTActivity(
         logd(tag, "onResume")
 
         super.onResume()
-        wtCommonData().wtBcastReceiver.also { bcastReceiver ->
+        wtHub.wtBcastReceiver.also { bcastReceiver ->
             ContextCompat.registerReceiver(this, bcastReceiver, intentFilter, ContextCompat.RECEIVER_EXPORTED)
         }
     }
@@ -223,7 +215,7 @@ class WTActivity(
         logd(tag, "onPause")
 
         super.onPause()
-        wtCommonData().wtBcastReceiver.also { bcastReceiver ->
+        wtHub.wtBcastReceiver.also { bcastReceiver ->
             this.unregisterReceiver(bcastReceiver)
         }
     }
@@ -241,21 +233,21 @@ class WTActivity(
         /* In order to be able to use Java sockets from this activity */
         StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().permitAll().build())
 
-        wtCommDataInit(stage = 0)
-        wtCommDataInit(stage = 1)
+        wtHubInit(stage = 0)
+        wtHubInit(stage = 1)
 
         wtVModel.lateInit()
 
-        wtCommDataInit(stage = 2)
+        wtHubInit(stage = 2)
 
         val uiObserver = Observer<Long> { wtVModel.changed() }
-        wtCommonData.updateUiLiveData.counter.observe(this, uiObserver)
+        wtHub.updateUiLiveData.counter.observe(this, uiObserver)
 
         /* Do I need this? */
-        /* lifecycle.addObserver(wtCommonData.wtLCObs) */
+        /* lifecycle.addObserver(wtHub.wtLCObs) */
         /* application.registerActivityLifecycleCallbacks(WTLifeCycleLogs); */
 
-        commSquirrelWheel(scope = wtCommonData.wtScope.scope(), delay = 6000L, addRandom = 5L)
+        commSquirrelWheel(scope = wtHub.wtRuntime.scope(), delay = 6000L, addRandom = 5L)
 
         enableEdgeToEdge()
 
@@ -284,7 +276,7 @@ class WTActivity(
             }
         }
 
-        wtCommonData().wtWifiD.wtWifiDirectMain(scanInterval = 1000L)
+        wtHub.wtWifiD.wtWifiDirectMain(scanInterval = 1000L)
     }
 
     private val groupIdWDI = "WIFI Direct Info"
@@ -301,16 +293,16 @@ class WTActivity(
                         val groupId = groupIdWDI
                         if (info1["b"] != input as String) {
                             info1["b"] = input
-                            wtCommonData().wtGlobalDiscussionMap.replaceDiscussion(
+                            wtHub.wtGlobalDiscussionMap.replaceDiscussion(
                                 ChatGroupId(
                                     groupId = groupId,
                                     type = ChatGroupType.LocalDebug
                                 ), ChatDiscussion(ChatGroupId(groupId = groupIdWDI, type = ChatGroupType.LocalDebug))
                             )
                             val message = ChatMessage(
-                                sender = Sender(wtCommonData().wtSystemNodeId),
+                                sender = Sender(wtHub.wtSystemNodeId),
                                 receiver = Receiver(
-                                    wtCommonData().wtSystemNodeId,
+                                    wtHub.wtSystemNodeId,
                                     ChatGroupId(groupId = groupId, type = ChatGroupType.LocalDebug)
                                 ),
                                 groupId = ChatGroupId(groupId = groupId, type = ChatGroupType.LocalDebug),
@@ -320,7 +312,7 @@ class WTActivity(
                                     )
                                 )
                             )
-                            wtCommonData().sendChatMessage(message)
+                            wtHub.sendChatMessage(message)
                         }
                     }
 
@@ -328,16 +320,16 @@ class WTActivity(
                         val groupId = groupIdWDI
                         if (info1["a"] != input as String) {
                             info1["a"] = input
-                            wtCommonData().wtGlobalDiscussionMap.replaceDiscussion(
+                            wtHub.wtGlobalDiscussionMap.replaceDiscussion(
                                 ChatGroupId(
                                     groupId = groupId,
                                     type = ChatGroupType.LocalDebug
                                 ), ChatDiscussion(ChatGroupId(groupId = groupId, type = ChatGroupType.LocalDebug))
                             )
                             val message = ChatMessage(
-                                sender = Sender(wtCommonData().wtSystemNodeId),
+                                sender = Sender(wtHub.wtSystemNodeId),
                                 receiver = Receiver(
-                                    wtCommonData().wtSystemNodeId,
+                                    wtHub.wtSystemNodeId,
                                     ChatGroupId(groupId = groupId, type = ChatGroupType.LocalDebug)
                                 ),
                                 groupId = ChatGroupId(groupId = groupId, type = ChatGroupType.LocalDebug),
@@ -347,14 +339,14 @@ class WTActivity(
                                     )
                                 )
                             )
-                            wtCommonData().sendChatMessage(message)
+                            wtHub.sendChatMessage(message)
                         }
                     }
 
                     ChannelMessageType.RCWifiRestartChannel -> {
                         logd(tag, "RCWifiRestartChannel")
                         wifiDRestartChannel()
-                        wtCommonData().wtComm.wtPRMComm().wtIPComm().stop()
+                        wtHub.wtComm.wtPRMComm().wtIPComm().stop()
                     }
 
                     else -> {
@@ -377,13 +369,17 @@ internal fun WTActivity.wifiDInit() {
     val channel: WifiP2pManager.Channel? =
         manager.initialize(this.applicationContext, mainLooper, null /* channelListener - to pass a channel listener to shadow */)
     channel?.also { chanel ->
-        wtCommonData().wtWifiD = WTWiFiDirect(manager, chanel, wtCommonData().wtSystemNodeId, wtCommonData().wtScope)
-        wtCommonData().wtBcastReceiver = WiFiDirectBroadcastReceiver()
-        ContextCompat.registerReceiver(this, wtCommonData().wtBcastReceiver, intentFilter, ContextCompat.RECEIVER_EXPORTED)
+        wtHub.wtWifiD = WTWiFiDirect(manager)
+        wtHub.wtWifiD.channel(channel)
+        wtHub.wtWifiD.nodeId(wtHub.wtSystemNodeId)
+        wtHub.wtWifiD.runtime(wtHub.wtRuntime)
+
+        wtHub.wtBcastReceiver = WiFiDirectBroadcastReceiver()
+        ContextCompat.registerReceiver(this, wtHub.wtBcastReceiver, intentFilter, ContextCompat.RECEIVER_EXPORTED)
         registerRemoteCall(RemoteCallId.RCCheckWifiDPermission) { _ -> hasWifiDPermission() }
-        wtCommonData().wtWifiD.registerRemoteCallTo(RemoteCallId.RCCheckWifiDPermission, this)
+        wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCCheckWifiDPermission, this)
         registerRemoteCall(RemoteCallId.RCRequestWifiDPermission) { _ -> requestWifiDPermission() }
-        wtCommonData().wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermission, this)
+        wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermission, this)
     }
 }
 
@@ -392,24 +388,24 @@ internal fun WTActivity.wifiDRestartChannel() {
 
     logd(tag, "Entry")
 
-    val manager = wtCommonData().wtWifiD.manager
+    val manager = wtHub.wtWifiD.manager
 
     val channel: WifiP2pManager.Channel? =
         manager.initialize(this.applicationContext, mainLooper, null /* channelListener - to pass a channel listener to shadow */)
 
     logd(tag, "Requested new channel ${channel.toString()}")
     channel?.also {
-        wtCommonData().wtWifiD.channel(it)
+        wtHub.wtWifiD.channel(it)
     }
 
-    wtCommonData().wtBcastReceiver.also { bcastReceiver ->
+    wtHub.wtBcastReceiver.also { bcastReceiver ->
         this.unregisterReceiver(bcastReceiver)
-        ContextCompat.registerReceiver(this, wtCommonData().wtBcastReceiver, intentFilter, ContextCompat.RECEIVER_EXPORTED)
+        ContextCompat.registerReceiver(this, wtHub.wtBcastReceiver, intentFilter, ContextCompat.RECEIVER_EXPORTED)
 
     }
 
     logd(tag, "Restarting peers scanning")
-    wtCommonData().wtWifiD.wtWifiDirectMain(scanInterval = 1000L)
+    wtHub.wtWifiD.wtWifiDirectMain(scanInterval = 1000L)
 }
 
 internal fun WTActivity.wtDeviceName() : String{
@@ -467,8 +463,8 @@ internal fun WTActivity.requestWifiDPermissionLocation() {
 }
 */
 
-internal fun WTActivity.wtCommDataInit(stage: Int) : WTCommonData {
-    val wtCommonData: WTCommonData = WTCommonData.ONE
+internal fun WTActivity.wtHubInit(stage: Int) : WTCommonData {
+    val wtHub: WTCommonData = WTCommonData.ONE
 
     logd(tag,"WTActivity.wtCommDataInit called stage: $stage init")
 
@@ -478,7 +474,7 @@ internal fun WTActivity.wtCommDataInit(stage: Int) : WTCommonData {
                 tag,
                 "WTActivity.wtCommDataInit called stage: $stage init before  stage: $i: ${WTCommonData.initStage[i]}?"
             )
-            return wtCommonData
+            return wtHub
         }
     }
 
@@ -487,88 +483,90 @@ internal fun WTActivity.wtCommDataInit(stage: Int) : WTCommonData {
             tag,
             "WTActivity.wtCommDataInit stage: $stage already initialized?"
         )
-        return wtCommonData
+        return wtHub
     }
 
     when (stage) {
         0 -> {
             wtDebug(onOff = BuildConfig.DEBUG)
-            wtCommonData.wtDeviceName = Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME)
-            wtCommonData.wtSystemNodeId = NodeId(wtCommonData.wtDeviceName, randomString(4U))
-            wtCommonData.wtScope = RndRuntime(CorRuntime.RunJob.Supervisor,RunDispatcher.Main)
+            wtHub.wtDeviceName = Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME)
+            wtHub.wtSystemNodeId = NodeId(wtHub.wtDeviceName, randomString(4U))
+            wtHub.wtRuntime = CoroutineRuntime.Custom(
+                CoroutineRuntime.RunJob.Supervisor,
+                CoroutineRuntime.RunDispatcher.Main)
 
             /* Do I need this? */
-            /* wtCommonData.wtLCObs = LifeCycleObserver(this, lifecycle) */
+            /* wtHub.wtLCObs = LifeCycleObserver(this, lifecycle) */
             customComposablesInit()
         }
 
         1 -> {
             wifiDInit()
-            wtCommonData.counterLive = CounterLive()
-            wtCommonData.updateUiLiveData = UpdateUiLiveData()
+            wtHub.counterLive = CounterLive()
+            wtHub.updateUiLiveData = UpdateUiLiveData()
 
-            wtCommonData.wtComm = WTComm(wtCommonData.wtSystemNodeId)
+            wtHub.wtComm = WTComm(wtHub.wtSystemNodeId)
 
-            wtCommonData.wtGlobalGroupMap = ChatGroupMap()
-            wtCommonData.wtGlobalDiscussionMap =
+            wtHub.wtGlobalGroupMap = ChatGroupMap()
+            wtHub.wtGlobalDiscussionMap =
                 DiscussionMap(
                     discussionMap = ChatDiscussionMap(),
-                    groupMap = wtCommonData.wtGlobalGroupMap,
-                    systemNode = wtCommonData.wtSystemNodeId)
-            wtCommonData.wtGlobalDiscussionMap.updateUiLiveData =
-                wtCommonData.updateUiLiveData
+                    groupMap = wtHub.wtGlobalGroupMap,
+                    systemNode = wtHub.wtSystemNodeId)
+            wtHub.wtGlobalDiscussionMap.updateUiLiveData =
+                wtHub.updateUiLiveData
 
-            wtCommonData.registerAsReceiver(
+            wtHub.registerAsReceiver(
                 ChannelId.RCTOCommonData,
-                wtCommonData.wtGlobalDiscussionMap,
-                wtCommonData.wtComm
+                wtHub.wtGlobalDiscussionMap,
+                wtHub.wtComm
             )
 
-            wtCommonData.wtComm.registerSenders(
+            wtHub.wtComm.registerSenders(
                 ChannelId.RCToComm,
-                wtCommonData.wtGlobalDiscussionMap,
-                wtCommonData.wtWifiD
+                wtHub.wtGlobalDiscussionMap,
+                wtHub.wtWifiD
             )
 
-            wtCommonData.wtGlobalDiscussionMap.registerSenders(
+            wtHub.wtGlobalDiscussionMap.registerSenders(
                 channelId = ChannelId.RCCommToChat,
-                wtCommonData.wtComm
+                wtHub.wtComm
             )
 
-            wtCommonData.wtWifiD.registerSenders(
+            wtHub.wtWifiD.registerSenders(
                 ChannelId.RCToWifi,
-                wtCommonData.wtBcastReceiver,
-                wtCommonData.wtComm,
-                wtCommonData.wtWifiD
+                wtHub.wtBcastReceiver,
+                wtHub.wtComm,
+                wtHub.wtWifiD
             )
 
             this.registerSenders(
                 channelId = ChannelId.RCToWTActivity,
-                wtCommonData.wtWifiD,
-                wtCommonData.wtComm.wtPRMComm()
+                wtHub.wtWifiD,
+                wtHub.wtComm.wtPRMComm()
             )
         }
 
         2 -> {
             /*
             /* WTActivity capable devices/running this app */
-            wtCommonData.wtGlobalGroupMap[ChatGroupId(groupId = "WTActivity", groupName = "WTActivity", type = ChatGroupType.WTActivity)] =
+            wtHub.wtGlobalGroupMap[ChatGroupId(groupId = "WTActivity", groupName = "WTActivity", type = ChatGroupType.WTActivity)] =
                 ChatGroupList(ChatGroupId(groupId = "WTActivity", groupName = groupId, type = ChatGroupType.WTActivity), mutableListOf())
 
             /* Where all the unsolicited messages go to group */
-            wtCommonData.wtGlobalGroupMap[ChatGroupId("Bogus", ChatGroupType.Etc)] =
+            wtHub.wtGlobalGroupMap[ChatGroupId("Bogus", ChatGroupType.Etc)] =
                 ChatGroupList(ChatGroupId("Bogus", ChatGroupType.Etc), mutableListOf())
             */
 
             /* Peers List - testing */
-            wtCommonData.wtGlobalGroupMap[ChatGroupId(groupId = "WIFI Direct Info", groupName = "WIFI Direct Info", type = ChatGroupType.LocalDebug)] =
+            wtHub.wtGlobalGroupMap[ChatGroupId(groupId = "WIFI Direct Info", groupName = "WIFI Direct Info", type = ChatGroupType.LocalDebug)] =
                 ChatGroupList(ChatGroupId(groupId = "WIFI Direct Info", groupName = "WIFI Direct Info", ChatGroupType.LocalDebug), mutableListOf())
 
             /* WIFI Direct Initial Testing - testing */
-            wtCommonData.wtGlobalGroupMap[ChatGroupId(groupId = "WIFI Direct All", groupName = "WIFI Direct All", ChatGroupType.LocalDebug)] =
+            wtHub.wtGlobalGroupMap[ChatGroupId(groupId = "WIFI Direct All", groupName = "WIFI Direct All", ChatGroupType.LocalDebug)] =
                 ChatGroupList(ChatGroupId(groupId = "WIFI Direct All", groupName = "WIFI Direct All", type = ChatGroupType.LocalDebug), mutableListOf())
 
-            wtCommonData.wtGlobalGroupMap[ChatGroupId("Direct Peers", type = ChatGroupType.RemoteChatTesting)] =
+            wtHub.wtGlobalGroupMap[ChatGroupId("Direct Peers", type = ChatGroupType.RemoteChatTesting)] =
                 ChatGroupList(ChatGroupId("Direct Peers", type = ChatGroupType.RemoteChatTesting), mutableListOf())
 
             for (i in 0..17) {
@@ -578,7 +576,7 @@ internal fun WTActivity.wtCommDataInit(stage: Int) : WTCommonData {
                             2
                         )
                     }"
-                wtCommonData.wtGlobalGroupMap[ChatGroupId(groupId, type = ChatGroupType.LocalChatTesting)] =
+                wtHub.wtGlobalGroupMap[ChatGroupId(groupId, type = ChatGroupType.LocalChatTesting)] =
                     ChatGroupList(
                         ChatGroupId(groupId, type = ChatGroupType.LocalChatTesting),
                         mutableListOf()
@@ -594,46 +592,26 @@ internal fun WTActivity.wtCommDataInit(stage: Int) : WTCommonData {
                     length = 4,
                     count = 7
                 ).toList().forEach {
-                    wtCommonData.wtGlobalGroupMap[ChatGroupId(groupId = groupId, type = ChatGroupType.LocalChatTesting)]?.add(NodeId(it, ""))
+                    wtHub.wtGlobalGroupMap[ChatGroupId(groupId = groupId, type = ChatGroupType.LocalChatTesting)]?.add(NodeId(it, ""))
                 }
             }
 
-            wtCommonData().wtComm.start()
+            wtHub.wtComm.start()
         }
         else -> {
             logd(
                 tag,
                 "WTActivity.wtCommDataInit stage: $stage out of range?"
             )
-            return wtCommonData
+            return wtHub
         }
     }
 
     WTCommonData.initStage[stage] = true
-    return wtCommonData
+    return wtHub
 }
 
 fun WTActivity.customComposablesInit() {
-    wtCommonData().customComposables["About"] = { mod, theme -> WTInfo(mod, theme) }
-    wtCommonData().customComposables["Help"] = { mod, theme -> WTHelp(mod, theme) }
+    wtHub.customComposables["About"] = { mod, theme -> WTInfo(mod, theme) }
+    wtHub.customComposables["Help"] = { mod, theme -> WTHelp(mod, theme) }
 }
-
-/*
-class S private constructor() {
-    private var _s: Int = 0
-    val s: Int
-        get() = _s
-
-    companion object {
-        val INSTANCE: S by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { S() }
-    }
-
-    fun inc() {
-        _s++
-    }
-
-    fun dec() {
-        _s--
-    }
-}
-*/

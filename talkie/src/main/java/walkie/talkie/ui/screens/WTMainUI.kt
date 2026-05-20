@@ -48,7 +48,7 @@ private val WTMainUITheme: WTUITheme = WTUITheme(
 val WTActivity.WTMenuUITheme: WTUITheme
     get() =
         WTUITheme(
-            topTitle = this.wtVModel().textInfoId,
+            topTitle = this.wtVModel.textInfoId,
             bottomTitle = ""
         )
 
@@ -56,7 +56,7 @@ val WTActivity.WTMenuUITheme: WTUITheme
 @Composable
 internal fun WTActivity.WTActivityMainUI(wtNavNode: WTNavNode? = null) {
     val tag = "WTActivityMain"
-    val mainVModel = this.wtVModel()
+    val mainVModel = this.wtVModel
     val switchScreen: Boolean by remember { derivedStateOf { mainVModel.switchScreen() } }
 
     logd(tag,"$tag: ${mainVModel.currentScreen()} nextScreen: ${mainVModel.nextScreen()} switchScreen: $switchScreen")

@@ -49,7 +49,7 @@ private val WTDebugUITheme: WTUITheme = WTUITheme(
 @Composable
 internal fun WTActivity.WTActivityDebugUI(wtNavNode: WTNavNode? = null) {
     val tag = "WTActivityDebugUI"
-    val mainVModel = this.wtVModel()
+    val mainVModel = this.wtVModel
     val switchScreen: Boolean by remember { derivedStateOf { mainVModel.switchScreen() } }
 
     logd(tag, "$tag Entry 0 triggerUpdate: ${mainVModel.triggerUIUpdate} switchScreen: $switchScreen")

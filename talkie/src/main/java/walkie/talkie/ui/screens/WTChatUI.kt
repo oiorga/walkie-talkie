@@ -56,7 +56,7 @@ import walkie.util.randomString
 val WTActivity.WTChatUITheme: WTUITheme
     get() =
         WTUITheme(
-            topTitle = this.wtVModel().chatDiscussionId?.groupName,
+            topTitle = this.wtVModel.chatDiscussionId?.groupName,
             bottomTitle = ""
         )
 
@@ -64,7 +64,7 @@ val WTActivity.WTChatUITheme: WTUITheme
 @Composable
 fun WTActivity.WTChat (wtNavNode: WTNavNode? = null) {
     val tag = "WTChat/${randomString(2U)}"
-    val chatVModel = this.wtVModel()
+    val chatVModel = this.wtVModel
     val navDest: WTNavigation = wtChatTypeToNavScreen(chatVModel.nextDiscussionId!!.type)
 
     logd(tag, "$tag Entry 0")

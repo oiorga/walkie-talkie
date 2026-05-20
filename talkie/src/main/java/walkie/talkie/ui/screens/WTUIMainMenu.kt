@@ -82,7 +82,7 @@ internal fun WTActivity.MenuItemInfo(
     val mod =
         if (null != onClick) modifier.clickable { onClick() }
         else modifier.clickable {
-            if (null !== wtCommonData().customComposables[entryId]) {
+            if (null !== wtHub.customComposables[entryId]) {
                 mainVModel.textInfoId = entryId
                 mainVModel.switchToScreen(WTNavigation.TextInfo)
             }
@@ -103,7 +103,7 @@ internal fun WTActivity.MenuItemInfo(
 @Composable
 internal fun WTActivity.MenuTextInfo() {
     val tag = "WTActivityMenuItem"
-    val mainVModel = this.wtVModel()
+    val mainVModel = this.wtVModel
 
     mainVModel.wtViewModelUpdate(WTNavigation.TextInfo)
 
@@ -121,6 +121,6 @@ internal fun WTActivity.MenuTextInfo() {
         bottomBar = { BottomBarUI(WTMenuUITheme) },
         containerColor = WTMenuUITheme.bgColor
     ) {
-        wtCommonData().customComposables[mainVModel.textInfoId]?.invoke(Modifier, WTUITheme())
+        wtHub.customComposables[mainVModel.textInfoId]?.invoke(Modifier, WTUITheme())
     }
 }
