@@ -77,8 +77,6 @@ class WTIPComm (
         localServerIpAddress = null
         /* serverPort = null */
         wtServer = null
-        ipOutQueue.qClear()
-        ipInQueue.qClear()
     }
 
     fun serverPort(port: Int? = null): Int? {
@@ -148,8 +146,6 @@ class WTIPComm (
                         if (null == localServerIpAddress) {
                             logd(tag,
                                 "localServerIpAddress became null. Closing server.")
-                            ipOutQueue.qClear()
-                            ipInQueue.qClear()
                             wtServer?.close()
                         }
                     }
@@ -343,7 +339,7 @@ suspend fun WTIPComm.wifiClient(
             logd(
                 TAGKClass,
                 tag,
-                "$count: main loop ipOutQueue before deQueue. Size: ${ioQueue.size}"
+                "$count: main loop ipOutQueue before deQueue"
             )
             val triple = ioQueue.dequeue()
             val ipAddress = triple?.first
@@ -356,7 +352,7 @@ suspend fun WTIPComm.wifiClient(
             logd(
                 TAGKClass,
                 tag,
-                "$count: main loop ipOutQueue after deQueue. Size: ${ioQueue.size}"
+                "$count: main loop ipOutQueue after deQueue"
             )
 
             if (null != ipAddress &&

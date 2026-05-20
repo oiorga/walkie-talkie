@@ -56,7 +56,6 @@ abstract class Mesh<K , V> (
         kToKTable.clear()
         kToVTable.clear()
         kAgeTable.clear()
-        inPeersQ.qClear()
         meshSemaphore.release()
         callBack(CallBackId.CBMeshResetPeers)
     }
@@ -239,7 +238,7 @@ abstract class Mesh<K , V> (
         }
 
         meshSemaphore.acquire()
-        while (inPeersQ.isNotEmpty()) {
+        while (!inPeersQ.isEmpty) {
             val pair = inPeersQ.dequeue() ?: continue
             val node = pair.first
 
@@ -283,18 +282,4 @@ abstract class Mesh<K , V> (
     fun directUnderlay (node: K): V? {
         return (kToVTable[node])
     }
-
-    /*
-    private fun directNode (node: K): K? {
-        return kToKTable[node]
-    }
-
-    private fun directNodes() : List<K> {
-        return kToKTable.keys.filterNotNull().filter { it != uniqueId }.toList()
-    }
-
-    private fun allNodes() : List<K> {
-        return kToKTable.keys.filterNotNull().toList()
-    }
-    */
 }
