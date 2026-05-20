@@ -5,7 +5,7 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.serialization.Serializable
-import walkie.util.TimedSemaphore
+import walkie.util.Gate
 import walkie.util.api.CallBackId
 import walkie.util.generic.BlockingQueue
 import walkie.util.generic.CallBack
@@ -36,7 +36,7 @@ abstract class Mesh<K , V> (
     val receivePeersS: ((K, MutableMap<K, V>) -> Unit)? = null
     private val meshSemaphore: Semaphore = Semaphore(1, 0)
     private var sendCall: (suspend (v: V, info: String) -> Unit)? = null
-    private val inPeersQSem: TimedSemaphore = TimedSemaphore(_heartbeat)
+    private val inPeersGate: Gate = Gate()
 
     fun heartBeat(value: Long = 0L): Long {
         if (0L != value) _heartbeat = value
@@ -131,7 +131,7 @@ abstract class Mesh<K , V> (
         _scope.launch {
             while (true) {
                 logd(TAGKClass, tag,"mainLoop: $count", logF).also { count++ }
-                inPeersQSem.acquire()
+                inPeersGate.await(_heartbeat)
                 processInPeers()
                 broadcastPeers()
             }
@@ -275,7 +275,7 @@ abstract class Mesh<K , V> (
         }
         if (bcastPeersNow){
             logd(tag, "Got new Peer.ers now Broadcasting peers now")
-            inPeersQSem.release()
+            inPeersGate.open()
         } 
         meshSemaphore.release()
     }
