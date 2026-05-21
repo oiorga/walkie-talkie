@@ -40,9 +40,10 @@ class WTCommonData private constructor (
 {
     companion object {
         val ONE: WTCommonData by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { WTCommonData() }
-        val initStage = arrayOf(false, false, false, false)
         const val TAG = "WTCommonData"
     }
+
+    val initStage = arrayOf(false, false, false, false)
 
     init {
         logging(true)

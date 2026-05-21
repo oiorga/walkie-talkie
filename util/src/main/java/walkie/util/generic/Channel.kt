@@ -111,4 +111,3 @@ class ChannelMux<T, K>() : ChannelMuxInt<T, K> {
     override val channelOnReceiveScope: CoroutineScope
         get() = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 }
-

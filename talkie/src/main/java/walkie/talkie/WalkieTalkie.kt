@@ -1,6 +1,8 @@
 package walkie.talkie
 
 import android.app.Application
+import android.content.Context
+import android.net.wifi.p2p.WifiP2pManager
 import android.provider.Settings
 import androidx.compose.foundation.lazy.LazyListState
 import kotlinx.coroutines.CoroutineScope
@@ -26,6 +28,8 @@ import walkie.util.generic.registerSenders
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
+import walkie.wifidirect.WTWiFiDirect
+import walkie.wifidirect.WiFiDirectBroadcastReceiver
 import kotlin.random.Random
 
 class WalkieTalkie:
@@ -49,6 +53,9 @@ class WalkieTalkie:
     override fun onCreate() {
         super.onCreate()
 
+        wtHubInit(stage = 0)
+        wtHubInit(stage = 1)
+        wtHubInit(stage = 2)
     }
 
     override fun onTerminate() {
@@ -68,89 +75,83 @@ class WalkieTalkie:
     }
 }
 
-/*
-internal fun WalkieTalkie.wtCommonDataInit(stage: Int) : WTCommonData {
-    val wtCommonData: WTCommonData = WTCommonData.ONE
-
+internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
     logd(tag,"WTActivity.wtCommDataInit called stage: $stage init")
 
     for (i in 0..<stage) {
-        if (!WTCommonData.initStage[i]) {
+        if (!wtHub.initStage[i]) {
             logd(
                 tag,
-                "WTActivity.wtCommDataInit called stage: $stage init before  stage: $i: ${WTCommonData.initStage[i]}?"
+                "WTActivity.wtCommDataInit called stage: $stage init before  stage: $i: ${wtHub.initStage[i]}?"
             )
-            return wtCommonData
+            return wtHub
         }
     }
 
-    if (WTCommonData.initStage[stage]) {
+    if (wtHub.initStage[stage]) {
         logd(
             tag,
             "WTActivity.wtCommDataInit stage: $stage already initialized?"
         )
-        return wtCommonData
+        return wtHub
     }
 
     when (stage) {
         0 -> {
             wtDebug(onOff = BuildConfig.DEBUG)
-            wtCommonData.wtDeviceName = Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME)
-            wtCommonData.wtSystemNodeId = NodeId(wtCommonData.wtDeviceName, randomString(4U))
-            wtCommonData.wtRuntime = CoroutineRuntime.Custom(
+            wtHub.wtDeviceName = Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME)
+            wtHub.wtSystemNodeId = NodeId(wtHub.wtDeviceName, randomString(4U))
+            wtHub.wtRuntime = CoroutineRuntime.Custom(
                 CoroutineRuntime.RunJob.Supervisor,
                 CoroutineRuntime.RunDispatcher.Main)
 
-            /* Move from Activity
-            customComposablesInit()
-            */
         }
 
         1 -> {
             wifiDInit()
-            wtCommonData.counterLive = CounterLive()
-            wtCommonData.updateUiLiveData = UpdateUiLiveData()
+            wtHub.counterLive = CounterLive()
+            wtHub.updateUiLiveData = UpdateUiLiveData()
 
-            wtCommonData.wtComm = WTComm(wtCommonData.wtSystemNodeId)
+            wtHub.wtComm = WTComm(wtHub.wtSystemNodeId)
 
-            wtCommonData.wtGlobalGroupMap = ChatGroupMap()
-            wtCommonData.wtGlobalDiscussionMap =
+            wtHub.wtGlobalGroupMap = ChatGroupMap()
+            wtHub.wtGlobalDiscussionMap =
                 DiscussionMap(
                     discussionMap = ChatDiscussionMap(),
-                    groupMap = wtCommonData.wtGlobalGroupMap,
-                    systemNode = wtCommonData.wtSystemNodeId)
-            wtCommonData.wtGlobalDiscussionMap.updateUiLiveData =
-                wtCommonData.updateUiLiveData
+                    groupMap = wtHub.wtGlobalGroupMap,
+                    systemNode = wtHub.wtSystemNodeId)
+            wtHub.wtGlobalDiscussionMap.updateUiLiveData =
+                wtHub.updateUiLiveData
 
-            wtCommonData.registerAsReceiver(
+            wtHub.registerAsReceiver(
                 ChannelId.RCTOCommonData,
-                wtCommonData.wtGlobalDiscussionMap,
-                wtCommonData.wtComm
+                wtHub.wtGlobalDiscussionMap,
+                wtHub.wtComm
             )
 
-            wtCommonData.wtComm.registerSenders(
+            wtHub.wtComm.registerSenders(
                 ChannelId.RCToComm,
-                wtCommonData.wtGlobalDiscussionMap,
-                wtCommonData.wtWifiD
+                wtHub.wtGlobalDiscussionMap,
+                wtHub.wtWifiD
             )
 
-            wtCommonData.wtGlobalDiscussionMap.registerSenders(
+            wtHub.wtGlobalDiscussionMap.registerSenders(
                 channelId = ChannelId.RCCommToChat,
-                wtCommonData.wtComm
+                wtHub.wtComm
             )
 
-            wtCommonData.wtWifiD.registerSenders(
+            wtHub.wtWifiD.registerSenders(
                 ChannelId.RCToWifi,
-                wtCommonData.wtBcastReceiver,
-                wtCommonData.wtComm,
-                wtCommonData.wtWifiD
+                wtHub.wtBcastReceiver,
+                wtHub.wtComm,
+                wtHub.wtWifiD
             )
 
             /* Move from Activity
             this.registerSenders(
                 channelId = ChannelId.RCToWTActivity,
-                wtCommonData.wtWifiD,
-                wtCommonData.wtComm.wtPRMComm()
+                wtHub.wtWifiD,
+                wtHub.wtComm.wtPRMComm()
             )
             */
         }
@@ -158,23 +159,23 @@ internal fun WalkieTalkie.wtCommonDataInit(stage: Int) : WTCommonData {
         2 -> {
             /*
             /* WTActivity capable devices/running this app */
-            wtCommonData.wtGlobalGroupMap[ChatGroupId(groupId = "WTActivity", groupName = "WTActivity", type = ChatGroupType.WTActivity)] =
+            wtHub.wtGlobalGroupMap[ChatGroupId(groupId = "WTActivity", groupName = "WTActivity", type = ChatGroupType.WTActivity)] =
                 ChatGroupList(ChatGroupId(groupId = "WTActivity", groupName = groupId, type = ChatGroupType.WTActivity), mutableListOf())
 
             /* Where all the unsolicited messages go to group */
-            wtCommonData.wtGlobalGroupMap[ChatGroupId("Bogus", ChatGroupType.Etc)] =
+            wtHub.wtGlobalGroupMap[ChatGroupId("Bogus", ChatGroupType.Etc)] =
                 ChatGroupList(ChatGroupId("Bogus", ChatGroupType.Etc), mutableListOf())
             */
 
             /* Peers List - testing */
-            wtCommonData.wtGlobalGroupMap[ChatGroupId(groupId = "WIFI Direct Info", groupName = "WIFI Direct Info", type = ChatGroupType.LocalDebug)] =
+            wtHub.wtGlobalGroupMap[ChatGroupId(groupId = "WIFI Direct Info", groupName = "WIFI Direct Info", type = ChatGroupType.LocalDebug)] =
                 ChatGroupList(ChatGroupId(groupId = "WIFI Direct Info", groupName = "WIFI Direct Info", ChatGroupType.LocalDebug), mutableListOf())
 
             /* WIFI Direct Initial Testing - testing */
-            wtCommonData.wtGlobalGroupMap[ChatGroupId(groupId = "WIFI Direct All", groupName = "WIFI Direct All", ChatGroupType.LocalDebug)] =
+            wtHub.wtGlobalGroupMap[ChatGroupId(groupId = "WIFI Direct All", groupName = "WIFI Direct All", ChatGroupType.LocalDebug)] =
                 ChatGroupList(ChatGroupId(groupId = "WIFI Direct All", groupName = "WIFI Direct All", type = ChatGroupType.LocalDebug), mutableListOf())
 
-            wtCommonData.wtGlobalGroupMap[ChatGroupId("Direct Peers", type = ChatGroupType.RemoteChatTesting)] =
+            wtHub.wtGlobalGroupMap[ChatGroupId("Direct Peers", type = ChatGroupType.RemoteChatTesting)] =
                 ChatGroupList(ChatGroupId("Direct Peers", type = ChatGroupType.RemoteChatTesting), mutableListOf())
 
             for (i in 0..17) {
@@ -184,7 +185,7 @@ internal fun WalkieTalkie.wtCommonDataInit(stage: Int) : WTCommonData {
                             2
                         )
                     }"
-                wtCommonData.wtGlobalGroupMap[ChatGroupId(groupId, type = ChatGroupType.LocalChatTesting)] =
+                wtHub.wtGlobalGroupMap[ChatGroupId(groupId, type = ChatGroupType.LocalChatTesting)] =
                     ChatGroupList(
                         ChatGroupId(groupId, type = ChatGroupType.LocalChatTesting),
                         mutableListOf()
@@ -200,22 +201,32 @@ internal fun WalkieTalkie.wtCommonDataInit(stage: Int) : WTCommonData {
                     length = 4,
                     count = 7
                 ).toList().forEach {
-                    wtCommonData.wtGlobalGroupMap[ChatGroupId(groupId = groupId, type = ChatGroupType.LocalChatTesting)]?.add(NodeId(it, ""))
+                    wtHub.wtGlobalGroupMap[ChatGroupId(groupId = groupId, type = ChatGroupType.LocalChatTesting)]?.add(NodeId(it, ""))
                 }
             }
 
-            wtCommonData.wtComm.start()
+            /* To do it properly
+
+            wtHub.wtComm.start() */
         }
         else -> {
             logd(
                 tag,
                 "WTActivity.wtCommDataInit stage: $stage out of range?"
             )
-            return wtCommonData
+            return wtHub
         }
     }
 
-    WTCommonData.initStage[stage] = true
-    return wtCommonData
+    wtHub.initStage[stage] = true
+    return wtHub
 }
-*/
+
+internal fun WalkieTalkie.wifiDInit() {
+    val manager: WifiP2pManager = getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager
+    wtHub.wtWifiD = WTWiFiDirect(manager)
+    wtHub.wtWifiD.nodeId(wtHub.wtSystemNodeId)
+    wtHub.wtWifiD.runtime(wtHub.wtRuntime)
+    wtHub.wtBcastReceiver = WiFiDirectBroadcastReceiver()
+}
+

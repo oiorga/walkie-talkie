@@ -22,13 +22,13 @@ import walkie.util.randomString
 
 enum class UIMessageAction {Send, Receive}
 
-class WTViewModelFactory(private val wtCommonData: WTCommonData) : ViewModelProvider.Factory {
+class WTViewModelFactory(private val wtHub: WTCommonData) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return WTViewModel(wtCommonData) as T
+        return WTViewModel(wtHub) as T
     }
 }
 
-class WTViewModel (private val wtCommonData: WTCommonData): ViewModel() {
+class WTViewModel (private val wtHub: WTCommonData): ViewModel() {
     companion object {
         const val TAG = "WTViewModel"
     }
@@ -87,9 +87,9 @@ class WTViewModel (private val wtCommonData: WTCommonData): ViewModel() {
     }
 
     fun lateInit() {
-        wtCommonData.wtVModel = this
-        _discussionMap = wtCommonData.wtGlobalDiscussionMap.discussionMap()
-        wtSystemNode = wtCommonData.wtSystemNodeId as NodeId
+        wtHub.wtVModel = this
+        _discussionMap = wtHub.wtGlobalDiscussionMap.discussionMap()
+        wtSystemNode = wtHub.wtSystemNodeId as NodeId
     }
 
     val triggerUIUpdate: Boolean
@@ -103,7 +103,7 @@ class WTViewModel (private val wtCommonData: WTCommonData): ViewModel() {
     }
     fun processMessage(message: ChatMessage, action: UIMessageAction) {
         if (UIMessageAction.Send == action) {
-            runBlocking { wtCommonData.sendChatMessage(message) }
+            runBlocking { wtHub.sendChatMessage(message) }
         }
     }
 
@@ -151,8 +151,8 @@ class WTViewModel (private val wtCommonData: WTCommonData): ViewModel() {
             WTNavigation.LocalDebugItem,
             WTNavigation.LocalDebugItem -> {
                 chatDiscussionId = nextDiscussionId
-                wtCommonData.wtCurrentDiscussionId = chatDiscussionId!!
-                chatDiscussion = wtCommonData.wtGlobalDiscussionMap.discussionMap()[chatDiscussionId]!!
+                wtHub.wtCurrentDiscussionId = chatDiscussionId!!
+                chatDiscussion = wtHub.wtGlobalDiscussionMap.discussionMap()[chatDiscussionId]!!
             }
             WTNavigation.WT -> { }
             WTNavigation.Main -> { }
@@ -169,8 +169,8 @@ class WTViewModel (private val wtCommonData: WTCommonData): ViewModel() {
         val tag = "onCleared/${randomString(2U)}"
         logd(tag, "$this:$tag onCleared()")
         viewModelScope.cancel()
-        if (wtCommonData.wtVModel === this) {
-            wtCommonData.wtVModel = null
+        if (wtHub.wtVModel === this) {
+            wtHub.wtVModel = null
         }
     }
 }
