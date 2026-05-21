@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import kotlinx.coroutines.CoroutineScope
 import walkie.chat.ChatGroupMap
 import walkie.comm.WTComm
 import walkie.util.generic.ChannelMux
@@ -66,7 +67,9 @@ class WTCommonData private constructor (
     lateinit var wtWifiD: WTWiFiDirect
     lateinit var wtBcastReceiver: WiFiDirectBroadcastReceiver
 
-    lateinit var wtRuntime: CoroutineRuntime
+    lateinit var wtRuntimee: CoroutineRuntime
+    lateinit var wtScope: CoroutineScope
+
     /* lateinit var wtLCObs: LifeCycleObserver */
 
     private var wtDebug: Boolean? = BuildConfig.DEBUG

@@ -1,5 +1,6 @@
 package  walkie.comm
 
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import walkie.talkie.api.wtcomm.WTMedium
@@ -7,6 +8,7 @@ import walkie.talkie.api.wtcomm.WTPeerInt
 import walkie.talkie.api.wtsystem.nodeUniqueId
 import walkie.talkie.api.wtsystem.uidToId
 import walkie.talkie.api.wtsystem.uidToUnique
+import walkie.util.CoroutineRuntime
 import walkie.util.`try`
 import walkie.util.logd
 import walkie.util.logging
@@ -48,7 +50,7 @@ fun WTCommPeerInfo.uid(): String {
     return nodeUniqueId(id, unique!!)
 }
 
-class WTIPMesh(uniqueId: String) : Mesh<String, WTCommPeerInfo>(uniqueId) {
+class WTIPMesh(uniqueId: String, scope: CoroutineScope) : Mesh<String, WTCommPeerInfo>(uniqueId, scope) {
     companion object {
         const val TAG = "WTIPMesh"
         val TAGKClass = WTIPMesh::class

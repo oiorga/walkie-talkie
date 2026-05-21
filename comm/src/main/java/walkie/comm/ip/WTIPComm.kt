@@ -13,6 +13,7 @@ import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
+import walkie.util.CoroutineRuntime
 import walkie.util.TCPClient
 import walkie.util.TCPServer
 import walkie.util.api.CallBackId
@@ -44,6 +45,7 @@ class WTIPCommStatic private constructor() {
 
 class WTIPComm (
     private val node: NodeIdInt,
+    val scope: CoroutineScope,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
     private val _callBackList: CallBackInt<Any, Any> = CallBack()
     /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>() */
@@ -233,7 +235,7 @@ suspend fun WTIPComm.wifiServer(localIp: InetAddress? = null,
     serverPort(WTIPComm.SERVERPORT + Random.nextInt(99))
     callBack(CallBackId.CBServerPort, serverPort())
 
-    launch(Dispatchers.Default) {
+    scope.launch(Dispatchers.Default) {
         var count: Long = 0
         while (isActive) {
             count++
@@ -270,7 +272,8 @@ suspend fun WTIPComm.wifiServer(localIp: InetAddress? = null,
             wtServer = TCPServer(
                 ipAddress = ipZero,
                 port = serverPort(),
-                soTimeout = 1000
+                soTimeout = 1000,
+                this
             ) { _, _ ->
                 logd(
                     TAGKClass,
@@ -293,7 +296,8 @@ suspend fun WTIPComm.wifiServer(localIp: InetAddress? = null,
             wtServer = TCPServer(
                 ipAddress = serverIp,
                 port = serverPort(),
-                soTimeout = 0
+                soTimeout = 0,
+                this
             ) { client, input ->
                 logd(
                     TAGKClass,
@@ -345,7 +349,7 @@ suspend fun WTIPComm.wifiClient(
             val ipAddress = triple?.first
             val serverPort = triple?.second
             val byteArray = triple?.third
-            var logF: Boolean = true
+            val logF: Boolean = true
 
             //wtTry(TAGKClass, tag) { logF = ((byteArray?.decodeToString()?.let { Json.decodeFromString<WTIPPacketComm>(it) })?.ipCommType == WTIPCommPacketType.ControlMesh) }
 
@@ -364,7 +368,7 @@ suspend fun WTIPComm.wifiClient(
                     tag,
                     "$count: Creating Client Socket to: $ipAddress:$serverPort ${byteArray.decodeToString()}"
                 )
-                val client = TCPClient(ipAddress, serverPort)
+                val client = TCPClient(ipAddress, serverPort, this)
                 if (client.init(timeOut = 10000)) {
                     logd(
                         TAGKClass,
@@ -406,7 +410,7 @@ suspend fun WTIPComm.wifiClient(
 }
 
 fun WTIPComm.wtIPCommMain(scope: CoroutineScope): Job {
-    return scope.launch {
+    return scope.launch(Dispatchers.IO) {
         launch { wifiServer() }
         launch { wifiClient() }
     }

@@ -14,6 +14,7 @@ import walkie.talkie.api.wtcomm.WTCommChatMessageOut
 import walkie.talkie.api.wtcomm.WTCommPacketIn
 import walkie.talkie.api.wtcomm.WTCommPacketOut
 import walkie.talkie.api.wtsystem.NodeIdInt
+import walkie.util.CoroutineRuntime
 import walkie.util.api.CallBackId
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
@@ -24,6 +25,7 @@ import walkie.util.randomString
 
 class WTComm (
     private val nodeId: NodeIdInt,
+    private val scope: CoroutineScope,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
     /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>(), */
 ) : ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
@@ -33,7 +35,7 @@ class WTComm (
     WTCommPacketOut,
     WTCommPacketIn
 {
-    private val wtPRMComm: WTPRMComm = WTPRMComm(nodeId)
+    private val wtPRMComm: WTPRMComm = WTPRMComm(nodeId, scope)
 
     companion object {
         const val TAG = "WTComm"
@@ -71,7 +73,7 @@ class WTComm (
         logd("Init Entry")
 
         this.registerReceiver(ChannelId.RCToPRMComm, wtPRMComm)
-        wtPRMComm.wtIPComm().registerReceiver(ChannelId.RCToComm, this)
+        wtPRMComm.wtIPComm.registerReceiver(ChannelId.RCToComm, this)
 
         wtPRMComm.registerCallBack(CallBackId.CBMeshNewPeer) { _ ->
             channelSend(ChannelId.RCTOCommonData, ChannelMessageType.RCUpdatePeersUI)
@@ -84,7 +86,7 @@ class WTComm (
     }
 
     fun start() {
-        wtPRMComm().wtIPComm().wtIPCommMain(CoroutineScope(Dispatchers.IO))
+        wtPRMComm().wtIPComm.wtIPCommMain(scope)
     }
 
     private suspend fun chatMessageLoopback(commPacket: CommPacketInt) {

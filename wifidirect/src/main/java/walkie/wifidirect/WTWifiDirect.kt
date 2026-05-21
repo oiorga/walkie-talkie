@@ -11,6 +11,7 @@ import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.net.wifi.p2p.WifiP2pManager.Channel
+import kotlinx.coroutines.CoroutineScope
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.Job
 import walkie.util.generic.ChannelMux
@@ -35,11 +36,9 @@ import kotlin.random.Random
 
 class WTWiFiDirect(
     val manager: WifiP2pManager,
-    /*
-    var channel: Channel,
-    val node: NodeIdInt,
-    val runtime: CoroutineRuntime,
-    */
+    val nodeId: NodeIdInt,
+    val scope: CoroutineScope,
+    var channel: WifiP2pManager.Channel? = null,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
 ) :
@@ -56,19 +55,8 @@ class WTWiFiDirect(
         val TAGKClass = WTWiFiDirect::class
     }
 
-    lateinit var nodeId: NodeIdInt
-    fun nodeId(nodeId: NodeIdInt) {
-        this.nodeId = nodeId
-    }
-
-    lateinit var channel: Channel
-    fun channel(channel: Channel) {
+    fun attachChannel(channel: Channel) {
         this.channel = channel
-    }
-
-    lateinit var runtime: CoroutineRuntime
-    fun runtime(runtime: CoroutineRuntime) {
-        this.runtime = runtime
     }
 
     private val errToString = mapOf(
@@ -413,7 +401,7 @@ class WTWiFiDirect(
 
         if (checkWifiDPermission()) {
             device = awaitP2pRequest<WifiP2pDevice?> { callback ->
-                manager.requestDeviceInfo(channel) { device ->
+                manager.requestDeviceInfo(channel!!) { device ->
                     callback(device)
                 }
             }

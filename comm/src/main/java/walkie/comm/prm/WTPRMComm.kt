@@ -1,5 +1,6 @@
 package walkie.comm.prm
 
+import kotlinx.coroutines.CoroutineScope
 import walkie.comm.WTCommPeerInfo
 import walkie.comm.WTIPMesh
 import walkie.comm.ip.WTIPComm
@@ -10,6 +11,7 @@ import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.WTMedium
 import walkie.talkie.api.wtsystem.NodeIdInt
+import walkie.util.CoroutineRuntime
 import walkie.util.api.CallBackId
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
@@ -23,20 +25,9 @@ import walkie.util.mesh.Mesh
 import walkie.util.randomString
 import java.net.InetAddress
 
-/* Ugly. To revisit. To prevent coroutines to restart at onCreate on screen rotation
-class WTPRMCommStatic private constructor() {
-    companion object {
-        val INSTANCE: WTPRMCommStatic by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { WTPRMCommStatic() }
-    }
-
-    var count: Int = 0
-    var wifiControlS: Boolean = false
-    var buildMesh: Boolean = false
-}
-*/
-
 class WTPRMComm (
     private val node: NodeIdInt,
+    private val scope: CoroutineScope,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
     private val _callBackList: CallBackInt<Any, Any> = CallBack()
     /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>() */
@@ -47,24 +38,14 @@ class WTPRMComm (
     CallBackInt<Any, Any> by _callBackList
 /* WTCallBackInt<Any, Any> by _callBackList */
 {
-    private val wtIPComm: WTIPComm = WTIPComm(node)
-
-    private val wtMesh: Mesh<String, WTCommPeerInfo> = WTIPMesh(node.uid())
+    val wtIPComm: WTIPComm = WTIPComm(node, scope)
+    private val wtMesh: Mesh<String, WTCommPeerInfo> = WTIPMesh(node.uid(), scope)
     private val directNodes: MutableList<String> = mutableListOf()
-
     private var groupInfoCache: Pair<String, String>? = null
 
     companion object {
         const val TAG = "WTPRMComm"
         val TAGKClass = WTPRMComm::class
-    }
-
-    fun wtIPComm() : WTIPComm {
-        return wtIPComm
-    }
-
-    fun wtMesh() : Mesh<String, WTCommPeerInfo> {
-        return wtMesh
     }
 
     fun directUnderlay (node: String): WTCommPeerInfo? {
@@ -76,7 +57,6 @@ class WTPRMComm (
 
         this.registerReceiver(ChannelId.RCToIpComm, wtIPComm)
         wtIPComm.registerReceiver(ChannelId.RCToPRMComm, this)
-
         wtMesh.registerSend { destPeer, jSon ->
             val tag = "wtMeshPRMSend/${randomString(2U)}"
             val dest = destPeer.umCI
@@ -192,7 +172,7 @@ class WTPRMComm (
                                     node.id(),
                                     node.unique,
                                     WTMedium.WifiIp,
-                                    umCI = listOf(localIpAddress.toString(), wtIPComm().serverPort()!!.toString()),
+                                    umCI = listOf(localIpAddress.toString(), wtIPComm.serverPort()!!.toString()),
                                     //true
                                 )
                             )

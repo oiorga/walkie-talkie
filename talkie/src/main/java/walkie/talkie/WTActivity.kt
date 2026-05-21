@@ -137,6 +137,9 @@ class WTActivity(
     val wtComm: WTComm
         get() = wtHub.wtComm
 
+    val wtScope: CoroutineScope
+        get() = wtHub.wtScope
+
     override fun wtDebug (onOff: Boolean?): Boolean {
         return wtHub.wtDebug(onOff)
     }
@@ -189,10 +192,10 @@ class WTActivity(
     }
 
     private fun kill() {
-        lifecycleScope.launch() {
+        wtScope.launch() {
             withContext(NonCancellable) {
                 wifiCleanUp()
-                wtHub.wtRuntime.cancel()
+                wtScope.cancel()
                 finishAffinity()
                 finishAndRemoveTask()
                 exitProcess(0)
@@ -331,7 +334,7 @@ class WTActivity(
                     ChannelMessageType.RCWifiRestartChannel -> {
                         logd(tag, "RCWifiRestartChannel")
                         wifiDRestartChannel()
-                        wtHub.wtComm.wtPRMComm().wtIPComm().stop()
+                        wtHub.wtComm.wtPRMComm().wtIPComm.stop()
                     }
 
                     else -> {
@@ -352,13 +355,12 @@ internal fun WTActivity.wifiInitChannel() {
     logd(tag, "Entry")
 
     val manager = wtHub.wtWifiD.manager
-
     val channel: WifiP2pManager.Channel? =
         manager.initialize(this.applicationContext, mainLooper, null)
     logd(tag, "Requested new channel ${channel.toString()}")
 
     channel?.also {
-        wtHub.wtWifiD.channel(it)
+        wtHub.wtWifiD.attachChannel(it)
     }
 }
 
@@ -460,7 +462,7 @@ internal fun WTActivity.wtCustomInit(){
     /* To move to App init section */
     wtHub.wtComm.start()
 
-    commSquirrelWheel(scope = wtHub.wtRuntime.scope(), delay = 6000L, addRandom = 5L)
+    commSquirrelWheel(scope = wtScope, delay = 6000L, addRandom = 5L)
 }
 
 fun WTActivity.customComposablesInit() {

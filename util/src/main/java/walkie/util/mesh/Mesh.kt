@@ -1,7 +1,6 @@
 package walkie.util.mesh
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.serialization.Serializable
@@ -16,8 +15,8 @@ import walkie.util.randomString
 
 abstract class Mesh<K , V> (
     private var uniqueId: K,
-    private var _heartbeat: Long = 3000L,
-    private var _scope: CoroutineScope = MainScope(),
+    private var scope: CoroutineScope,
+    private var heartbeat: Long = 3000L,
     private val _callBackList: CallBackInt<Any, Any> = CallBack()
 ) : CallBackInt<Any, Any> by _callBackList
 {
@@ -39,13 +38,8 @@ abstract class Mesh<K , V> (
     private val inPeersGate: Gate = Gate()
 
     fun heartBeat(value: Long = 0L): Long {
-        if (0L != value) _heartbeat = value
-        return _heartbeat
-    }
-
-    fun scope(scope: CoroutineScope? = null): CoroutineScope {
-        if (null != scope) _scope = scope
-        return _scope
+        if (0L != value) heartbeat = value
+        return heartbeat
     }
 
     suspend fun resetPeersInfo() {
@@ -70,15 +64,7 @@ abstract class Mesh<K , V> (
         logd(tag, "Init Exit")
     }
 
-    /*
-    override suspend fun channelOnReceive(channelId: walkie.glue_inc.ChannelIdInt, inputType: walkie.glue_inc.ChannelMessageInt?, input: Any?) {
-        val tag = "channelOnReceive/${randomString(2u)}"
-        logd(tag, "channelId: $channelId inputType: $inputType")
-    }
-    */
-
     abstract fun decodeFromString(input: String): Pair<K?, MutableMap<K?, V>>?
-
     suspend fun addPeersJson(jsonString: String) {
         val tag = "addPeersJson/${randomString(2u)}"
 
@@ -127,10 +113,10 @@ abstract class Mesh<K , V> (
         val logF = false
         var count: Long = 0
 
-        _scope.launch {
+        scope.launch() {
             while (true) {
                 logd(TAGKClass, tag,"mainLoop: $count", logF).also { count++ }
-                inPeersGate.await(_heartbeat)
+                inPeersGate.await(heartbeat)
                 processInPeers()
                 broadcastPeers()
             }

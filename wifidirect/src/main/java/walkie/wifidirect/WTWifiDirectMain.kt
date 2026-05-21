@@ -868,7 +868,7 @@ suspend fun WTWiFiDirect.stopPeerDiscovery() {
     when (val res = awaitP2pAction { listener ->
         /* manager.stopPeerDiscovery( */
         manager.stopListening(
-            channel,
+            channel!!,
             listener)
     }) {
         is CallbackResult.Success -> {
@@ -1052,7 +1052,7 @@ fun WTWiFiDirect.wtWifiDirectMain(scanInterval: Long = 1000L) {
 
     logd(tag, "wtWifiDirectMain Entry 1")
 
-    scanPeersJob = runtime.launch {
+    scanPeersJob = scope.launch {
         logd(TAGKClass, tag, "wtWifiDirectMain Starting Peers Scanning")
         scanPeers(scanInterval)
     }
@@ -1091,7 +1091,7 @@ suspend fun WTWiFiDirect.wtWifiDirectStop(delay: Long = 1000L) {
     delay(delay/divider)
     clearAllServices()
 
-    channel.close()
+    channel?.close()
 
     logd(tag, "resetData")
     resetData()

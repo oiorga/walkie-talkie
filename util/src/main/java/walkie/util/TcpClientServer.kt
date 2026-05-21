@@ -24,7 +24,7 @@ class TCPServer (
     private val ipAddress: InetAddress? = null,
     private var port: Int? = null,
     private val soTimeout: Int = 0,
-    private val context: CoroutineDispatcher = Dispatchers.IO,
+    private val scope: CoroutineScope,
     private val callBackLoop: (suspend (client: Socket, input : Any) -> Boolean)? = null
 ) {
     companion object {
@@ -36,6 +36,7 @@ class TCPServer (
     private lateinit var server: ServerSocket
     private val sem: Semaphore = Semaphore(1, 1)
     private lateinit var serverJob: Job
+    private val dispatcher = Dispatchers.IO
 
     private fun isClosed(): Boolean {
         return server.isClosed
@@ -53,25 +54,15 @@ class TCPServer (
         init()
     }
 
-    val serverPort = {
-        server.localPort
-    }
-
-    fun restart() {
-        sem.release()
-    }
-
     fun stop() {
         val tag = "stop/${randomString(2u)}"
         logd(tag, "Stop Server")
         server.close()
-        //serverJob.cancel()
     }
 
     fun close() {
         val tag = "close/${randomString(2u)}"
         logd(tag, "Close Server")
-        //if (!isClosed) server.close()
         server.close()
     }
 
@@ -88,7 +79,7 @@ class TCPServer (
     private fun init() {
         val tag = "init/${randomString(2u)}"
 
-        serverJob = CoroutineScope(context).launch {
+        serverJob = scope.launch(dispatcher) {
             try {
                 socketAddress = InetSocketAddress(ipAddress!!, port!!)
                 server = ServerSocket()
@@ -197,7 +188,7 @@ class TCPServer (
 class TCPClient (
     private val serverIpAddress: InetAddress,
     private val serverPort: Int,
-    private val context: CoroutineDispatcher = Dispatchers.IO
+    private val scope: CoroutineScope
 ) {
     companion object {
         const val TAG = "TCPClient"
@@ -209,31 +200,10 @@ class TCPClient (
     private lateinit var clientJob: Job
     private var timedOut = false
 
+    private val dispatcher = Dispatchers.IO
+
     fun timedOut(): Boolean {
         return timedOut
-    }
-
-    data class Builder(
-        private var serverIpAddress: InetAddress,
-        private var serverPort: Int = 9999,
-        private var context: CoroutineDispatcher = Dispatchers.IO
-    ) {
-        fun serverIpAddress(serverIpAddress: InetAddress) = apply {
-            this.serverIpAddress = serverIpAddress
-        }
-        fun serverPort(serverPort: Int = 9999) = apply {
-            this.serverPort = serverPort
-        }
-        fun context(context: CoroutineDispatcher = Dispatchers.IO) = apply {
-            this.context = context
-        }
-        suspend fun build() {
-            TCPClient(
-                serverIpAddress = this.serverIpAddress,
-                serverPort = this.serverPort,
-                context = this.context
-            ).init()
-        }
     }
 
     val init
@@ -257,7 +227,7 @@ class TCPClient (
         logd(TAGKClass, tag, "Entry: init: $_init timeOut: $timeOut")
 
         if (!_init) {
-            clientJob = CoroutineScope(context).launch {
+            clientJob = scope.launch(dispatcher) {
                 try {
                     logd(TAGKClass, tag, "Creating Socket: $_init")
                     client = Socket(serverIpAddress, serverPort)
@@ -304,7 +274,7 @@ class TCPClient (
                 if (timeOut > 0) timeOutS.release()
                 bSem.release()
             }
-            val timeOutJob = if (0 == timeOut) null else CoroutineScope(context).launch {
+            val timeOutJob = if (0 == timeOut) null else scope.launch(dispatcher) {
                 logd(TAGKClass, tag, "(0)Client timeOutJob entry")
                 delay(timeOut.toLong())
                 logd(TAGKClass, tag, "(1)Client timeOutJob")
@@ -323,7 +293,7 @@ class TCPClient (
             bSem.acquire()
             if (timedOut) {
                 _init = false
-                withContext(context) {
+                withContext(Dispatchers.IO) {
                     client?.close()
                 }
                 client = null
@@ -355,9 +325,9 @@ class TCPClient (
 
         logd(TAGKClass, tag, "(-1)Client Send Entry: init: $_init")
         if (_init && (null != client)) {
-            clientJob = CoroutineScope(context).launch {
+            clientJob = scope.launch(dispatcher) {
                 try {
-                    withContext(context) {
+                    withContext(dispatcher) {
                         client?.outputStream?.write(toSend)
                         client?.outputStream?.flush()
                         tSend = true
@@ -397,7 +367,7 @@ class TCPClient (
                 if (timeOut > 0) timeOutS.release()
                 bSem.release()
             }
-            val timeOutJob = if (0 == timeOut) null else CoroutineScope(context).launch {
+            val timeOutJob = if (0 == timeOut) null else scope.launch(dispatcher) {
                 logd(TAGKClass, tag, "(0)Client timeOutJob entry")
                 delay(timeOut.toLong())
                 logd(TAGKClass, tag, "(1)Client timeOutJob TIMEOUT after $timeOut millis")

@@ -101,10 +101,10 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
             wtDebug(onOff = BuildConfig.DEBUG)
             wtHub.wtDeviceName = Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME)
             wtHub.wtSystemNodeId = NodeId(wtHub.wtDeviceName, randomString(4U))
-            wtHub.wtRuntime = CoroutineRuntime.Custom(
+            wtHub.wtRuntimee = CoroutineRuntime.Custom(
                 CoroutineRuntime.RunJob.Supervisor,
                 CoroutineRuntime.RunDispatcher.Main)
-
+            wtHub.wtScope = wtHub.wtRuntimee.scope
         }
 
         1 -> {
@@ -112,7 +112,7 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
             wtHub.counterLive = CounterLive()
             wtHub.updateUiLiveData = UpdateUiLiveData()
 
-            wtHub.wtComm = WTComm(wtHub.wtSystemNodeId)
+            wtHub.wtComm = WTComm(wtHub.wtSystemNodeId, wtHub.wtScope)
 
             wtHub.wtGlobalGroupMap = ChatGroupMap()
             wtHub.wtGlobalDiscussionMap =
@@ -224,9 +224,7 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
 
 internal fun WalkieTalkie.wifiDInit() {
     val manager: WifiP2pManager = getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager
-    wtHub.wtWifiD = WTWiFiDirect(manager)
-    wtHub.wtWifiD.nodeId(wtHub.wtSystemNodeId)
-    wtHub.wtWifiD.runtime(wtHub.wtRuntime)
+    wtHub.wtWifiD = WTWiFiDirect(manager, wtHub.wtSystemNodeId, wtHub.wtScope)
     wtHub.wtBcastReceiver = WiFiDirectBroadcastReceiver()
 }
 
