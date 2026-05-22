@@ -333,7 +333,7 @@ class WTActivity(
 
                     ChannelMessageType.RCWifiRestartChannel -> {
                         logd(tag, "RCWifiRestartChannel")
-                        wifiDRestartChannel()
+                        wifiRestartChannel()
                         wtHub.wtComm.wtPRMComm().wtIPComm.stop()
                     }
 
@@ -385,8 +385,8 @@ internal fun WTActivity.wifiBindReceiver() {
     }
 }
 
-internal fun WTActivity.wifiDRestartChannel() {
-    val tag = "wifiDRestartChannel/${randomString(2u)}"
+internal fun WTActivity.wifiRestartChannel() {
+    val tag = "wifiRestartChannel/${randomString(2u)}"
 
     logd(tag, "Entry")
 

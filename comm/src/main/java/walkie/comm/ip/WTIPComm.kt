@@ -304,7 +304,7 @@ suspend fun WTIPComm.wifiServer(localIp: InetAddress? = null,
                     tag,
                     "$count: mainLoop serverIp(normal): $serverIp / ${this@wifiServer.localServerIpAddress}"
                 ).also { count++ }
-                wifiServerCallback(client, input as Scanner)
+                wifiServerCallback(client, input)
                 count++
                 return@TCPServer (null != this@wifiServer.localServerIpAddress)
             }
@@ -346,9 +346,9 @@ suspend fun WTIPComm.wifiClient(
                 "$count: main loop ipOutQueue before deQueue"
             )
             val triple = ioQueue.dequeue()
-            val ipAddress = triple?.first
-            val serverPort = triple?.second
-            val byteArray = triple?.third
+            val ipAddress = triple.first
+            val serverPort = triple.second
+            val byteArray = triple.third
             val logF: Boolean = true
 
             //wtTry(TAGKClass, tag) { logF = ((byteArray?.decodeToString()?.let { Json.decodeFromString<WTIPPacketComm>(it) })?.ipCommType == WTIPCommPacketType.ControlMesh) }
@@ -380,7 +380,7 @@ suspend fun WTIPComm.wifiClient(
                     logd(
                         TAGKClass,
                         tag,
-                        "$count: DONE Sending Remote to: $ipAddress:$serverPort. TimedOut: ${client.timedOut()}"
+                        "$count: DONE Sending Remote to: $ipAddress:$serverPort. TimedOut: ${client.timedOut}"
                     )
                 } else {
                     logd(
@@ -395,9 +395,9 @@ suspend fun WTIPComm.wifiClient(
             /***************************/
         } catch (e: Exception) {
             val triple = ioQueue.dequeue()
-            val ipAddress = triple?.first
-            val serverPort = triple?.second
-            val byteArray = triple?.third
+            val ipAddress = triple.first
+            val serverPort = triple.second
+            val byteArray = triple.third
 
             logd(TAGKClass, tag,
                 "$count: Main loop: Got Exception when sending to: " +

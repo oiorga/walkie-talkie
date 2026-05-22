@@ -1,13 +1,14 @@
 package walkie.util
 
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.net.BindException
 import java.net.ConnectException
 import java.net.InetAddress
@@ -25,22 +26,22 @@ class TCPServer (
     private var port: Int? = null,
     private val soTimeout: Int = 0,
     private val scope: CoroutineScope,
-    private val callBackLoop: (suspend (client: Socket, input : Any) -> Boolean)? = null
+    private val callBackLoop: (suspend (client: Socket, input : Scanner) -> Boolean)? = null
 ) {
     companion object {
         const val TAG = "TCPServer"
         val TAGKClass = TCPServer::class
+        private const val RECOVERY_DELAY = 1000L
     }
 
     private lateinit var socketAddress: SocketAddress
     private lateinit var server: ServerSocket
-    private val sem: Semaphore = Semaphore(1, 1)
     private lateinit var serverJob: Job
     private val dispatcher = Dispatchers.IO
 
-    private fun isClosed(): Boolean {
-        return server.isClosed
-    }
+    val isClosed: Boolean
+        get() = server.isClosed
+
 
     init {
         val tag = "$TAG[init/${randomString(2u)}]"
@@ -73,7 +74,7 @@ class TCPServer (
             TAGKClass,
             tag,
             "wait")
-        sem.acquire()
+        serverJob.join()
     }
 
     private fun init() {
@@ -87,86 +88,82 @@ class TCPServer (
                 logd(
                     TAGKClass,
                     tag,
-                    "Binding socket: isClosed: ${isClosed()} to $ipAddress")
+                    "Binding socket: isClosed: $isClosed to $ipAddress")
                 server.bind(socketAddress)
             } catch (e: BindException) {
                 logd(
                     TAGKClass,
                     tag,
-                    "BindException creating server socket: isClosed: ${isClosed()}" +
+                    "BindException creating server socket: isClosed: $isClosed" +
                             "\n${exceptionToString(e)}"
                 )
 
                 /*
                  * Group may get reset and the IP address become NULL.
-                 * Wait for th message to come up from WifiDirect, as the
+                 * Wait for the message to come up from WifiDirect, as the
                  * Android IP stack may react faster and give here an exception
                  * Don't throw nothing.
                  */
-                delay(1000L)
-                sem.release()
+                delay(RECOVERY_DELAY)
                 /* throw (e) */
             } catch (e: SocketException) {
                 logd(
                     TAGKClass,
                     tag,
-                    "SocketException creating server socket: isClosed: ${isClosed()}" +
+                    "SocketException creating server socket: isClosed: $isClosed" +
                             "\n${exceptionToString(e)}"
                 )
-                delay(1000L)
-                sem.release()
+                delay(RECOVERY_DELAY)
                 /* throw (e) */
             } catch (e: Exception) {
                 logd(
                     TAGKClass,
                     tag,
-                    "Exception creating server socket: isClosed: ${isClosed()}" +
+                    "Exception creating server socket: isClosed: $isClosed" +
                             "\n${exceptionToString(e)}"
                 )
-                delay(1000L)
-                sem.release()
+                delay(RECOVERY_DELAY)
                 throw (e)
             }
-            while (true) {
+            while (scope.isActive && !isClosed) {
                 try {
-                    while (!isClosed()) {
-                        logd(
-                            TAGKClass,
-                            tag,
-                            "Server Main Loop($ipAddress): Waiting for input")
-                        val client = server.accept()
-                        logd(
-                            TAGKClass,
-                            tag,
-                            "Server Main Loop($ipAddress): GOT input")
-                        val scanner = Scanner(client.inputStream)
-                        if (null == callBackLoop) {
-                            delay(1000L)
-                            logd(tag, "callBackLoop is null")
-                            throw(NotImplementedError("$tag callBackLoop is null"))
-                        }
-                        if (!callBackLoop.invoke(client, scanner)) break
+                    logd(
+                        TAGKClass,
+                        tag,
+                        "Server Main Loop($ipAddress): Waiting for input"
+                    )
+                    val client = server.accept()
+                    logd(
+                        TAGKClass,
+                        tag,
+                        "Server Main Loop($ipAddress): GOT input"
+                    )
+                    val scanner = Scanner(client.inputStream)
+                    if (null == callBackLoop) {
+                        delay(RECOVERY_DELAY)
+                        logd(tag, "callBackLoop is null")
+                        throw (NotImplementedError("$tag callBackLoop is null"))
                     }
+                    if (!callBackLoop.invoke(client, scanner)) break
                 } catch (e: SocketException) {
                     logd(
                         TAGKClass,
                         tag,
                         "Server Main Loop:\n SocketException" +
-                                "\n${exceptionToString(e)}")
+                                "\n${exceptionToString(e)}"
+                    )
                     close()
-                    delay(1000L)
-                    sem.release()
+                    delay(RECOVERY_DELAY)
                     break
                     /* throw(e) */
-                }  catch (e: SocketTimeoutException) {
+                } catch (e: SocketTimeoutException) {
                     logd(
                         TAGKClass,
                         tag,
                         "Server Main Loop:\n SocketTimeoutException" +
                                 "\n${exceptionToString(e)}")
                     close()
-                    delay(1000L)
-                    sem.release()
+                    delay(RECOVERY_DELAY)
                     break
                     /* throw(e) */
                 } catch (e: Exception) {
@@ -176,8 +173,7 @@ class TCPServer (
                         "Server Main Loop:\n Exception" +
                                 "\n${exceptionToString(e)}")
                     close()
-                    delay(1000L)
-                    sem.release()
+                    delay(RECOVERY_DELAY)
                     throw(e)
                 }
             }
@@ -186,6 +182,170 @@ class TCPServer (
 }
 
 class TCPClient (
+    private val serverIpAddress: InetAddress,
+    private val serverPort: Int,
+    private val scope: CoroutineScope
+) {
+    companion object {
+        const val TAG = "TCPClient"
+        val TAGKClass = TCPClient::class
+
+    }
+
+    private val dispatcher = Dispatchers.IO
+    private var client: Socket? = null
+
+    val init get() = (client != null)
+
+    var timedOut: Boolean = false
+        private set
+
+    init {
+        logging(true)
+    }
+
+    private suspend fun createSocket(timeOut: Int): Socket? = withContext(dispatcher) {
+        val tag = "createSocket/${randomString(2u)}"
+
+        try {
+            logd(TAGKClass, tag, "Creating Socket")
+            val socket = Socket()
+            socket.connect(
+                InetSocketAddress(serverIpAddress, serverPort),
+                timeOut
+            )
+            logd(TAGKClass, tag, "Creating Socket DONE")
+            socket
+        } catch (e: ConnectException) {
+            logd(
+                TAGKClass,
+                tag,
+                "Client ConnectException while creating client socket: " +
+                        "\n${exceptionToString(e)}"
+            )
+            /* throw(e) */
+            null
+        } catch (e: NoRouteToHostException) {
+            logd(
+                TAGKClass,
+                tag,
+                "Client NoRouteToHostException while creating client socket: " +
+                        "\n${exceptionToString(e)}"
+            )
+            /* throw(e) */
+            null
+        } catch (e: Exception) {
+            logd(
+                TAGKClass,
+                tag,
+                "Client Exception while creating client socket: " +
+                        "\n${exceptionToString(e)}"
+            )
+            null
+            //throw (e)
+        }
+    }
+
+    suspend fun init(timeOut: Int = 0): Boolean {
+        val tag = "init/${randomString(2u)}"
+
+        logd(TAGKClass, tag, "Entry: init: $init timeOut: $timeOut")
+
+        if (init) return true
+
+        client = if (timeOut > 0) {
+            val res = withTimeoutOrNull(timeOut.toLong()) {
+                createSocket(timeOut)
+            } ?: run {
+                null
+            }
+            timedOut = (null == res)
+            res
+        } else {
+            timedOut = false
+            createSocket(timeOut)
+        }
+
+        logd(TAGKClass, tag, "Exit: init: $init ${client != null}")
+
+        return init
+    }
+
+    private suspend fun sendData(toSend: ByteArray): Boolean = withContext(dispatcher) {
+        val tag = "sendData/${randomString(2u)}"
+
+        try {
+            val socket = client ?: return@withContext false
+            socket.outputStream?.write(toSend)
+            socket.outputStream?.flush()
+            true
+        } catch (e: SocketException) {
+            logd(
+                TAGKClass,
+                tag,
+                "Client SocketException while sending: $toSend" +
+                        "\n${exceptionToString(e)}"
+            )
+            false
+            /* throw(e) */
+        } catch (e: Exception) {
+            logd(
+                TAGKClass,
+                tag,
+                "Client Exception while sending: $toSend" +
+                        "\n${exceptionToString(e)}"
+            )
+            false
+            /* throw (e) */
+        }
+    }
+
+    suspend fun send(toSend: ByteArray, timeOut: Int = 0, autoClose: Boolean = true): Boolean {
+        val tag = "send/${randomString(2u)}"
+
+        logd(TAGKClass, tag, "(-2)Client Send Entry: init: $init timeOut: $timeOut")
+
+        if (!init) {
+            init(timeOut)
+        }
+
+        logd(TAGKClass, tag, "(-1)Client Send Entry: init: $init")
+
+        timedOut = false
+        val res = if (!init) {
+            false
+        } else if (timeOut > 0) {
+            withTimeoutOrNull(timeOut.toLong()) {
+                sendData(toSend)
+            } ?: run {
+                timedOut = true
+                false
+            }
+        } else {
+            sendData(toSend)
+        }
+
+        if (autoClose) {
+            client?.close()
+            client = null
+        }
+
+        logd(TAGKClass, tag, "(7)Client Send Exit: timeOut: $timedOut res: $res")
+
+        return res
+    }
+
+    fun close() {
+        if (false == client?.isClosed) {
+            client?.outputStream?.flush()
+            client?.close()
+        }
+        client = null
+    }
+}
+
+/*
+class TCPClientOld (
     private val serverIpAddress: InetAddress,
     private val serverPort: Int,
     private val scope: CoroutineScope
@@ -405,3 +565,4 @@ class TCPClient (
         _init = false
     }
 }
+*/
