@@ -1,8 +1,6 @@
 package walkie.wifidirect
 
 import android.net.wifi.p2p.WifiP2pDevice
-import android.os.Build
-import androidx.annotation.RequiresApi
 
 enum class ConnectionStatus {
     Null,
@@ -55,7 +53,7 @@ data class WTWifiDirectPeerInfo (
         const val CIP = 10
         /* Fail Cool Down */
         const val FCD = 1
-        const val MAXAGE = (WTWiFiDirect.DiscoveryCountdown * 3)
+        const val MAXAGE = (WTWifiDirectManager.DiscoveryCountdown * 3)
     }
     var stateCounter: Int = 0
         private set

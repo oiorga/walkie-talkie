@@ -88,7 +88,7 @@
 -keep class walkie.api.wtutil.WTUtilBinaryGamesKt
 -keep class walkie.api.wtutil.WTUtilKt
 -keep class walkie.wifidirect.WTWiFiDirect
--keep class walkie.wifidirect.WTWifiDirectMainKt
+-keep class walkie.wifidirect.WTWifiDirectManagerKt
 -keep class walkie.wifidirect.WiFiDirectBroadcastReceiver# Please add these rules to your existing keep rules in order to suppress warnings.
 # This is generated automatically by the Android Gradle plugin.
 -keep class walkie.util.generic.WTCallBackInt

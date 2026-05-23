@@ -3,7 +3,6 @@ package walkie.talkie
 import android.Manifest.permission.ACCESS_COARSE_LOCATION
 import android.Manifest.permission.ACCESS_FINE_LOCATION
 import android.Manifest.permission.NEARBY_WIFI_DEVICES
-import android.content.Context
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.wifi.p2p.WifiP2pManager
@@ -24,7 +23,6 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
@@ -32,21 +30,15 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.Observer
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import walkie.talkie.api.wtdebug.WTDebugInt
 import walkie.chat.ChatDiscussion
-import walkie.chat.ChatDiscussionMap
 import walkie.chat.ChatGroupId
-import walkie.chat.ChatGroupList
-import walkie.chat.ChatGroupMap
 import walkie.chat.ChatMessage
 import walkie.chat.ChatMessageItem
 import walkie.chat.ChatMessageItemList
@@ -58,37 +50,22 @@ import walkie.talkie.api.wtmisc.InfoMap
 import walkie.talkie.api.wtmisc.WTNavigation
 import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
-import walkie.util.generic.registerAsReceiver
 import walkie.util.generic.registerSenders
-import walkie.util.generic.genericListOf
-import walkie.talkie.common.UpdateUiLiveData
-import walkie.talkie.common.WTCommonData
-import walkie.talkie.globalmap.DiscussionMap
-import walkie.talkie.node.NodeId
-import walkie.talkie.playground.CounterLive
 import walkie.talkie.playground.commSquirrelWheel
 import walkie.talkie.ui.nav.WTNavInit
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.viewmodel.WTViewModelFactory
-import walkie.util.CoroutineRuntime
-import walkie.util.LifeCycleObserver
-import walkie.util.Logging
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
 import walkie.util.api.RemoteCallId
 import walkie.util.api.RemoteCallMuxInt
-import walkie.util.generateBinaryRec
 import walkie.util.generic.RemoteCallMux
 import walkie.util.logd
-import walkie.util.logging
 import walkie.util.randomString
-import walkie.wifidirect.WTWiFiDirect
-import walkie.wifidirect.WiFiDirectBroadcastReceiver
-import walkie.wifidirect.wtWifiDirectMain
-import walkie.wifidirect.wtWifiDirectStop
+import walkie.wifidirect.main
+import walkie.wifidirect.stop
 import kotlin.getValue
-import kotlin.random.Random
 import kotlin.system.exitProcess
 
 class WTActivity(
@@ -156,7 +133,7 @@ class WTActivity(
     private suspend fun wifiCleanUp() {
         val tag = "wifiCleanUp/${randomString(2U)}"
         logd(tag, "wifiCleanUp")
-        wtHub.wtWifiD.wtWifiDirectStop()
+        wtHub.wtWifiD.stop()
     }
 
     override fun onStart() {
@@ -264,7 +241,7 @@ class WTActivity(
             }
         }
 
-        wtHub.wtWifiD.wtWifiDirectMain(scanInterval = 1000L)
+        wtHub.wtWifiD.main(scanInterval = 1000L)
     }
 
     private val groupIdWDI = "WIFI Direct Info"
@@ -392,7 +369,7 @@ internal fun WTActivity.wifiRestartChannel() {
 
     wifiInitChannel()
     wifiBindReceiver()
-    wtHub.wtWifiD.wtWifiDirectMain(scanInterval = 1000L)
+    wtHub.wtWifiD.main(scanInterval = 1000L)
 }
 
 internal fun WTActivity.wtDeviceName() : String{

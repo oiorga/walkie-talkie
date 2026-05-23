@@ -33,7 +33,7 @@ internal fun WifiP2pInfo.logD(tag: String = "WifiP2pInfo") {
     )
 }
 
-internal fun WTWiFiDirect.wtWifiDirectInfo() : String {
+internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     var info = ""
 
     info += "P2P Info: " + if (null == this.wtWifiP2pInfo.get()) "null" else ""

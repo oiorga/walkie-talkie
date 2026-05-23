@@ -28,7 +28,7 @@ import walkie.util.generic.registerSenders
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
-import walkie.wifidirect.WTWiFiDirect
+import walkie.wifidirect.WTWifiDirectManager
 import walkie.wifidirect.WiFiDirectBroadcastReceiver
 import kotlin.random.Random
 
@@ -224,7 +224,7 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
 
 internal fun WalkieTalkie.wifiDInit() {
     val manager: WifiP2pManager = getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager
-    wtHub.wtWifiD = WTWiFiDirect(manager, wtHub.wtSystemNodeId, wtHub.wtScope)
+    wtHub.wtWifiD = WTWifiDirectManager(manager, wtHub.wtSystemNodeId, wtHub.wtScope)
     wtHub.wtBcastReceiver = WiFiDirectBroadcastReceiver()
 }
 

@@ -29,7 +29,7 @@ import walkie.util.generic.RemoteCallMux
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
-import walkie.wifidirect.WTWiFiDirect
+import walkie.wifidirect.WTWifiDirectManager
 import walkie.wifidirect.WiFiDirectBroadcastReceiver
 
 class WTCommonData private constructor (
@@ -64,7 +64,7 @@ class WTCommonData private constructor (
     lateinit var wtGlobalGroupMap: ChatGroupMap
 
     lateinit var wtComm: WTComm
-    lateinit var wtWifiD: WTWiFiDirect
+    lateinit var wtWifiD: WTWifiDirectManager
     lateinit var wtBcastReceiver: WiFiDirectBroadcastReceiver
 
     lateinit var wtRuntimee: CoroutineRuntime
