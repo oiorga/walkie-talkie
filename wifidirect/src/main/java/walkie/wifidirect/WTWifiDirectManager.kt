@@ -741,7 +741,7 @@ class WTWifiDirectManager(
 
         wtWifiP2pInfoN.get()?.logD(tag)
 
-        var wifiP2pInfo: WifiP2pInfo = awaitP2pRequest { callback ->
+        val wifiP2pInfo: WifiP2pInfo = awaitP2pRequest { callback ->
             manager.requestConnectionInfo(channel) { info ->
                 callback(info)
             }
@@ -766,8 +766,6 @@ class WTWifiDirectManager(
         return wifiP2pInfo
     }
 }
-
-
 
 suspend fun WTWifiDirectManager.mainLoop(delay: Long = 1000L) {
     val tag = "scanPeers/${randomString(2u)}"
