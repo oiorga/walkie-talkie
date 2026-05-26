@@ -1,13 +1,17 @@
 package walkie.wifidirect
 
+import android.annotation.SuppressLint
 import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.util.Log
+import androidx.annotation.RequiresPermission
 import walkie.util.CallbackResult
 import walkie.util.awaitResult
 import walkie.util.awaitValue
 import walkie.util.getInterfaceIpAddress
+import walkie.util.logd
+import walkie.wifidirect.WTWifiDirect.Companion.TAGKClass
 
 
 internal fun WifiP2pGroup.logD(tag: String = "WifiP2pGroup") {
@@ -90,7 +94,7 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     return info
 }
 
-suspend inline fun awaitP2pAction(
+internal suspend inline fun awaitP2pAction(
     crossinline action: (WifiP2pManager.ActionListener) -> Unit
 ): CallbackResult<Unit, Int> = awaitResult<Unit, Int> { listener ->
     action(object : WifiP2pManager.ActionListener {
@@ -103,6 +107,99 @@ suspend inline fun awaitP2pAction(
     })
 }
 
-suspend inline fun <T>awaitP2pRequest(
+internal suspend inline fun WTWifiDirect.p2pAction(
+    tag: String,
+    successMsg: String? = null,
+    failureMsg: String? = null,
+    crossinline action:
+        (WifiP2pManager.Channel,
+         WifiP2pManager.ActionListener) -> Unit
+): WTWifiDirectResult<Unit> {
+    if (!checkWifiDPermission()) {
+        logd(TAGKClass, tag,
+            "Not enough Wi Fi Permissions")
+        return WTWifiDirectResult.LocalError.NoWifiPermissions
+    }
+
+    val ch = channel ?: run {
+        logd(TAGKClass, tag,
+            "Channel not initialized")
+        return WTWifiDirectResult.LocalError.ChannelNotInitialized
+    }
+
+    return when (
+        val res = awaitP2pAction { listener ->
+            action(ch, listener)
+        }
+    ) {
+        is CallbackResult.Success -> {
+            if (null != successMsg) logd(
+                TAGKClass,
+                tag,
+                successMsg)
+            WTWifiDirectResult.Success
+        }
+        is CallbackResult.Failure -> {
+            val error =
+                WTWifiDirectResult.wifiP2pError(
+                    res.reason
+                        ?: WifiP2pManager.ERROR
+                )
+
+            if (null != failureMsg) logd(
+                TAGKClass,
+                tag,
+                "$failureMsg: ${error.errStr}"
+            )
+            error
+        }
+    }
+}
+
+internal suspend inline fun <T>awaitP2pRequest(
     crossinline action: ((T) -> Unit) -> Unit
 ): T = awaitValue (action)
+
+internal suspend inline fun <T>WTWifiDirect.p2pRequest(
+    tag: String,
+    successMsg: String? = null,
+    crossinline action:
+        (WifiP2pManager.Channel,
+         (T) -> Unit) -> Unit
+): WTWifiDirectResult<T> {
+    if (!checkWifiDPermission()) {
+        logd(
+            TAGKClass, tag,
+            "Not enough Wi Fi Permissions"
+        )
+        return WTWifiDirectResult.LocalError.NoWifiPermissions
+    }
+
+    val ch = channel ?: run {
+        logd(
+            TAGKClass, tag,
+            "Channel not initialized"
+        )
+        return WTWifiDirectResult.LocalError.ChannelNotInitialized
+    }
+
+    val data: T = awaitP2pRequest { callback ->
+        action(ch, callback)
+    }
+    /*
+        ?: run {
+        if (null != failureMsg) logd(
+            TAGKClass,
+            tag,
+            failureMsg)
+        return WTWifiDirectResult.LocalError.NoData
+    }
+    */
+
+    if (null != successMsg) logd(
+        TAGKClass,
+        tag,
+        successMsg)
+    return WTWifiDirectResult.Data(data)
+}
+

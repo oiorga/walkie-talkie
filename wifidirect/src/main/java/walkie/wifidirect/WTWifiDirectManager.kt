@@ -1341,14 +1341,6 @@ suspend fun WTWifiDirectManager.removeLocalService() {
     val instanceName = WT_SERVICE_WALKIETALKIE// + "." + deviceUid()
     /* val serviceType = "_presence._tcp" */
     val serviceType = WT_SERVICE_WALKIETALKIE
-    val record: Map<String, String> = mapOf(
-        WT_SERVICE_WALKIETALKIE to WT_SERVICE_WALKIETALKIE,
-        WT_SERVICE_ID to deviceId,
-        WT_SERVICE_UNIQUE to deviceUnique,
-        /* WT_SERVICE_RND to deviceUid(), */
-        WT_SERVICE_RND to randomString(8U),
-        WT_SERVICE_LOCAL_SERVER_PORT to wtLocalServerPort!!.toString()
-    )
 
     logd(tag, "Entry: $wtLocalServiceRecord")
 

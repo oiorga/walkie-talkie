@@ -2,52 +2,54 @@ package walkie.wifidirect
 
 import android.net.wifi.p2p.WifiP2pManager
 
-sealed class WTWifiDirectResult {
+sealed class WTWifiDirectResult<out T> {
     abstract val errStr: String
 
     companion object {
-        fun wifiP2pError(reason: Int): WTWifiDirectResult.WifiP2pError =
+        fun wifiP2pError(reason: Int): WifiP2pError =
             when (reason) {
                 WifiP2pManager.ERROR ->
-                    WTWifiDirectResult.WifiP2pError.InternalError
+                    WifiP2pError.InternalError
                 WifiP2pManager.P2P_UNSUPPORTED ->
-                    WTWifiDirectResult.WifiP2pError.Unsupported
+                    WifiP2pError.Unsupported
                 WifiP2pManager.BUSY ->
-                    WTWifiDirectResult.WifiP2pError.Busy
+                    WifiP2pError.Busy
                 else ->
-                    WTWifiDirectResult.WifiP2pError.InternalError
+                    WifiP2pError.InternalError
             }
     }
 
-    object Success: WTWifiDirectResult() {
+    object Success: WTWifiDirectResult<Nothing>() {
         override val errStr: String = "Success"
     }
 
-    data class Data<out T>(val data: T) : WTWifiDirectResult() {
+    data class Data<out T>(val data: T) : WTWifiDirectResult<T>() {
         override val errStr = "SuccessData"
     }
 
-    sealed class WifiP2pError(val errId: Int) : WTWifiDirectResult() {
+    sealed class WifiP2pError(val errId: Int) : WTWifiDirectResult<Nothing>() {
         object InternalError : WifiP2pError(WifiP2pManager.ERROR) {
-            override val errStr = "INTERNAL ERROR"
+            override val errStr = "($errId) -> INTERNAL ERROR"
         }
         object Unsupported : WifiP2pError(WifiP2pManager.P2P_UNSUPPORTED) {
-            override val errStr = "P2P UNSUPPORTED"
+            override val errStr = "($errId) ->P2P UNSUPPORTED"
         }
         object Busy : WifiP2pError(WifiP2pManager.BUSY) {
-            override val errStr = "BUSY"
+            override val errStr = "($errId) -> BUSY"
         }
     }
 
-    sealed class LocalError : WTWifiDirectResult() {
+    sealed class LocalError : WTWifiDirectResult<Nothing>() {
         object ChannelNotInitialized : LocalError() {
             override val errStr = "Channel not initialized"
         }
         object NoWifiPermissions : LocalError() {
             override val errStr = "Not enough Wi Fi Permissions"
         }
+        /*
         object NoData : LocalError() {
             override val errStr = "No Data Available"
         }
+        */
     }
 }
