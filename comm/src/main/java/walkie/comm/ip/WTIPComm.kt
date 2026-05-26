@@ -13,17 +13,16 @@ import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.util.CoroutineRuntime
 import walkie.util.TCPClient
 import walkie.util.TCPServer
-import walkie.util.api.CallBackId
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
+import walkie.util.api.DispatchEventId
 import walkie.util.exceptionToString
 import walkie.util.generic.BlockingQueue
-import walkie.util.generic.CallBack
-import walkie.util.generic.CallBackInt
+import walkie.util.generic.EventDispatcher
+import walkie.util.generic.EventDispatcherInt
 import walkie.util.getInetAddressByName
 import walkie.util.logd
 import walkie.util.logging
@@ -47,12 +46,12 @@ class WTIPComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
-    private val _callBackList: CallBackInt<Any, Any> = CallBack()
+    private val _callBackList: EventDispatcherInt<Any> = EventDispatcher()
     /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>() */
 ) :
     /* WTRemoteCallMuxInt<Any, Any> by _remoteCallMux, */
     ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
-    CallBackInt<Any, Any> by _callBackList
+    EventDispatcherInt<Any> by _callBackList
 {
     val ipOutQueue = BlockingQueue<Triple<InetAddress, Int, ByteArray>>("ipOutQueue", 100)
     val ipInQueue = BlockingQueue<String>("ipInQueue", 100)
@@ -233,7 +232,7 @@ suspend fun WTIPComm.wifiServer(localIp: InetAddress? = null,
     s.wifiServerS = true
 
     serverPort(WTIPComm.SERVERPORT + Random.nextInt(99))
-    callBack(CallBackId.CBServerPort, serverPort())
+    dispatchEvent(DispatchEventId.CBServerPort, serverPort())
 
     scope.launch(Dispatchers.Default) {
         var count: Long = 0

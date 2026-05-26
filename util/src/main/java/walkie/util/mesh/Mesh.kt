@@ -5,10 +5,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.serialization.Serializable
 import walkie.util.Gate
-import walkie.util.api.CallBackId
+import walkie.util.api.DispatchEventId
 import walkie.util.generic.BlockingQueue
-import walkie.util.generic.CallBack
-import walkie.util.generic.CallBackInt
+import walkie.util.generic.EventDispatcher
+import walkie.util.generic.EventDispatcherInt
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -17,8 +17,8 @@ abstract class Mesh<K , V> (
     private var uniqueId: K,
     private var scope: CoroutineScope,
     private var heartbeat: Long = 3000L,
-    private val _callBackList: CallBackInt<Any, Any> = CallBack()
-) : CallBackInt<Any, Any> by _callBackList
+    private val _callBackList: EventDispatcherInt<Any> = EventDispatcher()
+) : EventDispatcherInt<Any> by _callBackList
 {
     companion object {
         const val TAG = "Mesh"
@@ -51,7 +51,7 @@ abstract class Mesh<K , V> (
         kToVTable.clear()
         kAgeTable.clear()
         meshSemaphore.release()
-        callBack(CallBackId.CBMeshResetPeers)
+        dispatchEvent(DispatchEventId.CBMeshResetPeers)
     }
 
     init {
@@ -136,7 +136,7 @@ abstract class Mesh<K , V> (
             kToKTable[k] = k
             kToVTable[k] = v
             kAgeTable[k] = 0L
-            callBack(CallBackId.CBMeshNewPeer, k)
+            dispatchEvent(DispatchEventId.CBMeshNewPeer, k)
         } else {
             kToVTable[k] = v
             kAgeTable[k] = 0L
@@ -161,7 +161,7 @@ abstract class Mesh<K , V> (
                 kToKTable[k] = k
                 kToVTable[k] = v
                 kAgeTable[k] = 0L
-                callBack(walkie.glue_inc.CallBackId.CBMeshNewPeer, k)
+                dispatchEvent(walkie.glue_inc.DispatchEventId.CBMeshNewPeer, k)
             } else {
                 kToVTable[k] = v
                 kAgeTable[k] = 0L
@@ -193,7 +193,7 @@ abstract class Mesh<K , V> (
         val kToVTable = this.kToVTable.toMutableMap()
 
         if (null == kToVTable[null]) {
-            callBack(CallBackId.CBMeshGetGroupOwner)
+            dispatchEvent(DispatchEventId.CBMeshGetGroupOwner)
             /* return */
         }
 
@@ -249,7 +249,7 @@ abstract class Mesh<K , V> (
                             TAGKClass,
                             tag,
                             "($count): Got new peer: $kToV").also { count++ }
-                        callBack(CallBackId.CBMeshNewPeer, kToV.key!!)
+                        dispatchEvent(DispatchEventId.CBMeshNewPeer, kToV.key!!)
                     }
                     logd(
                         TAGKClass,

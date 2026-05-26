@@ -11,13 +11,12 @@ import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.WTMedium
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.util.CoroutineRuntime
-import walkie.util.api.CallBackId
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
-import walkie.util.generic.CallBack
-import walkie.util.generic.CallBackInt
+import walkie.util.api.DispatchEventId
+import walkie.util.generic.EventDispatcher
+import walkie.util.generic.EventDispatcherInt
 import walkie.util.inetToIpString
 import walkie.util.logd
 import walkie.util.logging
@@ -29,13 +28,13 @@ class WTPRMComm (
     private val node: NodeIdInt,
     private val scope: CoroutineScope,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
-    private val _callBackList: CallBackInt<Any, Any> = CallBack()
+    private val _callBackList: EventDispatcherInt<Any> = EventDispatcher()
     /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>() */
     /* private val _callBackList: WTCallBackInt<Any, Any> = WTCallBack() */
 ) :
     /* WTRemoteCallMuxInt<Any, Any> by _remoteCallMux, */
     ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
-    CallBackInt<Any, Any> by _callBackList
+    EventDispatcherInt<Any> by _callBackList
 /* WTCallBackInt<Any, Any> by _callBackList */
 {
     val wtIPComm: WTIPComm = WTIPComm(node, scope)
@@ -63,30 +62,30 @@ class WTPRMComm (
             logd(TAGKClass, tag, "wtMesh sending: ${dest}/${inetToIpString(dest[0])} -> $jSon")
             wtIPComm.sendIpCommPacket(inetToIpString(dest[0]), dest[1], WTIPCommPacketType.ControlMesh, jSon)
         }
-        wtMesh.registerCallBack(CallBackId.CBMeshNewPeer) { newPeer ->
+        wtMesh.registerToEvent(DispatchEventId.CBMeshNewPeer) { newPeer ->
             if ((newPeer as String) !in directNodes) {
                 directNodes.add(newPeer)
-                callBack(CallBackId.CBMeshNewPeer)
+                dispatchEvent(DispatchEventId.CBMeshNewPeer)
             }
             peersUpdateSendDebugInfo()
         }
-        wtIPComm.registerCallBack(CallBackId.CBServerPort) { serverPort ->
-            callBack(CallBackId.CBServerPort, serverPort!!)
+        wtIPComm.registerToEvent(DispatchEventId.CBServerPort) { serverPort ->
+            dispatchEvent(DispatchEventId.CBServerPort, serverPort!!)
             peersUpdateSendDebugInfo()
         }
-        wtMesh.registerCallBack(CallBackId.CBMeshResetPeers) { _ ->
+        wtMesh.registerToEvent(DispatchEventId.CBMeshResetPeers) { _ ->
             directNodes.clear()
-            callBack(CallBackId.CBMeshResetPeers)
+            dispatchEvent(DispatchEventId.CBMeshResetPeers)
             peersUpdateSendDebugInfo()
         }
-        wtMesh.registerCallBack(CallBackId.CBMeshLostPeer) { newPeer ->
+        wtMesh.registerToEvent(DispatchEventId.CBMeshLostPeer) { newPeer ->
             if ((newPeer as String) in directNodes) {
                 directNodes.remove(newPeer)
-                callBack(CallBackId.CBMeshNewPeer)
+                dispatchEvent(DispatchEventId.CBMeshNewPeer)
             }
             peersUpdateSendDebugInfo()
         }
-        wtMesh.registerCallBack(CallBackId.CBMeshGetGroupOwner) { _ ->
+        wtMesh.registerToEvent(DispatchEventId.CBMeshGetGroupOwner) { _ ->
             val tag = "CBMeshGetGroupOwner/${randomString(2u)}"
 
             logd(tag, "Requesting GroupOwnerInfo: groupInfoCache: $groupInfoCache")
@@ -103,7 +102,7 @@ class WTPRMComm (
                     )
                 )
             }
-            callBack(CallBackId.CBMeshGetGroupOwner)
+            dispatchEvent(DispatchEventId.CBMeshGetGroupOwner)
             peersUpdateSendDebugInfo()
         }
     }

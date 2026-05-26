@@ -14,11 +14,11 @@ import walkie.talkie.api.wtcomm.WTCommChatMessageOut
 import walkie.talkie.api.wtcomm.WTCommPacketIn
 import walkie.talkie.api.wtcomm.WTCommPacketOut
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.util.CoroutineRuntime
-import walkie.util.api.CallBackId
+
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
+import walkie.util.api.DispatchEventId
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -75,10 +75,10 @@ class WTComm (
         this.registerReceiver(ChannelId.RCToPRMComm, wtPRMComm)
         wtPRMComm.wtIPComm.registerReceiver(ChannelId.RCToComm, this)
 
-        wtPRMComm.registerCallBack(CallBackId.CBMeshNewPeer) { _ ->
+        wtPRMComm.registerToEvent(DispatchEventId.CBMeshNewPeer) { _ ->
             channelSend(ChannelId.RCTOCommonData, ChannelMessageType.RCUpdatePeersUI)
         }
-        wtPRMComm.registerCallBack(CallBackId.CBServerPort) { serverPort ->
+        wtPRMComm.registerToEvent(DispatchEventId.CBServerPort) { serverPort ->
             logd("$this sending serverPort: $serverPort to RCToWifi")
             channelSend(ChannelId.RCToWifi, ChannelMessageType.RCLocalServerPort, serverPort!!)
         }
