@@ -8,7 +8,6 @@ import android.net.wifi.p2p.WifiP2pConfig
 import android.net.wifi.p2p.WifiP2pConfig.GROUP_OWNER_INTENT_MAX
 import android.net.wifi.p2p.WifiP2pConfig.GROUP_OWNER_INTENT_MIN
 import android.net.wifi.p2p.WifiP2pDevice
-import android.net.wifi.p2p.WifiP2pDeviceList
 import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
@@ -18,8 +17,6 @@ import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION
-import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo
-import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest
 import android.os.Parcelable
 import android.os.SystemClock.uptimeMillis
 import kotlinx.coroutines.CoroutineScope
@@ -28,7 +25,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.util.CallbackResult
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
@@ -44,8 +40,6 @@ import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
 import walkie.util.stringSum
-import walkie.wifidirect.WTWifiDirectManager.Companion.ConnectCountdown
-import walkie.wifidirect.WTWifiDirectManager.Companion.TAGKClass
 import walkie.wifidirect.WTWifiDirectResult.LocalError.ChannelNotInitialized.dataOrNull
 import walkie.wifidirect.WTWifiDirectServiceInfo.Companion.WT_SERVICE_ID
 import walkie.wifidirect.WTWifiDirectServiceInfo.Companion.WT_SERVICE_LOCAL_SERVER_PORT
@@ -70,7 +64,6 @@ class WTWifiDirectManager(
     val manager: WifiP2pManager,
     val nodeId: NodeIdInt,
     val scope: CoroutineScope,
-    var channel: WifiP2pManager.Channel? = null,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
 ) :
@@ -98,7 +91,6 @@ class WTWifiDirectManager(
     }
 
     fun attachChannel(channel: Channel) {
-        this.channel = channel
         wtWifiDirect = WTWifiDirect(manager, channel, wtWifiDirectEnv)
     }
 
@@ -107,13 +99,6 @@ class WTWifiDirectManager(
         logd(tag, "checkWifiDPermission perm = ${remoteCall(RemoteCallId.RCCheckWifiDPermission)}")
         return (true == typedCall<Boolean>(RemoteCallId.RCCheckWifiDPermission))
     }
-
-
-    private val errToString = mapOf(
-        WifiP2pManager.P2P_UNSUPPORTED to "P2P UNSUPPORTED",
-        WifiP2pManager.ERROR to "INTERNAL ERROR",
-        WifiP2pManager.BUSY to "WifiP2pManager BUSY"
-    )
 
     private var mainLoopJob: Job? = null
 
@@ -356,10 +341,6 @@ class WTWifiDirectManager(
         }
     }
 
-    fun errToString(errCode: Int): String {
-        return (errToString[errCode] ?: "Unknown Error")
-    }
-
     fun resetData() {
         val tag = "resetData/${randomString(2u)}"
 
@@ -403,7 +384,7 @@ class WTWifiDirectManager(
     suspend fun requestPeersInfo(): MutableList<WifiP2pDevice> {
         val tag = "requestPeersInfo/${randomString(2u)}"
 
-            logd("Entry")
+        logd("Entry")
 
         val peerList = wtWifiDirect?.requestPeersInfo()?.dataOrNull()
 
@@ -867,7 +848,7 @@ class WTWifiDirectManager(
         }
     }
 
-    suspend fun discoverPeersJob(delay: Long = 100L) {
+    suspend fun discoverPeersJob(delay: Long = 1000L) {
         val tag = "discoverPeersJob/${randomString(2u)}"
 
         logd(
@@ -1560,9 +1541,9 @@ class WTWifiDirectManager(
         logd(tag, "Entry")
 
         registerServiceListeners()
-        delay(100L)
+        delay(1000L)
         clearAllServices()
-        delay(100L)
+        delay(1000L)
         /*
     /* addLocalService() */
     delay(1000L)
@@ -1575,66 +1556,58 @@ class WTWifiDirectManager(
     }
 
     @SuppressLint("NewApi")
-    suspend fun stopPeerDiscovery() {
+    suspend fun stopPeersDiscovery() {
         val tag = "stopPeerDiscovery/${randomString(2u)}"
 
         logd(tag, "Entry")
 
-        when (val res = awaitP2pAction { listener ->
-            /* manager.stopPeerDiscovery( */
-            manager.stopListening(
-                channel!!,
-                listener
-            )
-        }) {
-            is CallbackResult.Success -> {
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Success stopping peers discovery"
-                )
+        when (val res = wtWifiDirect?.stopPeersDiscovery()) {
+            is WTWifiDirectResult.Success -> {
+                logd(TAGKClass, tag, "Success stopping peers discovery")
             }
-
-            is CallbackResult.Failure -> {
+            is WTWifiDirectResult.WifiP2pError -> {
                 logd(
                     TAGKClass,
                     tag,
-                    "Failed stopping peers discovery: ${res.reason}: ${errToString(res.reason!!)}"
+                    "Failed stopping peers discovery: ${res.errStr}"
+                )
+                wifiP2PEngineFailCoolDown(true)
+            }
+            else -> {
+                logd(
+                    TAGKClass,
+                    tag,
+                    "Failed stopping peers discovery: Unknown Error"
                 )
                 wifiP2PEngineFailCoolDown(true)
             }
         }
-
-        logd(tag, "Exit 0")
     }
 
     suspend fun discoverServices() {
         val tag = "discoverServices/${randomString(2u)}"
 
-        logd(tag, "manager.discoverServices")
-        if (checkWifiDPermission()) {
-            when (val res = awaitP2pAction { listener ->
-                manager.discoverServices(
-                    channel,
-                    listener
-                )
-            }) {
-                is CallbackResult.Success -> {
-                    logd(
-                        TAGKClass,
-                        tag,
-                        "Success starting discoverServices"
-                    )
-                }
+        logd(tag, "Entry")
 
-                is CallbackResult.Failure -> {
-                    logd(
-                        TAGKClass,
-                        tag,
-                        "Failed starting discoverServices: ${res.reason}: ${errToString(res.reason!!)}"
-                    )
-                    wifiP2PEngineFailCoolDown(true)
-                }
+        when (val res = wtWifiDirect?.discoverServices()) {
+            is WTWifiDirectResult.Success -> {
+                logd(TAGKClass, tag, "Success starting discovering services")
+            }
+            is WTWifiDirectResult.WifiP2pError -> {
+                logd(
+                    TAGKClass,
+                    tag,
+                    "Failed starting discovering services: ${res.errStr}"
+                )
+                wifiP2PEngineFailCoolDown(true)
+            }
+            else -> {
+                logd(
+                    TAGKClass,
+                    tag,
+                    "Failed starting discovering services: Unknown Error"
+                )
+                wifiP2PEngineFailCoolDown(true)
             }
         }
     }
@@ -1644,53 +1617,45 @@ class WTWifiDirectManager(
 
         logd(tag, "Entry")
 
-        logd(tag, "manager.clearServiceRequests")
-
-        when (val res = awaitP2pAction { listener ->
-            manager.clearServiceRequests(
-                channel, listener
-            )
-        }) {
-            is CallbackResult.Success -> {
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Success clearServiceRequests"
-                )
+        when (val res = wtWifiDirect?.clearServiceRequests()) {
+            is WTWifiDirectResult.Success -> {
+                logd(TAGKClass, tag, "Success clearing service requests")
             }
-
-            is CallbackResult.Failure -> {
+            is WTWifiDirectResult.WifiP2pError -> {
                 logd(
                     TAGKClass,
                     tag,
-                    "Failed clearServiceRequests: ${res.reason}: ${errToString(res.reason!!)}"
+                    "Failed clearing service requests: ${res.errStr}"
+                )
+                wifiP2PEngineFailCoolDown(true)
+            }
+            else -> {
+                logd(
+                    TAGKClass,
+                    tag,
+                    "Failed clearing service requests: Unknown Error"
                 )
                 wifiP2PEngineFailCoolDown(true)
             }
         }
 
-        logd(tag, "manager.clearLocalServices")
-
-        when (val res = awaitP2pAction { listener ->
-            manager.clearLocalServices(
-                channel,
-                listener
-            )
-        }) {
-            is CallbackResult.Success -> {
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Success clearLocalServices"
-                )
+        when (val res = wtWifiDirect?.clearLocalServices()) {
+            is WTWifiDirectResult.Success -> {
+                logd(TAGKClass, tag, "Success clearing local service")
             }
-
-            is CallbackResult.Failure -> {
-                wifiP2PEngineFailCoolDown(true)
+            is WTWifiDirectResult.WifiP2pError -> {
                 logd(
                     TAGKClass,
                     tag,
-                    "Failed clearLocalServices: ${res.reason}: ${errToString(res.reason!!)}"
+                    "Failed clearing local service: ${res.errStr}"
+                )
+                wifiP2PEngineFailCoolDown(true)
+            }
+            else -> {
+                logd(
+                    TAGKClass,
+                    tag,
+                    "Failed clearing local service: Unknown Error"
                 )
                 wifiP2PEngineFailCoolDown(true)
             }
@@ -1816,13 +1781,7 @@ class WTWifiDirectManager(
 
         logd(tag, "stopPeerDiscovery")
         delay(delay / divider)
-        stopPeerDiscovery()
-
-        /*
-    logd(tag, "stopPeerDiscovery")
-    delay(delay/divider)
-    stopPeerDiscovery(false)
-    */
+        stopPeersDiscovery()
 
         logd(tag, "requestGroupInfo/removeGroup/clearAllServices")
         delay(delay / divider)
@@ -1832,7 +1791,7 @@ class WTWifiDirectManager(
         delay(delay / divider)
         clearAllServices()
 
-        channel?.close()
+        wtWifiDirect?.channelClose()
 
         logd(tag, "resetData")
         resetData()

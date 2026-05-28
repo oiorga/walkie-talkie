@@ -11,8 +11,10 @@ import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest
+import walkie.util.CallbackResult
 import walkie.util.api.ChannelMessageType
 import walkie.util.api.RemoteCallMuxInt
+import walkie.util.awaitValue
 import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.RemoteCallMux
@@ -20,8 +22,8 @@ import walkie.util.logd
 import walkie.util.randomString
 
 class WTWifiDirect(
-    val manager: WifiP2pManager,
-    var channel: WifiP2pManager.Channel,
+    private val manager: WifiP2pManager,
+    private var channel: WifiP2pManager.Channel,
     private var env: WTWifiDirectEnv,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
@@ -34,7 +36,7 @@ class WTWifiDirect(
     }
     val tag = TAG
 
-    fun checkWifiPermission(): Boolean {
+        fun checkWifiPermission(): Boolean {
         val tag = "checkWifiPermission/${randomString(2u)}"
 
         val res = env.checkWifiPermission()
@@ -42,6 +44,10 @@ class WTWifiDirect(
         logd(tag, ": $res")
 
         return res
+    }
+
+    fun channelClose() {
+        channel.close()
     }
 
     @SuppressLint("MissingPermission")
@@ -183,6 +189,72 @@ class WTWifiDirect(
         }
     }
 
+    suspend fun clearServiceRequests(): WTWifiDirectResult<Unit> {
+        val tag = "clearServiceRequests/${randomString(2u)}"
+
+        logd(tag, "Enter")
+
+        return p2pAction(tag,
+            "Success clearing service requests.",
+            "Failed clearing service requests:",
+        ) { ch, listener ->
+            manager.clearServiceRequests(
+                ch,
+                listener
+            )
+        }
+    }
+
+    suspend fun clearLocalServices(): WTWifiDirectResult<Unit> {
+        val tag = "clearLocalServices/${randomString(2u)}"
+
+        logd(tag, "Enter")
+
+        return p2pAction(tag,
+            "Success clearing local service.",
+            "Failed clearing local service:",
+        ) { ch, listener ->
+            manager.clearLocalServices(
+                ch,
+                listener
+            )
+        }
+    }
+
+    @SuppressLint("NewApi")
+    suspend fun stopPeersDiscovery(): WTWifiDirectResult<Unit> {
+        val tag = "stopPeerDiscovery/${randomString(2u)}"
+
+        logd(tag, "Entry")
+
+        return p2pAction(tag,
+            "Success stopping peers discovery.",
+            "Failed stopping peers discovery:",
+        ) { ch, listener ->
+            manager.stopListening(
+                ch,
+                listener
+            )
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    suspend fun discoverServices(): WTWifiDirectResult<Unit> {
+        val tag = "discoverServices/${randomString(2u)}"
+
+        logd(tag, "Entry")
+
+        return p2pAction(tag,
+            "Success starting discovering services.",
+            "Failed starting discovering services:",
+        ) { ch, listener ->
+            manager.discoverServices(
+                ch,
+                listener
+            )
+        }
+    }
+
     suspend fun requestConnectionInfo(): WTWifiDirectResult<WifiP2pInfo?> {
         val tag = "requestConnectionInfo/${randomString(2u)}"
 
@@ -301,4 +373,97 @@ class WTWifiDirect(
 
         manager.setDnsSdResponseListeners(channel, dnsSdServiceResponseListener, dnsSdTxtRecordListener)
     }
+
+    internal suspend inline fun p2pAction(
+        tag: String,
+        successMsg: String? = null,
+        failureMsg: String? = null,
+        crossinline action:
+            (WifiP2pManager.Channel,
+             WifiP2pManager.ActionListener) -> Unit
+    ): WTWifiDirectResult<Unit> {
+        if (!checkWifiPermission()) {
+            logd(TAGKClass, tag,
+                "Not enough Wi Fi Permissions")
+            return WTWifiDirectResult.LocalError.NoWifiPermissions
+        }
+
+        val ch = channel ?: run {
+            logd(TAGKClass, tag,
+                "Channel not initialized")
+            return WTWifiDirectResult.LocalError.ChannelNotInitialized
+        }
+
+        return when (
+            val res = awaitP2pAction { listener ->
+                action(ch, listener)
+            }
+        ) {
+            is CallbackResult.Success -> {
+                if (null != successMsg) logd(
+                    TAGKClass,
+                    tag,
+                    successMsg)
+                WTWifiDirectResult.Success
+            }
+            is CallbackResult.Failure -> {
+                val error =
+                    WTWifiDirectResult.wifiP2pError(
+                        res.reason
+                            ?: WifiP2pManager.ERROR
+                    )
+
+                if (null != failureMsg) logd(
+                    TAGKClass,
+                    tag,
+                    "$failureMsg: ${error.errStr}"
+                )
+                error
+            }
+        }
+    }
+
+    internal suspend inline fun <T>p2pRequest(
+        tag: String,
+        successMsg: String? = null,
+        crossinline action:
+            (WifiP2pManager.Channel,
+             (T) -> Unit) -> Unit
+    ): WTWifiDirectResult<T> {
+        if (!checkWifiPermission()) {
+            logd(
+                TAGKClass, tag,
+                "Not enough Wi Fi Permissions"
+            )
+            return WTWifiDirectResult.LocalError.NoWifiPermissions
+        }
+
+        val ch = channel ?: run {
+            logd(
+                TAGKClass, tag,
+                "Channel not initialized"
+            )
+            return WTWifiDirectResult.LocalError.ChannelNotInitialized
+        }
+
+        val data: T = awaitP2pRequest { callback ->
+            action(ch, callback)
+        }
+        /*
+            ?: run {
+            if (null != failureMsg) logd(
+                TAGKClass,
+                tag,
+                failureMsg)
+            return WTWifiDirectResult.LocalError.NoData
+        }
+        */
+
+        if (null != successMsg) logd(
+            TAGKClass,
+            tag,
+            successMsg)
+        return WTWifiDirectResult.Data(data)
+    }
+
 }
