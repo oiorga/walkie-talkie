@@ -86,7 +86,7 @@ class WTWifiDirectManager(
     private var wtWifiDirect: WTWifiDirect? = null
     private val wtWifiDirectEnv = object : WTWifiDirectEnv {
         override fun checkWifiPermission(): Boolean {
-            return checkWifiDPermission()
+            return this@WTWifiDirectManager.checkWifiPermission()
         }
     }
 
@@ -94,7 +94,7 @@ class WTWifiDirectManager(
         wtWifiDirect = WTWifiDirect(manager, channel, wtWifiDirectEnv)
     }
 
-    fun checkWifiDPermission(): Boolean {
+    fun checkWifiPermission(): Boolean {
         val tag = "checkWifiDPermission/${randomString(2u)}"
         logd(tag, "checkWifiDPermission perm = ${remoteCall(RemoteCallId.RCCheckWifiDPermission)}")
         return (true == typedCall<Boolean>(RemoteCallId.RCCheckWifiDPermission))
@@ -692,7 +692,7 @@ class WTWifiDirectManager(
     }
 
     suspend fun mainLoop(delay: Long = 1000L) {
-        val tag = "scanPeers/${randomString(2u)}"
+        val tag = "mainLoop/${randomString(2u)}"
         val s = WTWiFiDirectStatic.INSTANCE
         val divider = 5
         var c = (Random.nextInt(delay.toInt()) % 5)
@@ -709,20 +709,10 @@ class WTWifiDirectManager(
             wtWifiDirectInfo()
         )
 
-        val startDelay = delay * (1 + (uptimeMillis() + stringSum(deviceUid)) % 5)
-        logd(tag, "Delaying $startDelay millis")
-        delay(startDelay / divider)
         cancelConnect()
-        delay(startDelay / divider)
-        val stallGroup = requestGroupInfo()
-        stallGroup?.logD(tag)
-        delay(startDelay / divider)
         clearAllServices()
-        delay(startDelay / divider)
         removeGroup()
-        delay(startDelay / divider)
         clearAllServices()
-        delay(startDelay / divider)
 
         channelSend(
             ChannelId.RCToComm,
@@ -730,15 +720,17 @@ class WTWifiDirectManager(
             Triple(null, null, null)
         )
 
-        wtServicesInit()
+        initServices()
 
         logd(tag, "Entering Main Loop: ${s.scanPeersS}")
         while (true) {
-            delay(c * delay / divider)
-            if (!checkWifiDPermission()) {
+            if (!checkWifiPermission()) {
                 remoteCall(RemoteCallId.RCRequestWifiDPermission)
+                delay(delay)
                 continue
             }
+
+            delay(c * delay / divider)
 
             logd(
                 tag, "thisDevice: ${thisDevice?.deviceName}" +
@@ -751,7 +743,7 @@ class WTWifiDirectManager(
             )
 
             if (restartChannel()) {
-                logd(tag, "Restart CHANNEL")
+                logd(tag, "Restart channel")
                 break
             }
 
@@ -784,59 +776,58 @@ class WTWifiDirectManager(
     suspend fun updatePeers(delay: Long = 1000L) {
         val divider = 5
         val tag = "updatePeers/${randomString(2u)}"
-        var count = 0
 
-        logd(tag, "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        logd(tag, "Entry")
         logd(
             tag,
-            "($count) deviceName = $deviceUid localIp = $wtLocalIp failCoolDown: $failCooldown wifiP2pEnable: ${wifiP2pEnable}/${wifiP2pEnabledNInfo.get()}/${wifiP2pEnable}"
-        ).also { count++ }
+            "deviceName = $deviceUid localIp = $wtLocalIp failCoolDown: $failCooldown wifiP2pEnable: ${wifiP2pEnable}/${wifiP2pEnabledNInfo.get()}/${wifiP2pEnable}"
+        )
 
-        updateThisDevice()
+        updateDevice()
 
         if (wifiP2pEnable) {
-            delay(1 * delay)
+            delay(delay)
             logd(
                 tag,
-                "discoverPeersJob ($count) deviceName = $deviceUid failCoolDown: $failCooldown thisDevice: ${thisDevice?.deviceName}"
-            ).also { count++ }
-            discoverPeersJob(delay / divider)
+                "discoverPeersJob deviceName = $deviceUid failCoolDown: $failCooldown thisDevice: ${thisDevice?.deviceName}"
+            )
+            discoverPeersJob()
 
             logd(
                 tag,
-                "updateP2pInfo ($count) deviceName = $deviceUid failCoolDown: $failCooldown thisDevice: ${thisDevice?.deviceName}"
-            ).also { count++ }
+                "updateP2pInfo deviceName = $deviceUid failCoolDown: $failCooldown thisDevice: ${thisDevice?.deviceName}"
+            )
             updateP2pInfo()
 
             if (null != thisDevice) {
                 delay(delay / divider)
                 logd(
                     tag,
-                    "updatePeersInfo ($count) deviceName = $deviceUid failCoolDown: $failCooldown"
-                ).also { count++ }
+                    "updatePeersInfo deviceName = $deviceUid failCoolDown: $failCooldown"
+                )
                 updatePeersInfo()
 
                 delay(delay / divider)
                 logd(
                     tag,
-                    "updateGroupInfo ($count) deviceName = $deviceUid failCoolDown: $failCooldown"
-                ).also { count++ }
+                    "updateGroupInfo deviceName = $deviceUid failCoolDown: $failCooldown"
+                )
                 updateGroupInfo()
 
                 delay(delay / divider)
                 logd(
                     tag,
-                    "connectToPeers ($count) deviceName = $deviceUid failCoolDown: $failCooldown"
-                ).also { count++ }
+                    "connectToPeers deviceName = $deviceUid failCoolDown: $failCooldown"
+                )
                 connectToPeers(delay / divider)
             }
 
             delay(delay / divider)
         }
-        logd(tag, "--------------------------------------------------------------")
+        logd(tag, "Exit")
     }
 
-    fun updateThisDevice() {
+    fun updateDevice() {
         val tag = "updateThisDevice/${randomString(2u)}"
 
         if (wifiP2pEnableInfo.get() != wifiP2pEnabledNInfo.get()) {
@@ -848,16 +839,19 @@ class WTWifiDirectManager(
         }
     }
 
+<<<<<<< HEAD
     suspend fun discoverPeersJob(delay: Long = 1000L) {
+=======
+    suspend fun discoverPeersJob() {
+>>>>>>> 4057b74 (WifiDirect module refactor: split platform and logic layers - WIP(3))
         val tag = "discoverPeersJob/${randomString(2u)}"
 
         logd(
             tag,
             "Entry isWifiP2pEnabled: $wifiP2pEnable resetPeersDiscovery: ${peersDiscoveryState()} discoveryCountdown: $discoveryCountdown"
         )
-        if (!checkWifiDPermission()) {
-            logd(tag, "Not enough WIFI-D permissions.")
-        } else if (wifiP2pEnable) {
+
+        if (wifiP2pEnable) {
             var str = ""
 
             if (peersDiscoveryState()) {
@@ -865,37 +859,22 @@ class WTWifiDirectManager(
 
                 if (wtIsGroupFormed && !wtIsGroupOwner) {
                     removeLocalService()
-                    delay(delay)
                 }
 
                 if (wtIsGroupOwner || !wtIsGroupFormed) {
                     addLocalService(removeFirst = true)
-                    delay(delay)
                 }
 
                 if (!wtIsGroupFormed || (null == wtGroupServerPort)) {
                     addServiceRequest(removeFirst = true)
-                    delay(delay)
                     discoverServices()
                 }
-                /* delay(delay) */
             }
-
-            /*
-        if ((wtIsGroupOwner() || !wtIsGroupFormed) && serviceAdvAdd()) {
-            addLocalService(sync = true, removeFirst = true)
-            delay(delay)
-        } else {
-            delay(delay)
-        }
-        */
 
             if (serviceDiscoveryActive() &&
                 (!wtIsGroupFormed || (null == wtGroupServerPort))
             ) {
                 discoverServices()
-            } else {
-                delay(delay)
             }
 
             serviceDiscoveryCountdown()
@@ -911,7 +890,7 @@ class WTWifiDirectManager(
         }
     }
 
-    suspend fun updatePeersInfo() {
+    fun updatePeersInfo() {
         val tag = "updatePeersInfo/${randomString(2u)}"
         var change = false
 
@@ -1206,8 +1185,7 @@ class WTWifiDirectManager(
                     "\n\t\tdiscoverPeersProcessActive: ${serviceDiscoveryActive()}"
         ).also { c++ }
 
-        if (checkWifiDPermission() &&
-            wifiP2pEnable &&
+        if (wifiP2pEnable &&
             connectingAllowed()
         ) {
             val tmpPeers: MutableMap<String, WTWifiDirectPeerInfo> = directWifiPeers.toMutableMap()
@@ -1534,13 +1512,14 @@ class WTWifiDirectManager(
         wtWifiDirect?.registerServiceListeners( txtListener, servListener)
     }
 
-    suspend fun wtServicesInit() {
+    suspend fun initServices() {
         val tag = "discoverServicesInit/${randomString(2u)}"
         val sem = Semaphore(1, 1)
 
         logd(tag, "Entry")
 
         registerServiceListeners()
+<<<<<<< HEAD
         delay(1000L)
         clearAllServices()
         delay(1000L)
@@ -1552,6 +1531,9 @@ class WTWifiDirectManager(
     /* discoverServices() */
     delay(1000L)
     */
+=======
+        clearAllServices()
+>>>>>>> 4057b74 (WifiDirect module refactor: split platform and logic layers - WIP(3))
         peersDiscoveryState(true)
     }
 
@@ -1675,7 +1657,6 @@ class WTWifiDirectManager(
                     tag, "P2P discovery has $state " +
                             if (state == WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED) "Started" else "Stopped"
                 )
-                //discoverPeersProcessActive = WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED == state
             }
 
             WIFI_P2P_STATE_CHANGED_ACTION -> {
@@ -1702,13 +1683,13 @@ class WTWifiDirectManager(
 
             WIFI_P2P_PEERS_CHANGED_ACTION -> {
                 /*
-             Request available peers from the wifi p2p manager. This is an
-             asynchronous call and the calling activity is notified with a
-             callback on PeerListListener.onPeersAvailable()
-            */
+                 Request available peers from the wifi p2p manager. This is an
+                 asynchronous call and the calling activity is notified with a
+                 callback on PeerListListener.onPeersAvailable()
+                */
                 logd(tag, "processBcastReceiverMessage: P2P peers changed")
 
-                if (!checkWifiDPermission()) {
+                if (!checkWifiPermission()) {
                     logd(tag, "processBcastReceiverMessage: Not enough permissions.")
                     return
                 }
@@ -1752,32 +1733,26 @@ class WTWifiDirectManager(
     fun main(scanInterval: Long = 1000L) {
         val tag = "wtWifiDirectMain/${randomString(2u)}"
 
-        logd(tag, "wtWifiDirectMain Entry 0")
+        logd("Entry")
 
         resetData()
-
-        logd(tag, "wtWifiDirectMain Entry 1")
 
         mainLoopJob = scope.launch {
             logd(TAGKClass, tag, "wtWifiDirectMain Starting Peers Scanning")
             mainLoop(scanInterval)
         }
 
-        logd(tag, "wtWifiDirectMain Entry 2 scanPeersJob: ${mainLoopJob.toString()}")
     }
 
-    suspend fun stop(delay: Long = 1000L) {
+    suspend fun stop() {
         val tag = "wtWifiDirectStop/${randomString(2u)}"
         val s = WTWiFiDirectStatic.INSTANCE
-        val divider = 5
 
-        logd(tag, "cancelConnect")
-        delay(delay / divider)
+        logd("Entry")
+
         cancelConnect()
-
-        logd(tag, "clearAllServices")
-        delay(delay / divider)
         clearAllServices()
+<<<<<<< HEAD
 
         logd(tag, "stopPeerDiscovery")
         delay(delay / divider)
@@ -1787,31 +1762,26 @@ class WTWifiDirectManager(
         delay(delay / divider)
         requestGroupInfo()
         delay(delay / divider)
+=======
+        stopPeersDiscovery()
+>>>>>>> 4057b74 (WifiDirect module refactor: split platform and logic layers - WIP(3))
         removeGroup()
-        delay(delay / divider)
         clearAllServices()
 
         wtWifiDirect?.channelClose()
 
-        logd(tag, "resetData")
         resetData()
-
         channelSend(
             ChannelId.RCToWTActivity,
             ChannelMessageType.RCWifiDebugInfoMessage,
             wtWifiDirectInfo()
         )
 
-        logd(tag, "wtWifiDirectStop 3")
         s.scanPeersS = false
-        logd(tag, "wtWifiDirectStop 4: ${s.scanPeersS}")
-        delay(delay / divider)
         channelSend(
             ChannelId.RCToWTActivity,
             ChannelMessageType.RCWifiRestartChannel
         )
-        logd(tag, "wtWifiDirectStop 5: ${s.scanPeersS}")
         resetData()
-        delay(delay / divider)
     }
 }
