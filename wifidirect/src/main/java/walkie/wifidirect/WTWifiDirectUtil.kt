@@ -115,7 +115,7 @@ internal suspend inline fun WTWifiDirect.p2pAction(
         (WifiP2pManager.Channel,
          WifiP2pManager.ActionListener) -> Unit
 ): WTWifiDirectResult<Unit> {
-    if (!checkWifiDPermission()) {
+    if (!checkWifiPermission()) {
         logd(TAGKClass, tag,
             "Not enough Wi Fi Permissions")
         return WTWifiDirectResult.LocalError.NoWifiPermissions
@@ -167,7 +167,7 @@ internal suspend inline fun <T>WTWifiDirect.p2pRequest(
         (WifiP2pManager.Channel,
          (T) -> Unit) -> Unit
 ): WTWifiDirectResult<T> {
-    if (!checkWifiDPermission()) {
+    if (!checkWifiPermission()) {
         logd(
             TAGKClass, tag,
             "Not enough Wi Fi Permissions"

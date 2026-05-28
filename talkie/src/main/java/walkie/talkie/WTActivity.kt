@@ -63,8 +63,6 @@ import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.RemoteCallMux
 import walkie.util.logd
 import walkie.util.randomString
-import walkie.wifidirect.main
-import walkie.wifidirect.stop
 import kotlin.getValue
 import kotlin.system.exitProcess
 

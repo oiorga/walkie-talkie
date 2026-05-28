@@ -11,37 +11,37 @@ import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest
-import walkie.util.CallbackResult
 import walkie.util.api.ChannelMessageType
-import walkie.util.api.RemoteCallId
 import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.RemoteCallMux
-import walkie.util.generic.typedCall
 import walkie.util.logd
 import walkie.util.randomString
 
 class WTWifiDirect(
     val manager: WifiP2pManager,
-    var channel: WifiP2pManager.Channel? = null,
+    var channel: WifiP2pManager.Channel,
+    private var env: WTWifiDirectEnv,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
 ) :
     ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
     RemoteCallMuxInt by _remoteCallMux {
-
     companion object {
         const val TAG = "WTWifiDirect"
         val TAGKClass = WTWifiDirect::class
     }
-
     val tag = TAG
 
-    fun checkWifiDPermission(): Boolean {
-        val tag = tag
-        logd(tag, "checkWifiDPermission perm = ${remoteCall(RemoteCallId.RCCheckWifiDPermission)}")
-        return (true == typedCall<Boolean>(RemoteCallId.RCCheckWifiDPermission))
+    fun checkWifiPermission(): Boolean {
+        val tag = "checkWifiPermission/${randomString(2u)}"
+
+        val res = env.checkWifiPermission()
+
+        logd(tag, ": $res")
+
+        return res
     }
 
     @SuppressLint("MissingPermission")
@@ -99,12 +99,12 @@ class WTWifiDirect(
     }
 
     @SuppressLint("MissingPermission")
-    suspend fun requestGroupInfo(): WTWifiDirectResult<WifiP2pGroup> {
+    suspend fun requestGroupInfo(): WTWifiDirectResult<WifiP2pGroup?> {
         val tag = "requestGroupInfo/${randomString(2u)}"
 
         logd(tag, "Enter")
 
-        val res: WTWifiDirectResult<WifiP2pGroup> = p2pRequest(
+        val res: WTWifiDirectResult<WifiP2pGroup?> = p2pRequest(
             tag,
             "No group info available"
         ) { ch, callback ->
@@ -113,12 +113,12 @@ class WTWifiDirect(
             }
         }
 
-        (res as? WTWifiDirectResult.Data<WifiP2pGroup>)?.let {
+        (res as? WTWifiDirectResult.Data<WifiP2pGroup?>)?.let {
             logd(
                 TAGKClass,
                 tag,
-                "Group Owner: ${it.data.owner?.deviceName} -> " +
-                        it.data.clientList?.joinToString(" ") { device -> device.deviceName }
+                "Group Owner: ${it.data?.owner?.deviceName} -> " +
+                        it.data?.clientList?.joinToString(" ") { device -> device.deviceName }
             )
         }
 
@@ -183,12 +183,12 @@ class WTWifiDirect(
         }
     }
 
-    suspend fun requestConnectionInfo(): WTWifiDirectResult<WifiP2pInfo> {
+    suspend fun requestConnectionInfo(): WTWifiDirectResult<WifiP2pInfo?> {
         val tag = "requestConnectionInfo/${randomString(2u)}"
 
         logd(tag, "Enter")
 
-        val res: WTWifiDirectResult<WifiP2pInfo> = p2pRequest<WifiP2pInfo>(
+        val res: WTWifiDirectResult<WifiP2pInfo?> = p2pRequest<WifiP2pInfo>(
             tag,
             "No connection info available"
             ) { ch, callback ->
@@ -201,27 +201,16 @@ class WTWifiDirect(
             logd(
                 TAGKClass,
                 tag,
-                "Exit: ${it.data.groupFormed}  ${it.data.isGroupOwner} ${it.data.groupOwnerAddress}"
+                "Exit: ${it.data?.groupFormed}  ${it.data?.isGroupOwner} ${it.data?.groupOwnerAddress}"
             )
         }
-
-        /*
-        if (res is WTWifiDirectResult.Data) {
-            logd(
-                TAGKClass,
-                tag,
-                "Exit: ${res.data.groupFormed}  ${res.data.isGroupOwner} ${res.data.groupOwnerAddress}"
-            )
-        }
-        */
-
         return res
     }
 
     @SuppressLint("MissingPermission")
-    suspend fun addLocalService(record: Map<String, String>,
-                                instanceName: String,
-                                serviceType: String): WTWifiDirectResult<Unit> {
+    suspend fun addLocalService(instanceName: String,
+                                serviceType: String,
+                                record: Map<String, String>): WTWifiDirectResult<Unit> {
         val tag = "addLocalService/${randomString(2u)}"
 
         logd(tag, "Entry: $record")
@@ -242,9 +231,9 @@ class WTWifiDirect(
         }
     }
 
-    suspend fun removeLocalService(record: Map<String, String>,
-                                   instanceName: String,
-                                   serviceType: String): WTWifiDirectResult<Unit> {
+    suspend fun removeLocalService(instanceName: String,
+                                   serviceType: String,
+                                   record: Map<String, String>): WTWifiDirectResult<Unit> {
         val tag = "removeLocalService/${randomString(2u)}"
 
         logd(tag, "Entry: $record")

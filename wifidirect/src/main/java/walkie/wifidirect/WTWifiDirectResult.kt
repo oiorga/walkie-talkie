@@ -27,6 +27,20 @@ sealed class WTWifiDirectResult<out T> {
         override val errStr = "SuccessData"
     }
 
+    fun <T> WTWifiDirectResult<T>.dataOrNull(): T? {
+        return (this as? WTWifiDirectResult.Data)?.data
+    }
+
+    inline fun <T> WTWifiDirectResult<T>.onData(block: (T) -> Unit) {
+        if (this is WTWifiDirectResult.Data<T>) {
+            block(data)
+        }
+    }
+
+    fun <T> WTWifiDirectResult.Data<T>.onData(block: (T) -> Unit) {
+        block(data)
+    }
+
     sealed class WifiP2pError(val errId: Int) : WTWifiDirectResult<Nothing>() {
         object InternalError : WifiP2pError(WifiP2pManager.ERROR) {
             override val errStr = "($errId) -> INTERNAL ERROR"
