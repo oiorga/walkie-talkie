@@ -839,11 +839,8 @@ class WTWifiDirectManager(
         }
     }
 
-<<<<<<< HEAD
-    suspend fun discoverPeersJob(delay: Long = 1000L) {
-=======
+
     suspend fun discoverPeersJob() {
->>>>>>> 4057b74 (WifiDirect module refactor: split platform and logic layers - WIP(3))
         val tag = "discoverPeersJob/${randomString(2u)}"
 
         logd(
@@ -1519,21 +1516,7 @@ class WTWifiDirectManager(
         logd(tag, "Entry")
 
         registerServiceListeners()
-<<<<<<< HEAD
-        delay(1000L)
         clearAllServices()
-        delay(1000L)
-        /*
-    /* addLocalService() */
-    delay(1000L)
-    /* addServiceRequest() */
-    delay(1000L)
-    /* discoverServices() */
-    delay(1000L)
-    */
-=======
-        clearAllServices()
->>>>>>> 4057b74 (WifiDirect module refactor: split platform and logic layers - WIP(3))
         peersDiscoveryState(true)
     }
 
@@ -1752,19 +1735,7 @@ class WTWifiDirectManager(
 
         cancelConnect()
         clearAllServices()
-<<<<<<< HEAD
-
-        logd(tag, "stopPeerDiscovery")
-        delay(delay / divider)
         stopPeersDiscovery()
-
-        logd(tag, "requestGroupInfo/removeGroup/clearAllServices")
-        delay(delay / divider)
-        requestGroupInfo()
-        delay(delay / divider)
-=======
-        stopPeersDiscovery()
->>>>>>> 4057b74 (WifiDirect module refactor: split platform and logic layers - WIP(3))
         removeGroup()
         clearAllServices()
 
