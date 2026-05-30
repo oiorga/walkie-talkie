@@ -11,6 +11,7 @@ import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest
+import kotlinx.coroutines.CoroutineScope
 import walkie.util.CallbackResult
 import walkie.util.api.ChannelMessageType
 import walkie.util.api.RemoteCallMuxInt
@@ -25,6 +26,7 @@ class WTWifiDirect(
     private val manager: WifiP2pManager,
     private var channel: WifiP2pManager.Channel,
     private var env: WTWifiDirectEnv,
+    scope: CoroutineScope,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
 ) :
@@ -328,7 +330,7 @@ class WTWifiDirect(
 
     suspend fun removeServiceRequest(instanceName: String,
                                      serviceType: String): WTWifiDirectResult<Unit> {
-        val tag = "addServiceRequest/${randomString(2u)}"
+        val tag = "removeServiceRequest/${randomString(2u)}"
         val serviceRequest = WifiP2pDnsSdServiceRequest.newInstance(instanceName, serviceType)
 
         logd(tag, "Entry:")

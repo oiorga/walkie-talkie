@@ -1,5 +1,6 @@
 package walkie.talkie.globalmap
 
+import kotlinx.coroutines.CoroutineScope
 import walkie.chat.ChatDiscussion
 import walkie.chat.ChatGroupId
 import walkie.chat.ChatGroupMap

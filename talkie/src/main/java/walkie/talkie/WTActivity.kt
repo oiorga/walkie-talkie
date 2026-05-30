@@ -246,12 +246,12 @@ class WTActivity(
     private val info1 = InfoMap(groupIdWDI)
     override suspend fun channelOnReceive(
         channelId: ChannelIdInt,
-        inputType: ChannelMessageType?,
+        type: ChannelMessageType?,
         input: Any?
     ) {
         when (channelId) {
             ChannelId.RCToWTActivity -> {
-                when (inputType) {
+                when (type) {
                     ChannelMessageType.RCWifiDebugInfoMessage -> {
                         val groupId = groupIdWDI
                         if (info1["b"] != input as String) {

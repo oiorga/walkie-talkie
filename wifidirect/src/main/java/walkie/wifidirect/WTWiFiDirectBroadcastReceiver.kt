@@ -24,6 +24,8 @@ import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_DISCOVERY_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.runBlocking
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelMessageType
 import walkie.util.generic.ChannelMux
@@ -36,6 +38,7 @@ import walkie.util.logging
  * A BroadcastReceiver that notifies of important wifi p2p events.
  */
 class WiFiDirectBroadcastReceiver (
+    scope: CoroutineScope,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>()
 ) : BroadcastReceiver(),
     ChannelMuxInt<Any, ChannelMessageType> by _channelMux
@@ -70,7 +73,8 @@ class WiFiDirectBroadcastReceiver (
                 channelSend(
                     channelId = ChannelId.RCToWifi,
                     input = intent,
-                    inputType = ChannelMessageType.RCWifiBroadcastReceiver)
+                    type = ChannelMessageType.RCWifiBroadcastReceiver
+                )
             }
             /*
             WIFI_P2P_STATE_CHANGED_ACTION -> {

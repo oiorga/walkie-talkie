@@ -22,6 +22,7 @@ import android.os.SystemClock.uptimeMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import walkie.talkie.api.wtsystem.NodeIdInt
@@ -91,7 +92,7 @@ class WTWifiDirectManager(
     }
 
     fun attachChannel(channel: Channel) {
-        wtWifiDirect = WTWifiDirect(manager, channel, wtWifiDirectEnv)
+        wtWifiDirect = WTWifiDirect(manager, channel, wtWifiDirectEnv, scope)
     }
 
     fun checkWifiPermission(): Boolean {
@@ -197,11 +198,11 @@ class WTWifiDirectManager(
         if (null != enabled) {
             discoveryCountdown = if (enabled) 0 else DiscoveryCountdown
         }
-        return (0 == discoveryCountdown.toInt())
+        return (0 == discoveryCountdown)
     }
 
     fun serviceAdvAdd(): Boolean {
-        return (0 == (discoveryCountdown.toInt() % 5) && !connectingAllowed())
+        return (0 == (discoveryCountdown % 5) && !connectingAllowed())
     }
 
     fun serviceDiscoveryActive(enable: Boolean? = null): Boolean {
@@ -723,7 +724,7 @@ class WTWifiDirectManager(
         initServices()
 
         logd(tag, "Entering Main Loop: ${s.scanPeersS}")
-        while (true) {
+        while (scope.isActive) {
             if (!checkWifiPermission()) {
                 remoteCall(RemoteCallId.RCRequestWifiDPermission)
                 delay(delay)
@@ -849,8 +850,6 @@ class WTWifiDirectManager(
         )
 
         if (wifiP2pEnable) {
-            var str = ""
-
             if (peersDiscoveryState()) {
                 serviceDiscoveryActive(true)
 
@@ -864,7 +863,7 @@ class WTWifiDirectManager(
 
                 if (!wtIsGroupFormed || (null == wtGroupServerPort)) {
                     addServiceRequest(removeFirst = true)
-                    discoverServices()
+                    /* discoverServices() */
                 }
             }
 
@@ -876,13 +875,14 @@ class WTWifiDirectManager(
 
             serviceDiscoveryCountdown()
 
-            directWifiPeers.forEach { (_, device) ->
-                str += device.name + "/${device.address}/${device.age} "
-            }
-
             logd(
                 tag,
-                "isGroupOwner: ${wtIsGroupOwner}, discoveryCountdown: $discoveryCountdown resetPeersDiscovery: ${peersDiscoveryState()} peers: $str"
+                "isGroupOwner: ${wtIsGroupOwner}, discoveryCountdown: $discoveryCountdown resetPeersDiscovery: ${peersDiscoveryState()} " +
+                        "peers: ${
+                            directWifiPeers.values.joinToString(" ") { device ->
+                                "${device.name}/${device.address}/${device.age}"
+                            }
+                        }"
             )
         }
     }
@@ -918,10 +918,10 @@ class WTWifiDirectManager(
         if (directWifiPeersN.isEmpty()) {
             logd(tag, "No New Peers.")
         } else {
-            directWifiPeersN.forEach { device ->
-                str += "[${device.deviceName}/${device.uniqueWifiId()}] "
-            }
-            logd(tag, "Got New Peers: $str")
+            logd(tag, "Got New Peers: " +
+                    directWifiPeersN.joinToString(" ") { device ->
+                        "${device.deviceName}/${device.deviceAddress}"
+            })
             change = true
         }
 
@@ -967,41 +967,43 @@ class WTWifiDirectManager(
             }
         }
 
-        str = ""
-        directWifiPeers.forEach { (_, device) ->
-            str += "[${device.uniqueWifiId()} ${thisDevice?.deviceName} ${device.name}] "
-        }
-        logd(tag, "directWifiPeers: $str")
+        logd(tag, "directWifiPeers: " +
+                directWifiPeers.values.joinToString(" ") {
+                    device -> "[${device.uniqueWifiId()} ${thisDevice?.deviceName} ${device.name}]"
+                }
+        )
 
         if (change) {
             channelSend(
                 channelId = ChannelId.RCToWifi,
                 input = null,
-                inputType = ChannelMessageType.RCWifiBroadcastReceiver
+                type = ChannelMessageType.RCWifiBroadcastReceiver
             )
         }
     }
 
     fun updateGroupInfo() {
         val tag = "updateGroupInfo/${randomString(2u)}"
-        var changed = false
         val p2pInfo = wtWifiP2pInfo.get()
         val oldGroup = wtWifiGroupInfo.get()
         val newGroup = wtWifiGroupInfoN.get()
 
-        logd(tag, "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        logd(tag, "Entry")
         logd(
             tag,
             "\nFormed / Group Name / Owner / IP: $wtIsGroupFormed / ${newGroup?.networkName} / ${newGroup?.owner?.deviceName} / ${p2pInfo?.groupOwnerAddress}"
         )
 
-        if (oldGroup != newGroup) changed = true
+        if (oldGroup == newGroup) {
+            logd(tag, "Exit. No new group.")
+            return
+        }
 
         wtWifiGroupInfo.getAndSet(newGroup)
 
-        if (null == newGroup && changed) connectToDevice = null
+        if (null == newGroup) connectToDevice = null
 
-        if (null != p2pInfo && null != newGroup && changed) {
+        if (null != p2pInfo && null != newGroup) {
             if (newGroup.owner?.deviceName != null &&
                 newGroup.owner?.uniqueWifiId() != thisDevice!!.uniqueWifiId()
             ) {
@@ -1038,15 +1040,13 @@ class WTWifiDirectManager(
             }
         }
 
-        if (changed) {
-            channelSend(
-                ChannelId.RCToWTActivity,
-                ChannelMessageType.RCWifiDebugInfoMessage,
-                wtWifiDirectInfo()
-            )
-        }
+        channelSend(
+            ChannelId.RCToWTActivity,
+            ChannelMessageType.RCWifiDebugInfoMessage,
+            wtWifiDirectInfo()
+        )
 
-        logd(tag, "--------------------------------------------------------------")
+        logd(tag, "Exit")
     }
 
     fun notifyOfChange(
@@ -1348,7 +1348,7 @@ class WTWifiDirectManager(
 
         when (val res =
             wtWifiDirect?.addLocalService(
-                serviceType,
+                instanceName,
                 serviceType,
                 wtLocalServiceRecord!!
             )

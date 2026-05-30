@@ -67,7 +67,7 @@ class WTCommonData private constructor (
     lateinit var wtWifiD: WTWifiDirectManager
     lateinit var wtBcastReceiver: WiFiDirectBroadcastReceiver
 
-    lateinit var wtRuntimee: CoroutineRuntime
+    lateinit var wtRuntime: CoroutineRuntime
     lateinit var wtScope: CoroutineScope
 
     /* lateinit var wtLCObs: LifeCycleObserver */
@@ -83,15 +83,15 @@ class WTCommonData private constructor (
 
     override suspend fun channelOnReceive(
         channelId: ChannelIdInt,
-        inputType: ChannelMessageType?,
+        type: ChannelMessageType?,
         input: Any?
         ) {
         val tag = "channelOnReceive/${randomString(2U)}"
 
-        logd(tag, "channelId: $channelId inputType: $inputType input: $input")
+        logd(tag, "channelId: $channelId inputType: $type input: $input")
         when (channelId) {
             ChannelId.RCTOCommonData -> {
-                if (updateUI(inputType!!, input))
+                if (updateUI(type!!, input))
                     updateUiLiveData.update()
             }
             else -> {

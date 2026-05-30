@@ -21,7 +21,10 @@ import walkie.talkie.playground.CounterLive
 import walkie.util.CoroutineRuntime
 import walkie.util.Logging
 import walkie.util.api.ChannelId
+import walkie.util.api.ChannelMessageType
 import walkie.util.generateBinaryRec
+import walkie.util.generic.ChannelMux
+import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.genericListOf
 import walkie.util.generic.registerAsReceiver
 import walkie.util.generic.registerSenders
@@ -76,13 +79,13 @@ class WalkieTalkie:
 }
 
 internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
-    logd(tag,"WTActivity.wtCommDataInit called stage: $stage init")
+    logd(tag,"WalkieTalkie.wtHubInit called stage: $stage init")
 
     for (i in 0..<stage) {
         if (!wtHub.initStage[i]) {
             logd(
                 tag,
-                "WTActivity.wtCommDataInit called stage: $stage init before  stage: $i: ${wtHub.initStage[i]}?"
+                "WalkieTalkie.wtHubInit called stage: $stage init before  stage: $i: ${wtHub.initStage[i]}?"
             )
             return wtHub
         }
@@ -91,7 +94,7 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
     if (wtHub.initStage[stage]) {
         logd(
             tag,
-            "WTActivity.wtCommDataInit stage: $stage already initialized?"
+            "WalkieTalkie.wtHubInit stage: $stage already initialized?"
         )
         return wtHub
     }
@@ -101,10 +104,10 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
             wtDebug(onOff = BuildConfig.DEBUG)
             wtHub.wtDeviceName = Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME)
             wtHub.wtSystemNodeId = NodeId(wtHub.wtDeviceName, randomString(4U))
-            wtHub.wtRuntimee = CoroutineRuntime.Custom(
+            wtHub.wtRuntime = CoroutineRuntime.Custom(
                 CoroutineRuntime.RunJob.Supervisor,
                 CoroutineRuntime.RunDispatcher.Main)
-            wtHub.wtScope = wtHub.wtRuntimee.scope
+            wtHub.wtScope = wtHub.wtRuntime.scope
         }
 
         1 -> {
@@ -119,7 +122,8 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 DiscussionMap(
                     discussionMap = ChatDiscussionMap(),
                     groupMap = wtHub.wtGlobalGroupMap,
-                    systemNode = wtHub.wtSystemNodeId)
+                    systemNode = wtHub.wtSystemNodeId
+                )
             wtHub.wtGlobalDiscussionMap.updateUiLiveData =
                 wtHub.updateUiLiveData
 
@@ -212,7 +216,7 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
         else -> {
             logd(
                 tag,
-                "WTActivity.wtCommDataInit stage: $stage out of range?"
+                "WalkieTalkie.wtHubInit stage: $stage out of range?"
             )
             return wtHub
         }
@@ -225,6 +229,6 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
 internal fun WalkieTalkie.wifiDInit() {
     val manager: WifiP2pManager = getSystemService(Context.WIFI_P2P_SERVICE) as WifiP2pManager
     wtHub.wtWifiD = WTWifiDirectManager(manager, wtHub.wtSystemNodeId, wtHub.wtScope)
-    wtHub.wtBcastReceiver = WiFiDirectBroadcastReceiver()
+    wtHub.wtBcastReceiver = WiFiDirectBroadcastReceiver(wtHub.wtScope)
 }
 
