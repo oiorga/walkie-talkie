@@ -71,7 +71,7 @@ class ChannelMux<T, K>() : ChannelMuxInt<T, K> {
             if (null == channelMap[channelId]) {
                 channelMap[channelId] =
                     MutableSharedFlow<ChannelMessage<T, K>>(
-                        replay = 1,
+                        replay = 0,
                         extraBufferCapacity = 100,
                         onBufferOverflow = BufferOverflow.SUSPEND
                     )

@@ -18,6 +18,7 @@ import walkie.talkie.common.WTCommonData
 import walkie.talkie.globalmap.DiscussionMap
 import walkie.talkie.node.NodeId
 import walkie.talkie.playground.CounterLive
+import walkie.talkie.playground.commSquirrelWheel
 import walkie.util.CoroutineRuntime
 import walkie.util.Logging
 import walkie.util.api.ChannelId
@@ -129,13 +130,6 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
             wtHub.wtGlobalDiscussionMap.updateUiLiveData =
                 wtHub.updateUiLiveData
 
-            wtHub.registerAsReceiver(
-                ChannelId.RCTOCommonData,
-                wtHub.wtScope,
-                wtHub.wtGlobalDiscussionMap,
-                wtHub.wtComm
-            )
-
             wtHub.wtGlobalDiscussionMap.registerSenders(
                 channelId = ChannelId.RCCommToChat,
                 wtHub.wtGlobalDiscussionMap.scope,
@@ -149,6 +143,13 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 wtHub.wtWifiD
             )
 
+            wtHub.registerAsReceiver(
+                ChannelId.RCTOCommonData,
+                wtHub.wtScope,
+                wtHub.wtGlobalDiscussionMap,
+                wtHub.wtComm
+            )
+
             wtHub.wtWifiD.registerSenders(
                 ChannelId.RCToWifi,
                 wtHub.wtWifiD.scope,
@@ -157,13 +158,14 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 wtHub.wtWifiD
             )
 
-            /* Move from Activity
+            /*
             this.registerSenders(
                 channelId = ChannelId.RCToWTActivity,
                 wtHub.wtWifiD,
                 wtHub.wtComm.wtPRMComm()
             )
             */
+
         }
 
         2 -> {
@@ -181,7 +183,7 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
             wtHub.wtGlobalGroupMap[ChatGroupId(groupId = "WIFI Direct Info", groupName = "WIFI Direct Info", type = ChatGroupType.LocalDebug)] =
                 ChatGroupList(ChatGroupId(groupId = "WIFI Direct Info", groupName = "WIFI Direct Info", ChatGroupType.LocalDebug), mutableListOf())
 
-            /* WIFI Direct Initial Testing - testing */
+            /* Wi-Fi Direct Initial Testing - testing */
             wtHub.wtGlobalGroupMap[ChatGroupId(groupId = "WIFI Direct All", groupName = "WIFI Direct All", ChatGroupType.LocalDebug)] =
                 ChatGroupList(ChatGroupId(groupId = "WIFI Direct All", groupName = "WIFI Direct All", type = ChatGroupType.LocalDebug), mutableListOf())
 
@@ -213,10 +215,11 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 ).toList().forEach {
                     wtHub.wtGlobalGroupMap[ChatGroupId(groupId = groupId, type = ChatGroupType.LocalChatTesting)]?.add(NodeId(it, ""))
                 }
+
+                commSquirrelWheel(scope = wtHub.wtScope, delay = 6000L, addRandom = 5L)
             }
 
             /* To do it properly
-
             wtHub.wtComm.start() */
         }
         else -> {

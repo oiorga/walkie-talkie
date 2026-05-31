@@ -72,6 +72,9 @@ class WTCommonData private constructor (
 
     /* lateinit var wtLCObs: LifeCycleObserver */
 
+    /* To Remove */
+    lateinit var counterLive: CounterLive
+
     private var wtDebug: Boolean? = BuildConfig.DEBUG
 
     var customComposables: MutableMap<String, @Composable (Modifier, WTUITheme) -> Unit> = mutableMapOf()
@@ -102,12 +105,8 @@ class WTCommonData private constructor (
     }
 
     fun sendChatMessage(chatMessage: ChatMessageAbs) {
-        val globalDiscussionMap = wtGlobalDiscussionMap
-        globalDiscussionMap.sendMessage(chatMessage)
+        wtGlobalDiscussionMap.sendMessage(chatMessage)
     }
-
-    /* To Remove */
-    lateinit var counterLive: CounterLive
 }
 
 internal fun WTCommonData.updateUI(
@@ -115,8 +114,7 @@ internal fun WTCommonData.updateUI(
     uiScreenMinor: Any?
 ): Boolean {
     val tag = "updateUI/${randomString(2U)}"
-    var updateUI = false
-    updateUI = when (uiScreenMajor) {
+    val updateUI: Boolean = when (uiScreenMajor) {
         ChannelMessageType.RCUpdateChatUI -> {
             wtChatUpdateUI(uiScreenMinor as ChatGroupType, wtVModel?.currentScreen())
         }

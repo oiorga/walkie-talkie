@@ -278,7 +278,6 @@ class WTActivity(
                             wtHub.sendChatMessage(message)
                         }
                     }
-
                     ChannelMessageType.RCWTMeshDebugInfoMessage -> {
                         val groupId = groupIdWDI
                         if (info1["a"] != input as String) {
@@ -305,20 +304,20 @@ class WTActivity(
                             wtHub.sendChatMessage(message)
                         }
                     }
-
                     ChannelMessageType.RCWifiRestartChannel -> {
                         logd(tag, "RCWifiRestartChannel")
                         wifiRestartChannel()
                         wtHub.wtComm.wtPRMComm().wtIPComm.stop()
                     }
-
                     else -> {
-
+                        logd(tag, "channelOnReceive channelMessageType $channelId/$type. Not implemented.")
+                        throw (NotImplementedError("$tag: channelOnReceive channelMessageType $channelId/$type. Not implemented."))
                     }
                 }
             }
             else -> {
-
+                logd(tag, "channelOnReceive channelId $channelId not implemented.")
+                throw (NotImplementedError("$tag: channelId channelMessageType: $channelId not implemented."))
             }
         }
     }
@@ -418,7 +417,6 @@ internal fun WTActivity.hasWifiDPermission(): Boolean {
 internal fun WTActivity.wtCustomInit(){
     logd(tag,"WTActivity.wtHubInit")
 
-
     if (!hasWifiDPermission())
         requestWifiDPermission()
     wifiInitChannel()
@@ -438,7 +436,6 @@ internal fun WTActivity.wtCustomInit(){
     /* To move to App init section */
     wtHub.wtComm.start()
 
-    commSquirrelWheel(scope = wtScope, delay = 6000L, addRandom = 5L)
 }
 
 fun WTActivity.customComposablesInit() {
