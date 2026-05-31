@@ -71,7 +71,7 @@ class ChannelMux<T, K>() : ChannelMuxInt<T, K> {
             if (null == channelMap[channelId]) {
                 channelMap[channelId] =
                     MutableSharedFlow<ChannelMessage<T, K>>(
-                        replay = 0,
+                        replay = 10,
                         extraBufferCapacity = 100,
                         onBufferOverflow = BufferOverflow.SUSPEND
                     )
@@ -110,7 +110,7 @@ class ChannelMux<T, K>() : ChannelMuxInt<T, K> {
     override fun channelSend (channelId: ChannelIdInt, scope: CoroutineScope, type: K?, input: T?) {
         val tag = "channelSend/${randomString(2u)}"
 
-        logd(tag, "channelSend: channelId ${channelId.toString()} input: $input type: $type")
+        logd(tag, "channelSend: channelId ${channelId.toString()} input: ${if (null != input) input::class else null}  type: $type")
 
         if (null == receiverMap[channelId]) {
             logd(tag, "channelSend: receiver object for channel $channelId / $type is not registered")

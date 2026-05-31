@@ -508,7 +508,6 @@ class WTWifiDirectManager(
             }
             else -> {
                 wtWifiFailure("$tag/Unknown Error")
-                ConnectionStatus.Fail
             }
         }
     }

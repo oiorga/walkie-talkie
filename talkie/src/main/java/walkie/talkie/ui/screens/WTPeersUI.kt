@@ -25,7 +25,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import walkie.chat.ChatGroupId
 import walkie.comm.WTCommPeerInfo
 import walkie.comm.uid
@@ -217,7 +220,7 @@ internal fun WTActivity.PeersUiEntry(
     }
 }
 
-internal fun WTActivity.openChatOnClickPrep(
+internal suspend fun WTActivity.openChatOnClickPrep(
     mainVModel: WTViewModel,
     peer: WTCommPeerInfo
 ) {
@@ -226,11 +229,12 @@ internal fun WTActivity.openChatOnClickPrep(
 
     logd(tag, "(0): ${mainVModel.currentScreen()} dId: ${mainVModel.nextDiscussionId}")
 
-   wtHub.wtGlobalGroupMap.addNode(
+    wtHub.wtGlobalGroupMap.addNode(
         chatGroupId,
         NodeId.Builder().id(peer.id).unique(peer.unique!!).build()
     )
-   wtHub.wtGlobalDiscussionMap.createDiscussion(chatGroupId)
+
+    wtHub.wtGlobalDiscussionMap.createDiscussion(chatGroupId)
 
     mainVModel.nextDiscussionId = chatGroupId
     mainVModel.changeScreen(WTNavigation.RemoteChat)
@@ -238,7 +242,7 @@ internal fun WTActivity.openChatOnClickPrep(
     logd(tag, "(1): ${mainVModel.currentScreen()} dId: ${mainVModel.nextDiscussionId}")
 }
 
-internal fun WTActivity.openChatOnClick(
+internal suspend fun WTActivity.openChatOnClick(
     mainVModel: WTViewModel,
     peer: WTCommPeerInfo
 ) {
@@ -266,19 +270,32 @@ internal fun WTActivity.PeersMainScreen(
 
     run { triggerUpdate }
 
+    val scope = rememberCoroutineScope()
     val randomTrue = Random.nextBoolean()
     wtComm.directNodesInfo().forEach { peerInfo ->
         val navNode = WTNavNode(
             route = WTNavigation.RemoteChat,
             /* value = peerInfo, */
-            onClick = if (randomTrue) { { openChatOnClick(mainVModel, peer = peerInfo) } } else null,
+            onClick = if (randomTrue) {
+                {
+                    scope.launch {
+                        openChatOnClick(mainVModel, peer = peerInfo)
+                    }
+                }
+            } else null,
             preview = { mod ->
                 PeersUiEntry(
                     modifier = mod!!,
                     mainVModel = mainVModel,
                     peer = peerInfo,
                     wtUITheme = wtUITheme,
-                    onClick = if (!randomTrue) { { openChatOnClick(mainVModel, peer = peerInfo) } } else null,
+                    onClick = if (!randomTrue) {
+                        {
+                            scope.launch {
+                                openChatOnClick(mainVModel, peer = peerInfo)
+                            }
+                        }
+                    } else null,
                 )
             }
         )

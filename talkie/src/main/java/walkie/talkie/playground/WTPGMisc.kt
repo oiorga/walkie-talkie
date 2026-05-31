@@ -20,6 +20,7 @@ import walkie.talkie.WTActivity
 import walkie.talkie.WalkieTalkie
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.node.NodeId
+import walkie.util.logd
 import walkie.util.randomString
 import java.util.Timer
 import java.util.TimerTask
@@ -87,33 +88,40 @@ fun WalkieTalkie.squirrelWheel (scope: CoroutineScope = MainScope(), counter: Co
     }
 }
 
-fun WalkieTalkie.commSquirrelWheel (scope: CoroutineScope = MainScope(), delay: Long = 1003L, addRandom: Long = 10L) = runBlocking {
-    val tag: String = "commSquirrelWheel"
+fun WalkieTalkie.commSquirrelWheel (scope: CoroutineScope, delay: Long = 1003L, addRandom: Long = 10L): Job {
+    val tag: String = "commSquirrelWheel/${randomString(2U)}"
 
-    Log.d(tag, "commSquirrelWheel: Entry")
+    logd(tag, "Entry")
 
-    val generateRandomMessageJob = scope.launch {
-        Log.d(tag, "commSquirrelWheel: generateRandomMessageJob: 0")
-        delay(delay * Random.nextLong(addRandom))
+    return scope.launch {
+        logd(tag, "generateRandomMessageJob: 0")
         while (true) {
             if (wtDebug()) {
-                wifiLocalRndMsgs(scope, delay)
+                wifiLocalRndMsgs()
                 wifiDirectIpPeersRndMsgs(scope, delay)
             }
 
-            delay(Random.nextLong(1 + delay * addRandom))
+            delay(delay * (1 + Random.nextLong(addRandom)))
         }
     }
 }
 
-fun WalkieTalkie.wifiLocalRndMsgs(scope: CoroutineScope, delay: Long) {
+suspend fun WalkieTalkie.wifiLocalRndMsgs() {
+    if (!wtDebug())
+        return
+
+    val tag = "wifiLocalRndMsgs/${randomString(2U)}"
+    val messagePayload = Random.nextLong().toString()
+
+    logd(tag, messagePayload)
+
     val message = ChatMessage(
         sender = generateRandomSender(),
         receiver = generateRandomReceiver(receiverType = ChatGroupType.LocalChatTesting),
         groupId = generateRandomGroupId(type = ChatGroupType.LocalChatTesting),
         chatMessageItemList = ChatMessageItemList(
             mutableListOf(
-                ChatMessageItem.Builder().value(Random.nextLong().toString()).build()
+                ChatMessageItem.Builder().value(messagePayload).build()
             )
         )
     )
@@ -121,10 +129,15 @@ fun WalkieTalkie.wifiLocalRndMsgs(scope: CoroutineScope, delay: Long) {
 }
 
 suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: Long) {
-    delay(0L)
+    if (!wtDebug())
+        return
+
+    val tag = "wifiDirectIpPeersRndMsgs/${randomString(2U)}"
     var delaY = 0
     var i = 0
     val dPeersGroup = ChatGroupId("Direct Peers", type = ChatGroupType.RemoteChatTesting)
+
+    logd(tag, "Entry")
 
     wtHub.wtComm.directNodesInfo().forEach { peer ->
         val peerGId = ChatGroupId(groupId = peer.uid(), groupName = peer.id, type = ChatGroupType.RemoteChatTesting)
@@ -145,6 +158,10 @@ suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: 
             delay(10L)
             scope.launch {
                 delay(delay * Random.nextLong((k + 1) * delaY))
+
+                val messagePayload = "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid()}" +
+                        " $c$maxK $k " + "[" + randomString(8U) + "]"
+
                 val message = ChatMessage(
                     sender = Sender(wtHub.wtSystemNodeId),
                     receiver = Receiver(peerNodeId, peerGId),
@@ -152,19 +169,20 @@ suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: 
                     chatMessageItemList = ChatMessageItemList(
                         mutableListOf(
                             ChatMessageItem.Builder()
-                                .value(
-                                    "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid()}" +
-                                            " $c$maxK $k " + "[" + randomString(8U) + "]"
-                                )
+                                .value(messagePayload)
                                 .build()
                         )
                     )
                 )
+
+                logd(tag, "${message.sender.node.unique} -> ${message.receiver.node.unique}: $messagePayload")
                 wtHub.sendChatMessage(message)
             }
 
             scope.launch {
                 delay(delay * Random.nextLong(delaY.toLong()))
+                val messagePayload = "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid()} " + "" +
+                        "[" + randomString(8U) + "]"
                 val message = ChatMessage(
                     sender = Sender(wtHub.wtSystemNodeId),
                     receiver = Receiver(peerNodeId, dPeersGroup),
@@ -172,13 +190,13 @@ suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: 
                     chatMessageItemList = ChatMessageItemList(
                         mutableListOf(
                             ChatMessageItem.Builder()
-                                .value(
-                                    "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid()} " + "" +
-                                            "[" + randomString(8U) + "]")
+                                .value(messagePayload)
                                 .build()
                         )
                     )
                 )
+
+                logd(tag, "${message.sender.node.unique} -> ${message.receiver.node.unique}: $messagePayload")
                 wtHub.sendChatMessage(message)
             }
         }

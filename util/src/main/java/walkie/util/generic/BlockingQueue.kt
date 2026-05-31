@@ -12,7 +12,7 @@ class BlockingQueue<T> (val name: String = "BlockingQueue", private val permits:
 
 abstract class GenericBlockingQueueAbs<T> (
     private val name: String = "GenericBlockingQueueAbs",
-    private val capacity: Int = 1,
+    private val capacity: Int = 100,
     private val channel: Channel<T> = Channel<T>(capacity)
 ) : Channel<T> by channel {
     private val logDString: String
@@ -65,6 +65,7 @@ abstract class GenericBlockingQueueAbs<T> (
  * Working/Alias against with semaphore protection:
  *        itemList: MutableList<T> = mutableListOf()
  **/
+/*
 abstract class GenericBlockingQueueAbsOld<T> (
     private val name: String = "GenericBlockingQueueAbs",
     private val capacity: Int = 1,
@@ -175,3 +176,4 @@ abstract class GenericBlockingQueueAbsOld<T> (
     }
 
 }
+*/

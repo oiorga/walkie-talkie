@@ -1,6 +1,7 @@
 package walkie.chat
 
 import android.util.Log
+import kotlinx.coroutines.sync.Mutex
 import walkie.talkie.api.wtchat.AuthorInt
 import walkie.talkie.api.wtchat.ChatGroupIdInt
 import walkie.talkie.api.wtchat.ChatGroupListAbs
@@ -47,20 +48,15 @@ data class ChatGroupMap(
     }
 
     fun removeGroup (chatGroupId: ChatGroupIdInt) : ChatGroupListAbs? {
-        return groupMap.remove(chatGroupId)
-    }
-
-    fun groupIsEmpty (chatGroupId: ChatGroupIdInt) : Boolean {
-        return ((groupMap[chatGroupId] != null) && (groupMap[chatGroupId]?.isEmpty() == true))
+        val ret = groupMap.remove(chatGroupId)
+        return ret
     }
 
     fun groupExists(chatGroupId: ChatGroupIdInt) : Boolean {
-        return groupMap[chatGroupId] != null
+        val exist = groupMap[chatGroupId] != null
+        return exist
     }
 
-    fun getGroupList (chatGroupId: ChatGroupIdInt) : ChatGroupListAbs? {
-        return groupMap[chatGroupId]
-    }
 }
 
 data class ChatGroupList(

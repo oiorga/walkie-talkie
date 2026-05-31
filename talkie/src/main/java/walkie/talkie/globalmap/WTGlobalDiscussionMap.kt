@@ -1,6 +1,7 @@
 package walkie.talkie.globalmap
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.sync.Mutex
 import walkie.chat.ChatDiscussion
 import walkie.chat.ChatGroupId
 import walkie.chat.ChatGroupMap
@@ -50,6 +51,8 @@ data class DiscussionMap(
         const val TAG = "GlobalDiscussionMap"
     }
 
+    val mutex = Mutex()
+
     init {
         /* registerRemoteCall(RemoteCallId.RCChatMessageFromComm) { run { recvFromComm(it as CommPacket) } } */
 
@@ -58,7 +61,7 @@ data class DiscussionMap(
         logd(TAG, "init")
     }
 
-    private fun addMessage(chatMessage: ChatMessageAbs) {
+    private suspend fun addMessage(chatMessage: ChatMessageAbs) {
         val tag = "addMessage/${randomString(2U)}"
         val logF = (chatMessage.groupId.type == ChatGroupType.RemoteChatTesting || chatMessage.groupId.type == ChatGroupType.RemoteChat)
 
@@ -68,6 +71,8 @@ data class DiscussionMap(
         val gIdReceiver = ChatGroupId(chatMessage.receiver.node.uid(), chatMessage.receiver.node.id(), type = type)
         val gIdMe = ChatGroupId(systemNode.uid(), systemNode.id(), type = type)
         val gIdBogus = ChatGroupId("Bogus", "Bogus", type = ChatGroupType.Etc)
+
+        mutex.lock()
 
         val gId: ChatGroupId =
             if (gIdMe == gIdSender && groupMap.groupExists(gIdGroup)) gIdGroup
@@ -97,18 +102,24 @@ data class DiscussionMap(
         tempVar.addChatMessage(chatMessage)
         discussionMap[gId] = tempVar
 
+        mutex.unlock()
+
         channelSend(ChannelId.RCTOCommonData,  scope, ChannelMessageType.RCUpdateChatUI, chatMessage.groupId.type)
     }
 
     fun discussionMap() = discussionMap
 
-    fun createDiscussion(chatGroupId: ChatGroupId, chatDiscussion: ChatDiscussion = ChatDiscussion(chatGroupId)) : ChatDiscussion {
+    suspend fun createDiscussion(chatGroupId: ChatGroupId, chatDiscussion: ChatDiscussion = ChatDiscussion(chatGroupId)) : ChatDiscussion {
         var ret: ChatDiscussion = chatDiscussion
+
+        mutex.lock()
         if (null != discussionMap[chatGroupId]) {
             ret = discussionMap[chatGroupId] as ChatDiscussion
         } else {
             discussionMap[chatGroupId] = chatDiscussion
         }
+
+        mutex.unlock()
         return ret
     }
 
@@ -116,12 +127,14 @@ data class DiscussionMap(
         return discussionMap.remove(chatGroupId)
     }
 
-    fun replaceDiscussion(chatGroupId: ChatGroupId, chatDiscussion: ChatDiscussion) : DiscussionAbs? {
+    suspend fun replaceDiscussion(chatGroupId: ChatGroupId, chatDiscussion: ChatDiscussion) : DiscussionAbs? {
+        mutex.lock()
         discussionMap[chatGroupId] = chatDiscussion
+        mutex.unlock()
         return discussionMap[chatGroupId]
     }
 
-    fun sendMessage(chatMessage: ChatMessageAbs) {
+    suspend fun sendMessage(chatMessage: ChatMessageAbs) {
         val tag = "sendMessage/${randomString(2U)}"
         val logF = (chatMessage.groupId.type == ChatGroupType.RemoteChat ||
                 chatMessage.groupId.type == ChatGroupType.RemoteChatTesting)
@@ -134,6 +147,8 @@ data class DiscussionMap(
         group?.logD(tag, logF)
         logd(tag, "$tag 0 group?.groupId?.type == " + group?.groupId?.type, logF)
         */
+
+        mutex.lock()
 
         group?.logD(tag, logF)
         chatMessage.logD(tag, logF)
@@ -154,6 +169,8 @@ data class DiscussionMap(
                 }
             }
         }
+
+        mutex.unlock()
     }
 
     override suspend fun channelOnReceive(
@@ -199,7 +216,7 @@ data class DiscussionMap(
         channelSend(ChannelId.RCToComm, scope, messageType, commPacket)
     }
 
-    private fun processCommPacketIn(commPacket: CommPacket): ChatMessage {
+    private suspend fun processCommPacketIn(commPacket: CommPacket): ChatMessage {
         val tag = "processCommPacketIn/${randomString(2U)}"
         val logF = commPacket.groupIdType == ChatGroupType.RemoteChat || commPacket.groupIdType == ChatGroupType.RemoteChatTesting
 
@@ -212,6 +229,8 @@ data class DiscussionMap(
 
                 ChatGroupId(commPacket.groupId, commPacket.groupName, type = commPacket.groupIdType)
             }
+
+        mutex.lock()
 
         if ((commPacket.groupIdType == ChatGroupType.RemoteChat || commPacket.groupIdType == ChatGroupType.RemoteChatTesting)) {
             groupMap.addNode(gId, NodeId.Builder().id(commPacket.senderId).unique(commPacket.senderUnique).build())
@@ -231,10 +250,13 @@ data class DiscussionMap(
             sender = Sender(NodeId.Builder().id(commPacket.senderId).unique(commPacket.senderUnique).build()),
             chatMessageItemList = ChatMessageItemList(mutableListOf(chatItem))
         )
+
+        mutex.unlock()
+
         return chatMessage
     }
 
-    private fun recvFromComm(commPacket: CommPacket){
+    private suspend fun recvFromComm(commPacket: CommPacket){
         val tag = "recvFromComm/${randomString(2U)}"
         val logF = (commPacket.groupIdType == ChatGroupType.RemoteChatTesting || commPacket.groupIdType == ChatGroupType.RemoteChat)
 

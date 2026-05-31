@@ -104,8 +104,9 @@ class WTCommonData private constructor (
         }
     }
 
-    fun sendChatMessage(chatMessage: ChatMessageAbs) {
-        wtGlobalDiscussionMap.sendMessage(chatMessage)
+    suspend fun sendChatMessage(chatMessage: ChatMessageAbs) {
+        val globalDiscussionMap = wtGlobalDiscussionMap
+        globalDiscussionMap.sendMessage(chatMessage)
     }
 }
 
