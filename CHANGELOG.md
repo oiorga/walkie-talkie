@@ -1,5 +1,43 @@
 # Captain's log
 
+## 2026-05-29 - WifiDirect module refactor: split platform and logic layers (WIP)
+
+# Commits
+
+- 2026-05-31 - a723c16 - Refactor ChannelMux synchronization and registration
+- 2026-05-29 - 8bc9993, 698fa6b - Refactor WTWifiDirectManager
+- 2026-05-28 - db7b826, 9979679 - Split platform and logic layers
+- 2026-05-24 - d87ccc2, 456aebf - Refactor WifiDirect APIs to unified result model (Success/Data/Error)
+- 2026-05-23 - 032b4fd - Split foundation and logic layers
+- 2026-05-20 - cf10131 - Incremental refactoring and cleanup for app scope transition
+- 2026-05-21 - 304d6b0 - Refactor WiFi P2P module initialization stage
+- 2026-05-19 - 56e074e - Incremental refactoring and cleanup for app scope transition
+
+
+## 2026-05-21 - Unify coroutine runtime scope across application modules
+
+# Commits
+- 9782745
+
+
+## 2026-05-20 - Refactor blocking queue implementation to use Kotlin Channels for buffering and backpressure handling
+
+# Commits
+- e6cc9ba
+
+
+## 2026-05-20 - Add Gate abstraction for coroutine wait/timeout with external open signal
+
+# Commits
+- a557ce0
+
+
+## 2026-05-18 - Add coroutine await helpers for callback-based APIs
+
+# Commits
+- f6a9467
+
+
 ## 2026-05-15 - Add wrapper for structured coroutine execution and runtime dispatch selection
 
 # Commits
