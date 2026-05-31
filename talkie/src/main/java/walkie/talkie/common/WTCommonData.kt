@@ -96,6 +96,7 @@ class WTCommonData private constructor (
             }
             else -> {
                 logd(tag, "channelId: $channelId no service available")
+                throw (NoSuchElementException("${this}: channelId: $channelId no service available"))
             }
         }
     }

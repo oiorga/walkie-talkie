@@ -118,34 +118,40 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
             wtHub.wtComm = WTComm(wtHub.wtSystemNodeId, wtHub.wtScope)
 
             wtHub.wtGlobalGroupMap = ChatGroupMap()
+
             wtHub.wtGlobalDiscussionMap =
                 DiscussionMap(
                     discussionMap = ChatDiscussionMap(),
                     groupMap = wtHub.wtGlobalGroupMap,
-                    systemNode = wtHub.wtSystemNodeId
+                    systemNode = wtHub.wtSystemNodeId,
+                    wtHub.wtScope
                 )
             wtHub.wtGlobalDiscussionMap.updateUiLiveData =
                 wtHub.updateUiLiveData
 
             wtHub.registerAsReceiver(
                 ChannelId.RCTOCommonData,
+                wtHub.wtScope,
                 wtHub.wtGlobalDiscussionMap,
+                wtHub.wtComm
+            )
+
+            wtHub.wtGlobalDiscussionMap.registerSenders(
+                channelId = ChannelId.RCCommToChat,
+                wtHub.wtGlobalDiscussionMap.scope,
                 wtHub.wtComm
             )
 
             wtHub.wtComm.registerSenders(
                 ChannelId.RCToComm,
+                wtHub.wtComm.scope,
                 wtHub.wtGlobalDiscussionMap,
                 wtHub.wtWifiD
             )
 
-            wtHub.wtGlobalDiscussionMap.registerSenders(
-                channelId = ChannelId.RCCommToChat,
-                wtHub.wtComm
-            )
-
             wtHub.wtWifiD.registerSenders(
                 ChannelId.RCToWifi,
+                wtHub.wtWifiD.scope,
                 wtHub.wtBcastReceiver,
                 wtHub.wtComm,
                 wtHub.wtWifiD

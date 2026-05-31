@@ -18,7 +18,6 @@ import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION
 import android.os.Parcelable
-import android.os.SystemClock.uptimeMillis
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -40,7 +39,6 @@ import walkie.util.getInterfaceIpAddress
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
-import walkie.util.stringSum
 import walkie.wifidirect.WTWifiDirectResult.LocalError.ChannelNotInitialized.dataOrNull
 import walkie.wifidirect.WTWifiDirectServiceInfo.Companion.WT_SERVICE_ID
 import walkie.wifidirect.WTWifiDirectServiceInfo.Companion.WT_SERVICE_LOCAL_SERVER_PORT
@@ -309,15 +307,15 @@ class WTWifiDirectManager(
 
     override suspend fun channelOnReceive(
         channelId: ChannelIdInt,
-        inputType: ChannelMessageType?,
+        type: ChannelMessageType?,
         input: Any?
     ) {
         val tag = "channelOnReceive/${randomString(2U)}"
 
-        logd(tag, "channelId: $channelId inputType: $inputType")
+        logd(tag, "channelId: $channelId inputType: $type")
         when (channelId) {
             ChannelId.RCToWifi -> {
-                when (inputType) {
+                when (type) {
                     ChannelMessageType.RCWifiBroadcastReceiver -> {
                         if (null != input) {
                             processBcastReceiverMessage(input as Intent)
@@ -331,13 +329,13 @@ class WTWifiDirectManager(
                     }
 
                     else -> {
-                        throw (NotImplementedError("$tag: channelOnReceive: channelId: $channelId: inputType: $inputType Not Implemented "))
+                        throw (NotImplementedError("$tag: channelOnReceive: channelId: $channelId: inputType: $type Not Implemented "))
                     }
                 }
             }
 
             else -> {
-                throw (NotImplementedError("$tag: channelOnReceive: channelId: $channelId: inputType: $inputType Not Implemented "))
+                throw (NotImplementedError("$tag: channelOnReceive: channelId: $channelId: inputType: $type Not Implemented "))
             }
         }
     }
@@ -349,6 +347,7 @@ class WTWifiDirectManager(
 
         channelSend(
             ChannelId.RCToComm,
+            scope,
             ChannelMessageType.RCGroupInfo,
             Triple(null, null, null)
         )
@@ -706,6 +705,7 @@ class WTWifiDirectManager(
 
         channelSend(
             ChannelId.RCToWTActivity,
+            scope,
             ChannelMessageType.RCWifiDebugInfoMessage,
             wtWifiDirectInfo()
         )
@@ -717,6 +717,7 @@ class WTWifiDirectManager(
 
         channelSend(
             ChannelId.RCToComm,
+            scope,
             ChannelMessageType.RCGroupInfo,
             Triple(null, null, null)
         )
@@ -764,6 +765,7 @@ class WTWifiDirectManager(
 
             channelSend(
                 ChannelId.RCToWTActivity,
+                scope,
                 ChannelMessageType.RCWifiDebugInfoMessage,
                 wtWifiDirectInfo()
             )
@@ -976,6 +978,7 @@ class WTWifiDirectManager(
         if (change) {
             channelSend(
                 channelId = ChannelId.RCToWifi,
+                scope,
                 input = null,
                 type = ChannelMessageType.RCWifiBroadcastReceiver
             )
@@ -1042,6 +1045,7 @@ class WTWifiDirectManager(
 
         channelSend(
             ChannelId.RCToWTActivity,
+            scope,
             ChannelMessageType.RCWifiDebugInfoMessage,
             wtWifiDirectInfo()
         )
@@ -1075,6 +1079,7 @@ class WTWifiDirectManager(
                 )
                 channelSend(
                     ChannelId.RCToComm,
+                    scope,
                     ChannelMessageType.RCGroupInfo,
                     Triple(null, null, null)
                 )
@@ -1098,11 +1103,13 @@ class WTWifiDirectManager(
             */
                 channelSend(
                     ChannelId.RCToComm,
+                    scope,
                     ChannelMessageType.RCGroupInfo,
                     Triple(wtGroupOwnerName, wtGroupIp, wtGroupServerPort)
                 )
                 channelSend(
                     ChannelId.RCToComm,
+                    scope,
                     ChannelMessageType.RCLocalIp,
                     wtLocalIp
                 )
@@ -1121,6 +1128,7 @@ class WTWifiDirectManager(
                 logd(tag, "Local IP info changed(IP): wtLocalIp: $oldLocalIp -> $wtLocalIp")
                 channelSend(
                     ChannelId.RCToComm,
+                    scope,
                     ChannelMessageType.RCLocalIp,
                     wtLocalIp
                 )
@@ -1151,6 +1159,7 @@ class WTWifiDirectManager(
             wtWifiGroupInfo.getAndSet(null)
             channelSend(
                 ChannelId.RCToComm,
+                scope,
                 ChannelMessageType.RCGroupInfo,
                 Triple(null, null, null)
             )
@@ -1744,6 +1753,7 @@ class WTWifiDirectManager(
         resetData()
         channelSend(
             ChannelId.RCToWTActivity,
+            scope,
             ChannelMessageType.RCWifiDebugInfoMessage,
             wtWifiDirectInfo()
         )
@@ -1751,6 +1761,7 @@ class WTWifiDirectManager(
         s.scanPeersS = false
         channelSend(
             ChannelId.RCToWTActivity,
+            scope,
             ChannelMessageType.RCWifiRestartChannel
         )
         resetData()

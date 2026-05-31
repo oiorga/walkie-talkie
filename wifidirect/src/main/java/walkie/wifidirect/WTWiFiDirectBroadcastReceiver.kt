@@ -38,7 +38,7 @@ import walkie.util.logging
  * A BroadcastReceiver that notifies of important wifi p2p events.
  */
 class WiFiDirectBroadcastReceiver (
-    scope: CoroutineScope,
+    val scope: CoroutineScope,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>()
 ) : BroadcastReceiver(),
     ChannelMuxInt<Any, ChannelMessageType> by _channelMux
@@ -72,6 +72,7 @@ class WiFiDirectBroadcastReceiver (
             -> {
                 channelSend(
                     channelId = ChannelId.RCToWifi,
+                    scope = scope,
                     input = intent,
                     type = ChannelMessageType.RCWifiBroadcastReceiver
                 )

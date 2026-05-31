@@ -25,7 +25,7 @@ import walkie.util.randomString
 
 class WTComm (
     private val nodeId: NodeIdInt,
-    private val scope: CoroutineScope,
+    val scope: CoroutineScope,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
     /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>(), */
 ) : ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
@@ -72,15 +72,15 @@ class WTComm (
         logging(true)
         logd("Init Entry")
 
-        this.registerReceiver(ChannelId.RCToPRMComm, wtPRMComm)
-        wtPRMComm.wtIPComm.registerReceiver(ChannelId.RCToComm, this)
+        this.registerReceiver(ChannelId.RCToPRMComm, wtPRMComm.scope, wtPRMComm)
+        wtPRMComm.wtIPComm.registerReceiver(ChannelId.RCToComm, scope, this)
 
         wtPRMComm.registerToEvent(DispatchEventId.CBMeshNewPeer) { _ ->
-            channelSend(ChannelId.RCTOCommonData, ChannelMessageType.RCUpdatePeersUI)
+            channelSend(ChannelId.RCTOCommonData, scope, ChannelMessageType.RCUpdatePeersUI)
         }
         wtPRMComm.registerToEvent(DispatchEventId.CBServerPort) { serverPort ->
             logd("$this sending serverPort: $serverPort to RCToWifi")
-            channelSend(ChannelId.RCToWifi, ChannelMessageType.RCLocalServerPort, serverPort!!)
+            channelSend(ChannelId.RCToWifi, scope, ChannelMessageType.RCLocalServerPort, serverPort!!)
         }
         logd("Init Exit")
     }
@@ -98,7 +98,7 @@ class WTComm (
     }
 
     override suspend fun chatMessageOut(commPacket: CommPacketInt) {
-        channelSend(ChannelId.RCCommToChat, null, commPacket)
+        channelSend(ChannelId.RCCommToChat, scope, null, commPacket)
     }
 
     override suspend fun commPacketOut(commPacket: CommPacketInt) {
@@ -136,10 +136,10 @@ class WTComm (
                         chatMessageLoopback(input as CommPacketInt)
                     }
                     ChannelMessageType.RCLocalIp -> {
-                        channelSend(ChannelId.RCToPRMComm, ChannelMessageType.RCLocalIp, input)
+                        channelSend(ChannelId.RCToPRMComm, scope, ChannelMessageType.RCLocalIp, input)
                     }
                     ChannelMessageType.RCGroupInfo -> {
-                        channelSend(ChannelId.RCToPRMComm, ChannelMessageType.RCGroupInfo, input)
+                        channelSend(ChannelId.RCToPRMComm, scope, ChannelMessageType.RCGroupInfo, input)
                     }
                     else -> {
                         throw (NotImplementedError("$TAG: channelOnReceive: channelId: $channelId: inputType: $inputType Not Implemented "))

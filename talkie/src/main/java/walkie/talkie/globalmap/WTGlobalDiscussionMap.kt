@@ -38,6 +38,7 @@ data class DiscussionMap(
     private val discussionMap: DiscussionMapAbs,
     private val groupMap: ChatGroupMap,
     private val systemNode: NodeIdInt,
+    val scope: CoroutineScope,
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
 ) : RemoteCallMuxInt by _remoteCallMux,
@@ -96,7 +97,7 @@ data class DiscussionMap(
         tempVar.addChatMessage(chatMessage)
         discussionMap[gId] = tempVar
 
-        channelSend(ChannelId.RCTOCommonData, ChannelMessageType.RCUpdateChatUI, chatMessage.groupId.type)
+        channelSend(ChannelId.RCTOCommonData,  scope, ChannelMessageType.RCUpdateChatUI, chatMessage.groupId.type)
     }
 
     fun discussionMap() = discussionMap
@@ -157,7 +158,7 @@ data class DiscussionMap(
 
     override suspend fun channelOnReceive(
         channelId: ChannelIdInt,
-        inputType: ChannelMessageType?,
+        type: ChannelMessageType?,
         input: Any?
         ) {
         when (channelId) {
@@ -195,7 +196,7 @@ data class DiscussionMap(
 
         commPacket.logD(tag, logF)
 
-        channelSend(ChannelId.RCToComm, messageType, commPacket)
+        channelSend(ChannelId.RCToComm, scope, messageType, commPacket)
     }
 
     private fun processCommPacketIn(commPacket: CommPacket): ChatMessage {

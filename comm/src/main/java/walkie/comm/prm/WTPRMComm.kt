@@ -26,7 +26,7 @@ import java.net.InetAddress
 
 class WTPRMComm (
     private val node: NodeIdInt,
-    private val scope: CoroutineScope,
+    val scope: CoroutineScope,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher()
     /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>() */
@@ -54,8 +54,8 @@ class WTPRMComm (
     init {
         logging(true)
 
-        this.registerReceiver(ChannelId.RCToIpComm, wtIPComm)
-        wtIPComm.registerReceiver(ChannelId.RCToPRMComm, this)
+        this.registerReceiver(ChannelId.RCToIpComm, wtIPComm.scope,wtIPComm)
+        wtIPComm.registerReceiver(ChannelId.RCToPRMComm, scope,this)
         wtMesh.registerSend { destPeer, jSon ->
             val tag = "wtMeshPRMSend/${randomString(2U)}"
             val dest = destPeer.umCI
@@ -161,6 +161,7 @@ class WTPRMComm (
                             "$inputType localIpAddress: $localIpAddress")
                         channelSend(
                             ChannelId.RCToIpComm,
+                            scope,
                             ChannelMessageType.RCLocalIp,
                             localIpAddress
                         )
@@ -249,6 +250,7 @@ internal fun WTPRMComm.peersUpdateSendDebugInfo() {
     }
     channelSend(
         ChannelId.RCToWTActivity,
+        scope,
         ChannelMessageType.RCWTMeshDebugInfoMessage,
         str)
 }

@@ -38,7 +38,7 @@ class WTWifiDirect(
     }
     val tag = TAG
 
-        fun checkWifiPermission(): Boolean {
+    fun checkWifiPermission(): Boolean {
         val tag = "checkWifiPermission/${randomString(2u)}"
 
         val res = env.checkWifiPermission()

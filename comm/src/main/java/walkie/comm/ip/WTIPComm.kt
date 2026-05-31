@@ -197,7 +197,7 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
 
     logd(TAGKClass,tag,"Received(1): ${decodedJSon!!.ipCommType} -> ${decodedJSon!!.toJson()} ")
 
-    when (decodedJSon!!.ipCommType) {
+    when (decodedJSon.ipCommType) {
         WTIPCommPacketType.Data -> {
             var commPacket: CommPacket? = null
             logd(TAGKClass, tag,"Decoding input Json CommPacket")
@@ -208,10 +208,10 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
                 /* throw (exc) */
                 return
             }
-            channelSend(ChannelId.RCToComm, ChannelMessageType.RCWifiMessage, commPacket)
+            channelSend(ChannelId.RCToComm, scope,ChannelMessageType.RCWifiMessage, commPacket)
         }
         WTIPCommPacketType.ControlMesh -> {
-            channelSend(ChannelId.RCToPRMComm, ChannelMessageType.RCControlMesh, decodedJSon!!.jsonString)
+            channelSend(ChannelId.RCToPRMComm, scope,ChannelMessageType.RCControlMesh, decodedJSon!!.jsonString)
         }
         else -> {
             logd(TAGKClass,

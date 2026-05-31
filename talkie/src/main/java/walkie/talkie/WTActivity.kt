@@ -430,6 +430,7 @@ internal fun WTActivity.wtCustomInit(){
     wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermission, this)
     this.registerSenders(
         channelId = ChannelId.RCToWTActivity,
+        wtScope,
         wtHub.wtWifiD,
         wtHub.wtComm.wtPRMComm()
     )

@@ -10,15 +10,21 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import walkie.util.api.ChannelIdInt
+import walkie.util.logd
+import walkie.util.logging
+import walkie.util.randomString
+import java.util.concurrent.locks.ReentrantLock
 
 interface ChannelMuxInt<T, K> {
-    val channelScope: CoroutineScope
     val channelMap: MutableMap<ChannelIdInt, MutableSharedFlow<ChannelMessage<T, K>>>
     val receiverMap: MutableMap<ChannelIdInt, ChannelMuxInt<T, K>>
-    fun registerReceiver (channelId: ChannelIdInt, receiverObj: ChannelMuxInt<T, K>)
+    fun registerReceiver (channelId: ChannelIdInt, scope: CoroutineScope, receiverObj: ChannelMuxInt<T, K>)
     suspend fun channelOnReceive (channelId: ChannelIdInt, type: K?, input: T?)
-    fun channelSend (channelId: ChannelIdInt, type: K? = null, input: T? = null)
+    fun channelSend (channelId: ChannelIdInt, scope: CoroutineScope, type: K? = null, input: T? = null)
     fun channel(channelId: ChannelIdInt) : MutableSharedFlow<ChannelMessage<T, K>>?
     fun channelCreate(channelId: ChannelIdInt) : MutableSharedFlow<ChannelMessage<T, K>>?
 }
@@ -28,15 +34,15 @@ data class ChannelMessage<T, K>(
     val type: K?
 )
 
-fun <T, K> ChannelMuxInt<T, K>.registerAsReceiver (channelId: ChannelIdInt, vararg senderObjList: ChannelMuxInt<T, K>) {
+fun <T, K> ChannelMuxInt<T, K>.registerAsReceiver (channelId: ChannelIdInt, scope: CoroutineScope, vararg senderObjList: ChannelMuxInt<T, K>) {
     senderObjList.forEach { senderObj ->
-        senderObj.registerReceiver(channelId, this)
+        senderObj.registerReceiver(channelId, scope, this)
     }
 }
 
-fun <T, K> ChannelMuxInt<T, K>.registerSenders (channelId: ChannelIdInt, vararg senderObjList: ChannelMuxInt<T, K>) {
+fun <T, K> ChannelMuxInt<T, K>.registerSenders (channelId: ChannelIdInt, scope: CoroutineScope,  vararg senderObjList: ChannelMuxInt<T, K>) {
     senderObjList.forEach { senderObj ->
-        senderObj.registerReceiver(channelId, this)
+        senderObj.registerReceiver(channelId, scope,  this)
     }
 }
 
@@ -44,13 +50,16 @@ class ChannelMux<T, K>() : ChannelMuxInt<T, K> {
     override val channelMap: MutableMap<ChannelIdInt, MutableSharedFlow<ChannelMessage<T, K>>> = mutableMapOf()
     override val receiverMap: MutableMap<ChannelIdInt, ChannelMuxInt<T, K>> = mutableMapOf()
 
+    private val lock = Any()
+
     companion object {
         private const val TAG = "ChannelMux"
-        private var count: Long = 0
+        val TAGKClass = ChannelMux::class
     }
 
     init {
-        Log.d (TAG, "$TAG init")
+        logging()
+        logd (TAG, "init")
     }
 
     override fun channel(channelId: ChannelIdInt) : MutableSharedFlow<ChannelMessage<T, K>>? {
@@ -58,61 +67,70 @@ class ChannelMux<T, K>() : ChannelMuxInt<T, K> {
     }
 
     override fun channelCreate(channelId: ChannelIdInt) : MutableSharedFlow<ChannelMessage<T, K>>? {
-        if (null == channelMap[channelId]) {
-            channelMap[channelId] =
-                MutableSharedFlow<ChannelMessage<T, K>>(
-                    replay = 10,
-                    extraBufferCapacity = 100,
-                    onBufferOverflow = BufferOverflow.SUSPEND
+        synchronized(lock) {
+            if (null == channelMap[channelId]) {
+                channelMap[channelId] =
+                    MutableSharedFlow<ChannelMessage<T, K>>(
+                        replay = 1,
+                        extraBufferCapacity = 100,
+                        onBufferOverflow = BufferOverflow.SUSPEND
                     )
+            }
         }
         return channelMap[channelId]
     }
 
-    override fun registerReceiver (channelId: ChannelIdInt, receiverObj: ChannelMuxInt<T, K>) {
-        Log.d(TAG, "$TAG: registerReceiver: channelId ${channelId.toString()} ${receiverObj.toString()}")
+    override fun registerReceiver (channelId: ChannelIdInt, scope: CoroutineScope, receiverObj: ChannelMuxInt<T, K>) {
+        val tag = "registerReceiver/${randomString(2u)}"
 
-        if (null == receiverMap[channelId]) {
-            receiverMap[channelId] = receiverObj
-        }
+        logd(tag, "registerReceiver: channelId ${channelId.toString()} ${receiverObj.toString()}")
 
-        if (null != receiverObj.channel(channelId)) {
-            Log.d(TAG, "$TAG: registerReceiver: channelId ${channelId.toString()} already exists")
-        } else {
-            receiverObj.channelCreate(channelId)
-            receiverObj.channelScope.launch {
-                receiverObj.channel(channelId)
-                    ?.onEach { msg ->
-                        receiverObj.channelOnReceive(channelId = channelId, input = msg.input, type = msg.type)
-                    }
-                    ?.collect()
+        synchronized(lock) {
+            receiverMap.putIfAbsent(channelId, receiverObj)
+
+            if (null != receiverObj.channel(channelId)) {
+                logd(tag, "registerReceiver: channelId ${channelId.toString()} already exists")
+            } else {
+                receiverObj.channelCreate(channelId)
+                scope.launch {
+                    receiverObj.channel(channelId)
+                        ?.onEach { msg ->
+                            receiverObj.channelOnReceive(
+                                channelId = channelId,
+                                input = msg.input,
+                                type = msg.type
+                            )
+                        }
+                        ?.collect()
+                }
             }
         }
     }
 
-    override fun channelSend (channelId: ChannelIdInt, type: K?, input: T?) {
-        Log.d(TAG, "$TAG: channelSend: channelId ${channelId.toString()} input: $input type: $type $count")
-        count++
+    override fun channelSend (channelId: ChannelIdInt, scope: CoroutineScope, type: K?, input: T?) {
+        val tag = "channelSend/${randomString(2u)}"
+
+        logd(tag, "channelSend: channelId ${channelId.toString()} input: $input type: $type")
 
         if (null == receiverMap[channelId]) {
-            Log.d(TAG, "$TAG: channelSend: receiver object for channel $channelId / $type is not registered")
+            logd(tag, "channelSend: receiver object for channel $channelId / $type is not registered")
             throw (NoSuchElementException("TAG: channelSend: receiver object for channel $channelId / $type is not registered"))
         }
 
         val channel  = receiverMap[channelId]?.channel(channelId) ?: run {
-            Log.d(TAG, "$TAG: channelSend: channel for ${receiverMap[channelId]}[$channelId] does not exist")
+            logd(tag, "channelSend: channel for ${receiverMap[channelId]}[$channelId] does not exist")
             throw (NoSuchElementException("${this}: channelSend: channel for ${receiverMap[channelId]}[$channelId] does not exist"))
         }
 
-        channelScope.launch {
+        scope.launch {
             channel.emit(value = ChannelMessage(input, type))
         }
     }
 
     override suspend fun channelOnReceive(channelId: ChannelIdInt, type: K?, input: T?) {
-        Log.d(TAG, "$TAG: channelOnReceive channelId: $channelId input: $input. Not implemented")
-        throw (NotImplementedError("$TAG: channelOnReceive(channelId: $channelId input: $input) not implemented"))
-    }
+        val tag = "channelOnReceive/${randomString(2u)}"
 
-    override val channelScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+        logd(tag, "channelOnReceive channelId: $channelId. Not implemented.")
+        throw (NotImplementedError("$tag: channelOnReceive(channelId: $channelId. Not implemented."))
+    }
 }
