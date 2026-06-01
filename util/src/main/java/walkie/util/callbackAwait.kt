@@ -19,12 +19,14 @@ suspend inline fun <T>awaitValue(
 
 sealed class CallbackResult<out T, out E> {
     data class Success<out T>(val value: T) : CallbackResult<T, Nothing>()
-    data class Failure<out E>(val reason: E?) : CallbackResult<Nothing, E>()
+    data class Failure<out E>(val reason: E) : CallbackResult<Nothing, E>()
+    data class Exception(val exception: Throwable) : CallbackResult<Nothing, Nothing>()
 }
 
 interface CallbackListener<T, E> {
     fun onSuccess(value: T)
-    fun onFailure(reason: E? = null)
+    fun onFailure(reason: E)
+    fun onException(exception: Throwable)
 }
 
 suspend inline fun <T, E>awaitResult(
@@ -37,9 +39,15 @@ suspend inline fun <T, E>awaitResult(
             }
         }
 
-        override fun onFailure(reason: E?) {
+        override fun onFailure(reason: E) {
             if (continuation.isActive) {
                 continuation.resume(CallbackResult.Failure(reason))
+            }
+        }
+
+        override fun onException(exception: Throwable) {
+            if (continuation.isActive) {
+                continuation.resume(CallbackResult.Exception(exception))
             }
         }
     }

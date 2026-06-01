@@ -97,14 +97,19 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
 internal suspend inline fun awaitP2pAction(
     crossinline action: (WifiP2pManager.ActionListener) -> Unit
 ): CallbackResult<Unit, Int> = awaitResult<Unit, Int> { listener ->
-    action(object : WifiP2pManager.ActionListener {
-        override fun onSuccess() {
-            listener.onSuccess(Unit)
-        }
-        override fun onFailure(reason: Int) {
-            listener.onFailure(reason)
-        }
-    })
+    try {
+        action(object : WifiP2pManager.ActionListener {
+            override fun onSuccess() {
+                listener.onSuccess(Unit)
+            }
+
+            override fun onFailure(reason: Int) {
+                listener.onFailure(reason)
+            }
+        })
+    } catch (thrown: Throwable) {
+        listener.onException(thrown)
+    }
 }
 
 internal suspend inline fun <T>awaitP2pRequest(
