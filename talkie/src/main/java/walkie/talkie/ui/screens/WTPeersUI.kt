@@ -44,6 +44,7 @@ import walkie.talkie.ui.util.ScaffoldScreen
 import walkie.talkie.ui.util.TopBarBack
 import walkie.talkie.ui.util.TopBarUI
 import walkie.talkie.viewmodel.WTViewModel
+import walkie.talkie.viewmodel.openChatOnClick
 import walkie.util.logd
 import walkie.util.randomString
 import kotlin.random.Random
@@ -220,34 +221,11 @@ internal fun WTActivity.PeersUiEntry(
     }
 }
 
-internal suspend fun WTActivity.openChatOnClickPrep(
+internal fun WTActivity.openChatOnClick(
     mainVModel: WTViewModel,
     peer: WTCommPeerInfo
 ) {
-    val tag = "openChatOnClick/${randomString(2U)}"
-    val chatGroupId = ChatGroupId(peer.uid(), peer.id, type = ChatGroupType.RemoteChat)
-
-    logd(tag, "(0): ${mainVModel.currentScreen()} dId: ${mainVModel.nextDiscussionId}")
-
-    wtHub.wtGlobalGroupMap.addNode(
-        chatGroupId,
-        NodeId.Builder().id(peer.id).unique(peer.unique!!).build()
-    )
-
-    wtHub.wtGlobalDiscussionMap.createDiscussion(chatGroupId)
-
-    mainVModel.nextDiscussionId = chatGroupId
-    mainVModel.changeScreen(WTNavigation.RemoteChat)
-
-    logd(tag, "(1): ${mainVModel.currentScreen()} dId: ${mainVModel.nextDiscussionId}")
-}
-
-internal suspend fun WTActivity.openChatOnClick(
-    mainVModel: WTViewModel,
-    peer: WTCommPeerInfo
-) {
-    openChatOnClickPrep(mainVModel, peer)
-    mainVModel.switchScreen(WTNavigation.RemoteChat)
+    mainVModel.openChatOnClick(peer)
 }
 
 @Composable
@@ -277,11 +255,7 @@ internal fun WTActivity.PeersMainScreen(
             route = WTNavigation.RemoteChat,
             /* value = peerInfo, */
             onClick = if (randomTrue) {
-                {
-                    scope.launch {
-                        openChatOnClick(mainVModel, peer = peerInfo)
-                    }
-                }
+                { openChatOnClick(mainVModel, peer = peerInfo) }
             } else null,
             preview = { mod ->
                 PeersUiEntry(
@@ -290,11 +264,7 @@ internal fun WTActivity.PeersMainScreen(
                     peer = peerInfo,
                     wtUITheme = wtUITheme,
                     onClick = if (!randomTrue) {
-                        {
-                            scope.launch {
-                                openChatOnClick(mainVModel, peer = peerInfo)
-                            }
-                        }
+                        { openChatOnClick(mainVModel, peer = peerInfo) }
                     } else null,
                 )
             }

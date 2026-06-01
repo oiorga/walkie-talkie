@@ -7,9 +7,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import walkie.chat.ChatGroupId
 import walkie.chat.ChatMessage
+import walkie.comm.WTCommPeerInfo
+import walkie.comm.uid
+import walkie.talkie.WTActivity
 import walkie.talkie.api.wtchat.ChatGroupIdInt
+import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.DiscussionAbs
 import walkie.talkie.api.wtchat.DiscussionMapAbs
 import walkie.talkie.api.wtmisc.WTNavigation
@@ -28,19 +34,21 @@ class WTViewModelFactory(private val wtHub: WTCommonData) : ViewModelProvider.Fa
     }
 }
 
-class WTViewModel (private val wtHub: WTCommonData): ViewModel() {
+class WTViewModel (val wtHub: WTCommonData): ViewModel() {
     companion object {
         const val TAG = "WTViewModel"
     }
 
     /* Needed by WTMainUI */
-    private var _triggerUIUpdate: Boolean by mutableStateOf(false)
-    private var _changed: Boolean = true
+    var triggerUIUpdate: Boolean by mutableStateOf(false)
+        private set
+    private var changed: Boolean = true
 
     private var switchScreen: Boolean by mutableStateOf(false)
     private var currentScreen: WTNavigation = WTNavigation.WT
     private var nextScreen: WTNavigation = WTNavigation.WT
-    private lateinit var _discussionMap: DiscussionMapAbs
+    lateinit var discussionMap: DiscussionMapAbs
+        private set
     var nextDiscussionId: ChatGroupIdInt? = null
     lateinit var navGraph: WTNavGraph
 
@@ -51,14 +59,11 @@ class WTViewModel (private val wtHub: WTCommonData): ViewModel() {
     var chatDiscussionId: ChatGroupIdInt? = null
     lateinit var wtSystemNode: NodeId
 
-    val discussionMap
-        get() = _discussionMap as Map<ChatGroupIdInt, DiscussionAbs>
-
     init {
         logging(true)
         logd(TAG, "init()")
-        _triggerUIUpdate = true
-        _changed = true
+        triggerUIUpdate = true
+        changed = true
         currentScreen(WTNavigation.WT)
     }
 
@@ -88,18 +93,15 @@ class WTViewModel (private val wtHub: WTCommonData): ViewModel() {
 
     fun lateInit() {
         wtHub.wtVModel = this
-        _discussionMap = wtHub.wtGlobalDiscussionMap.discussionMap()
+        discussionMap = wtHub.wtGlobalDiscussionMap.discussionMap
         wtSystemNode = wtHub.wtSystemNodeId as NodeId
     }
-
-    val triggerUIUpdate: Boolean
-        get() = _triggerUIUpdate
-
+    
     fun changed() {
         val tag = "changed/${randomString(2U)}"
-        logd(tag, "changed: $_triggerUIUpdate -> ${!_triggerUIUpdate} current: ${currentScreen()} switchScreen: $switchScreen")
-        _changed = true
-        _triggerUIUpdate = !_triggerUIUpdate
+        logd(tag, "changed: $triggerUIUpdate -> ${!triggerUIUpdate} current: ${currentScreen()} switchScreen: $switchScreen")
+        changed = true
+        triggerUIUpdate = !triggerUIUpdate
     }
     fun processMessage(message: ChatMessage, action: UIMessageAction) {
         if (UIMessageAction.Send == action) {
@@ -152,7 +154,7 @@ class WTViewModel (private val wtHub: WTCommonData): ViewModel() {
             WTNavigation.LocalDebugItem -> {
                 chatDiscussionId = nextDiscussionId
                 wtHub.wtCurrentDiscussionId = chatDiscussionId!!
-                chatDiscussion = wtHub.wtGlobalDiscussionMap.discussionMap()[chatDiscussionId]!!
+                chatDiscussion = wtHub.wtGlobalDiscussionMap.discussionMap[chatDiscussionId]!!
             }
             WTNavigation.WT -> { }
             WTNavigation.Main -> { }
@@ -174,3 +176,23 @@ class WTViewModel (private val wtHub: WTCommonData): ViewModel() {
         }
     }
 }
+
+internal fun WTViewModel.openChatOnClick(
+    peer: WTCommPeerInfo
+) {
+    val tag = "openChatOnClick/${randomString(2U)}"
+    val chatGroupId = ChatGroupId(peer.uid(), peer.id, type = ChatGroupType.RemoteChat)
+
+    logd(tag, "(0): ${currentScreen()} dId: $nextDiscussionId")
+    wtHub.wtScope.launch {
+        wtHub.wtGlobalDiscussionMap.createDiscussion(
+            chatGroupId,
+            NodeId.Builder().id(peer.id).unique(peer.unique!!).build()
+        )
+        nextDiscussionId = chatGroupId
+        changeScreen(WTNavigation.RemoteChat)
+        switchScreen(WTNavigation.RemoteChat)
+    }
+    logd(tag, "(1): ${currentScreen()} dId: $nextDiscussionId")
+}
+

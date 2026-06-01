@@ -36,7 +36,7 @@ import walkie.util.randomString
  *
  */
 data class DiscussionMap(
-    private val discussionMap: DiscussionMapAbs,
+    val discussionMap: DiscussionMapAbs,
     private val groupMap: ChatGroupMap,
     private val systemNode: NodeIdInt,
     val scope: CoroutineScope,
@@ -107,24 +107,40 @@ data class DiscussionMap(
         channelSend(ChannelId.RCTOCommonData,  scope, ChannelMessageType.RCUpdateChatUI, chatMessage.groupId.type)
     }
 
-    fun discussionMap() = discussionMap
-
-    suspend fun createDiscussion(chatGroupId: ChatGroupId, chatDiscussion: ChatDiscussion = ChatDiscussion(chatGroupId)) : ChatDiscussion {
-        var ret: ChatDiscussion = chatDiscussion
+    suspend fun createDiscussion(chatGroupId: ChatGroupId) : ChatDiscussion {
+        var chatDiscussion = ChatDiscussion(chatGroupId)
 
         mutex.lock()
         if (null != discussionMap[chatGroupId]) {
-            ret = discussionMap[chatGroupId] as ChatDiscussion
+            chatDiscussion = discussionMap[chatGroupId] as ChatDiscussion
         } else {
             discussionMap[chatGroupId] = chatDiscussion
         }
-
         mutex.unlock()
-        return ret
+        return chatDiscussion
     }
 
-    fun removeDiscussion(chatGroupId: ChatGroupId) : DiscussionAbs? {
-        return discussionMap.remove(chatGroupId)
+    suspend fun createDiscussion(chatGroupId: ChatGroupId, nodeId: NodeIdInt) : ChatDiscussion {
+        var chatDiscussion = ChatDiscussion(chatGroupId)
+
+        mutex.lock()
+        groupMap.addNode(chatGroupId, nodeId)
+
+        if (null != discussionMap[chatGroupId]) {
+            chatDiscussion = discussionMap[chatGroupId] as ChatDiscussion
+        } else {
+            discussionMap[chatGroupId] = chatDiscussion
+        }
+        mutex.unlock()
+        return chatDiscussion
+    }
+
+    suspend fun removeDiscussion(chatGroupId: ChatGroupId) : DiscussionAbs? {
+        mutex.lock()
+        val chat = discussionMap.remove(chatGroupId)
+        mutex.unlock()
+
+        return chat
     }
 
     suspend fun replaceDiscussion(chatGroupId: ChatGroupId, chatDiscussion: ChatDiscussion) : DiscussionAbs? {
@@ -138,7 +154,6 @@ data class DiscussionMap(
         val tag = "sendMessage/${randomString(2U)}"
         val logF = (chatMessage.groupId.type == ChatGroupType.RemoteChat ||
                 chatMessage.groupId.type == ChatGroupType.RemoteChatTesting)
-        val group = groupMap[chatMessage.groupId]
 
         /*
         logd(tag,"group: ${chatMessage.groupId.groupId.toString()} is " +
@@ -149,6 +164,8 @@ data class DiscussionMap(
         */
 
         mutex.lock()
+        val group = groupMap[chatMessage.groupId]
+        mutex.unlock()
 
         group?.logD(tag, logF)
         chatMessage.logD(tag, logF)
@@ -160,7 +177,7 @@ data class DiscussionMap(
                 if (receiverNode.uid() != systemNode.uid()) {
                     logd(
                         tag,
-                        "$tag: sendMessage: to group: ${chatMessage.groupId.groupId.toString()} to: " + receiverNode.uid(),
+                        "$tag: sendMessage: to group: ${chatMessage.groupId.groupId} to: " + receiverNode.uid(),
                         logF
                     )
                     receiverNode.logD(tag, logF)
@@ -169,8 +186,6 @@ data class DiscussionMap(
                 }
             }
         }
-
-        mutex.unlock()
     }
 
     override suspend fun channelOnReceive(
