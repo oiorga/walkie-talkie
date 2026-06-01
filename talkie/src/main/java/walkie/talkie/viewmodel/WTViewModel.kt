@@ -18,6 +18,7 @@ import walkie.talkie.api.wtchat.ChatGroupIdInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.DiscussionAbs
 import walkie.talkie.api.wtchat.DiscussionMapAbs
+import walkie.talkie.api.wtdebug.WTDebugInt
 import walkie.talkie.api.wtmisc.WTNavigation
 import walkie.talkie.common.WTCommonData
 import walkie.talkie.node.NodeId
@@ -34,7 +35,7 @@ class WTViewModelFactory(private val wtHub: WTCommonData) : ViewModelProvider.Fa
     }
 }
 
-class WTViewModel (val wtHub: WTCommonData): ViewModel() {
+class WTViewModel (val wtHub: WTCommonData): ViewModel(), WTDebugInt {
     companion object {
         const val TAG = "WTViewModel"
     }
@@ -175,6 +176,10 @@ class WTViewModel (val wtHub: WTCommonData): ViewModel() {
             wtHub.wtVModel = null
         }
     }
+
+    override fun wtDebug(onOff: Boolean?): Boolean {
+        return wtHub.wtDebug(onOff)
+    }
 }
 
 internal fun WTViewModel.openChatOnClick(
@@ -183,7 +188,7 @@ internal fun WTViewModel.openChatOnClick(
     val tag = "openChatOnClick/${randomString(2U)}"
     val chatGroupId = ChatGroupId(peer.uid(), peer.id, type = ChatGroupType.RemoteChat)
 
-    logd(tag, "(0): ${currentScreen()} dId: $nextDiscussionId")
+    logd(tag, "Entry: ${currentScreen()} dId: $nextDiscussionId")
     wtHub.wtScope.launch {
         wtHub.wtGlobalDiscussionMap.createDiscussion(
             chatGroupId,
@@ -193,6 +198,6 @@ internal fun WTViewModel.openChatOnClick(
         changeScreen(WTNavigation.RemoteChat)
         switchScreen(WTNavigation.RemoteChat)
     }
-    logd(tag, "(1): ${currentScreen()} dId: $nextDiscussionId")
+    logd(tag, "Exit: ${currentScreen()} dId: $nextDiscussionId")
 }
 

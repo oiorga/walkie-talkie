@@ -17,7 +17,6 @@ import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.common.WTCommonData
 import walkie.talkie.globalmap.DiscussionMap
 import walkie.talkie.node.NodeId
-import walkie.talkie.playground.CounterLive
 import walkie.talkie.playground.commSquirrelWheel
 import walkie.util.CoroutineRuntime
 import walkie.util.Logging
@@ -110,14 +109,9 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 CoroutineRuntime.RunDispatcher.Main)
             wtHub.wtScope = wtHub.wtRuntime.scope
         }
-
         1 -> {
             wifiDInit()
-            wtHub.counterLive = CounterLive()
             wtHub.updateUiLiveData = UpdateUiLiveData()
-
-            wtHub.wtComm = WTComm(wtHub.wtSystemNodeId, wtHub.wtScope)
-
             wtHub.wtGlobalGroupMap = ChatGroupMap()
 
             wtHub.wtGlobalDiscussionMap =
@@ -129,6 +123,8 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 )
             wtHub.wtGlobalDiscussionMap.updateUiLiveData =
                 wtHub.updateUiLiveData
+
+            wtHub.wtComm = WTComm(wtHub.wtSystemNodeId, wtHub.wtScope)
 
             wtHub.wtGlobalDiscussionMap.registerSenders(
                 channelId = ChannelId.RCCommToChat,
@@ -167,57 +163,8 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
             */
 
         }
-
         2 -> {
-            /*
-            /* WTActivity capable devices/running this app */
-            wtHub.wtGlobalGroupMap[ChatGroupId(groupId = "WTActivity", groupName = "WTActivity", type = ChatGroupType.WTActivity)] =
-                ChatGroupList(ChatGroupId(groupId = "WTActivity", groupName = groupId, type = ChatGroupType.WTActivity), mutableListOf())
-
-            /* Where all the unsolicited messages go to group */
-            wtHub.wtGlobalGroupMap[ChatGroupId("Bogus", ChatGroupType.Etc)] =
-                ChatGroupList(ChatGroupId("Bogus", ChatGroupType.Etc), mutableListOf())
-            */
-
-            /* Peers List - testing */
-            wtHub.wtGlobalGroupMap[ChatGroupId(groupId = "WIFI Direct Info", groupName = "WIFI Direct Info", type = ChatGroupType.LocalDebug)] =
-                ChatGroupList(ChatGroupId(groupId = "WIFI Direct Info", groupName = "WIFI Direct Info", ChatGroupType.LocalDebug), mutableListOf())
-
-            /* Wi-Fi Direct Initial Testing - testing */
-            wtHub.wtGlobalGroupMap[ChatGroupId(groupId = "WIFI Direct All", groupName = "WIFI Direct All", ChatGroupType.LocalDebug)] =
-                ChatGroupList(ChatGroupId(groupId = "WIFI Direct All", groupName = "WIFI Direct All", type = ChatGroupType.LocalDebug), mutableListOf())
-
-            wtHub.wtGlobalGroupMap[ChatGroupId("Direct Peers", type = ChatGroupType.RemoteChatTesting)] =
-                ChatGroupList(ChatGroupId("Direct Peers", type = ChatGroupType.RemoteChatTesting), mutableListOf())
-
-            for (i in 0..17) {
-                val groupId =
-                    "${Random.nextInt(2)}.${Random.nextInt(2)}.${Random.nextInt(2)}.${
-                        Random.nextInt(
-                            2
-                        )
-                    }"
-                wtHub.wtGlobalGroupMap[ChatGroupId(groupId, type = ChatGroupType.LocalChatTesting)] =
-                    ChatGroupList(
-                        ChatGroupId(groupId, type = ChatGroupType.LocalChatTesting),
-                        mutableListOf()
-                    )
-                generateBinaryRec(
-                    baseList = genericListOf(
-                        Random.nextInt(2),
-                        Random.nextInt(2),
-                        Random.nextInt(2),
-                        Random.nextInt(2)
-                    ),
-                    base = 2,
-                    length = 4,
-                    count = 7
-                ).toList().forEach {
-                    wtHub.wtGlobalGroupMap[ChatGroupId(groupId = groupId, type = ChatGroupType.LocalChatTesting)]?.add(NodeId(it, ""))
-                }
-
-                commSquirrelWheel(scope = wtHub.wtScope, delay = 6000L, addRandom = 5L)
-            }
+            customDebugInit()
 
             /* To do it properly
             wtHub.wtComm.start() */
@@ -241,3 +188,80 @@ internal fun WalkieTalkie.wifiDInit() {
     wtHub.wtBcastReceiver = WiFiDirectBroadcastReceiver(wtHub.wtScope)
 }
 
+internal fun WalkieTalkie.customDebugInit() {
+    /*
+            /* WTActivity capable devices/running this app */
+            wtHub.wtGlobalGroupMap[ChatGroupId(groupId = "WTActivity", groupName = "WTActivity", type = ChatGroupType.WTActivity)] =
+                ChatGroupList(ChatGroupId(groupId = "WTActivity", groupName = groupId, type = ChatGroupType.WTActivity), mutableListOf())
+
+            /* Where all the unsolicited messages go to group */
+            wtHub.wtGlobalGroupMap[ChatGroupId("Bogus", ChatGroupType.Etc)] =
+                ChatGroupList(ChatGroupId("Bogus", ChatGroupType.Etc), mutableListOf())
+            */
+
+    /* Peers List - testing */
+    wtHub.wtGlobalGroupMap[ChatGroupId(
+        groupId = "WIFI Direct Info",
+        groupName = "WIFI Direct Info",
+        type = ChatGroupType.LocalDebug
+    )] =
+        ChatGroupList(
+            ChatGroupId(
+                groupId = "WIFI Direct Info",
+                groupName = "WIFI Direct Info",
+                ChatGroupType.LocalDebug
+            ), mutableListOf()
+        )
+
+    /* Wi-Fi Direct Initial Testing - testing */
+    wtHub.wtGlobalGroupMap[ChatGroupId(
+        groupId = "WIFI Direct All",
+        groupName = "WIFI Direct All",
+        ChatGroupType.LocalDebug
+    )] =
+        ChatGroupList(
+            ChatGroupId(
+                groupId = "WIFI Direct All",
+                groupName = "WIFI Direct All",
+                type = ChatGroupType.LocalDebug
+            ), mutableListOf()
+        )
+
+    wtHub.wtGlobalGroupMap[ChatGroupId("Direct Peers", type = ChatGroupType.RemoteChatTesting)] =
+        ChatGroupList(
+            ChatGroupId("Direct Peers", type = ChatGroupType.RemoteChatTesting),
+            mutableListOf()
+        )
+
+    for (i in 0..17) {
+        val groupId =
+            "${Random.nextInt(2)}.${Random.nextInt(2)}.${Random.nextInt(2)}.${
+                Random.nextInt(
+                    2
+                )
+            }"
+        wtHub.wtGlobalGroupMap[ChatGroupId(groupId, type = ChatGroupType.LocalChatTesting)] =
+            ChatGroupList(
+                ChatGroupId(groupId, type = ChatGroupType.LocalChatTesting),
+                mutableListOf()
+            )
+        generateBinaryRec(
+            baseList = genericListOf(
+                Random.nextInt(2),
+                Random.nextInt(2),
+                Random.nextInt(2),
+                Random.nextInt(2)
+            ),
+            base = 2,
+            length = 4,
+            count = 7
+        ).toList().forEach {
+            wtHub.wtGlobalGroupMap[ChatGroupId(
+                groupId = groupId,
+                type = ChatGroupType.LocalChatTesting
+            )]?.add(NodeId(it, ""))
+        }
+
+        commSquirrelWheel(scope = wtHub.wtScope, delay = 6000L, addRandom = 5L)
+    }
+}

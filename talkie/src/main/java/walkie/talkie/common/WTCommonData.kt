@@ -14,7 +14,6 @@ import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.globalmap.DiscussionMap
-import walkie.talkie.playground.CounterLive
 import walkie.talkie.ui.nav.wtChatUpdateUI
 import walkie.talkie.ui.screens.WTUITheme
 import walkie.talkie.viewmodel.WTViewModel
@@ -72,9 +71,6 @@ class WTCommonData private constructor (
 
     /* lateinit var wtLCObs: LifeCycleObserver */
 
-    /* To Remove */
-    lateinit var counterLive: CounterLive
-
     private var wtDebug: Boolean? = BuildConfig.DEBUG
 
     var customComposables: MutableMap<String, @Composable (Modifier, WTUITheme) -> Unit> = mutableMapOf()
@@ -126,9 +122,9 @@ internal fun WTCommonData.updateUI(
     return updateUI
 }
 
-data class UpdateUiLiveData(
-    private val _counter: MutableLiveData<Long> = MutableLiveData<Long>()
-) {
+class UpdateUiLiveData {
+    private var _counter: MutableLiveData<Long> = MutableLiveData<Long>()
+
     init {
         _counter.value = 0
     }

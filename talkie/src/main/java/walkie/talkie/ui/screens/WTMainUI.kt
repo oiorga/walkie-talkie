@@ -68,6 +68,8 @@ internal fun WTActivity.WTActivityMainUI(wtNavNode: WTNavNode? = null) {
         /* mainVModel.switchScreen(mainVModel.nextScreen()) */
     }
 
+    run { mainVModel.triggerUIUpdate }
+
     logd(tag, "$tag navDest: ${mainVModel.currentScreen()} nextScreen: ${mainVModel.nextScreen()}")
     ScaffoldScreen (
         modifier = Modifier
@@ -213,7 +215,7 @@ internal fun WTActivity.MainScreen(
 ) {
     val tag = "WTActivityMain.Screen"
 
-    /* run { triggerUpdate } */
+    run { mainVModel.triggerUIUpdate }
 
     val navList: MutableList<WTNavNode> = mainScreenList(mainVModel)
 

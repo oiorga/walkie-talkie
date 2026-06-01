@@ -1,9 +1,8 @@
-package walkie.talkie
+package walkie.talkie.ui.screens
 
 import android.content.pm.PackageInfo
 import android.icu.text.DateFormat.getDateInstance
 import android.os.Build
-import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -20,13 +19,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import walkie.talkie.ui.screens.WTUITheme
+import walkie.talkie.BuildConfig
+import walkie.talkie.BuildInfo
+import walkie.talkie.WTActivity
 import walkie.talkie.ui.util.EmptyLine
+import walkie.talkie.viewmodel.WTViewModel
 import walkie.util.logd
 import walkie.util.randomString
 
 @Composable
-fun WTActivity.WTInfo(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WTUITheme()) {
+fun WTActivity.WTInfo(modifier: Modifier = Modifier,
+                      mainVModel: WTViewModel,
+                      wtUITheme: WTUITheme = WTUITheme()) {
     val pInfo: PackageInfo = packageManager.getPackageInfo(packageName, 0)
 
     val hostInfoMap = mapOf(
@@ -157,7 +161,8 @@ fun WTActivity.WTInfo(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WTUI
                         color = wtUITheme.bgColor,
                         RoundedCornerShape(8.dp, 8.dp, 8.dp, 8.dp)
                     )
-                    .align(Alignment.CenterHorizontally)
+                    .align(Alignment.CenterHorizontally),
+                mainVModel
             )
             for (i in 0..5) { EmptyLine() }
             Box (
@@ -192,7 +197,7 @@ fun WTActivity.WTInfo(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WTUI
 }
 
 @Composable
-fun WTActivity.WTDebug(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WTUITheme()) {
+fun WTActivity.WTDebug(modifier: Modifier = Modifier, mainVModel: WTViewModel, wtUITheme: WTUITheme = WTUITheme()) {
     val tag = "WTDebug/${randomString(2U)}"
     var clickCount = remember { 0 }
     val spaces = "                        "
@@ -206,13 +211,13 @@ fun WTActivity.WTDebug(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WTU
             .wrapContentSize()
             .background(color = wtUITheme.bgColor, RoundedCornerShape(8.dp, 8.dp, 8.dp, 8.dp))
             .clickable {
-                if (wtDebug()) {
-                    wtDebug(false)
+                if (mainVModel.wtDebug()) {
+                    mainVModel.wtDebug(false)
                     text.value = spaces
                 } else {
                     clickCount++
                     if (clickCount >= 7) {
-                        wtDebug(true)
+                        mainVModel.wtDebug(true)
                         text.value = "Disable Debug"
                     }
                 }
@@ -234,7 +239,7 @@ private const val WTHelp = "Welcome to the Walky Talky chat app!" +
 private const val WTCopyright = "Copyright (c) 2024–2026 Ovidiu Iorga" + "\nLicensed under the MIT License"
 
 @Composable
-fun WTActivity.WTHelp(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WTUITheme()) {
+fun WTActivity.WTHelp(modifier: Modifier = Modifier, mainVModel: WTViewModel, wtUITheme: WTUITheme = WTUITheme()) {
 
     Box(
         modifier = modifier
@@ -264,3 +269,7 @@ fun WTActivity.WTHelp(modifier: Modifier = Modifier, wtUITheme: WTUITheme = WTUI
     }
 }
 
+fun WTActivity.customComposablesInit() {
+    wtHub.customComposables["About"] = { mod, theme -> WTInfo(mod, wtVModel, theme) }
+    wtHub.customComposables["Help"] = { mod, theme -> WTHelp(mod, wtVModel, theme) }
+}

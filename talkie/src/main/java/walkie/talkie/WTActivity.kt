@@ -36,7 +36,6 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import walkie.talkie.api.wtdebug.WTDebugInt
 import walkie.chat.ChatDiscussion
 import walkie.chat.ChatGroupId
 import walkie.chat.ChatMessage
@@ -51,8 +50,10 @@ import walkie.talkie.api.wtmisc.WTNavigation
 import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.registerSenders
-import walkie.talkie.playground.commSquirrelWheel
 import walkie.talkie.ui.nav.WTNavInit
+import walkie.talkie.ui.screens.WTHelp
+import walkie.talkie.ui.screens.WTInfo
+import walkie.talkie.ui.screens.customComposablesInit
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.viewmodel.WTViewModelFactory
 import walkie.util.api.ChannelId
@@ -71,7 +72,6 @@ class WTActivity(
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
     ) :
     ComponentActivity(),
-    WTDebugInt,
     ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
     RemoteCallMuxInt by _remoteCallMux {
 
@@ -115,8 +115,8 @@ class WTActivity(
     val wtScope: CoroutineScope
         get() = wtHub.wtScope
 
-    override fun wtDebug (onOff: Boolean?): Boolean {
-        return wtHub.wtDebug(onOff)
+    fun wtDebug (): Boolean {
+        return wtHub.wtDebug()
     }
 
     init {
@@ -207,6 +207,7 @@ class WTActivity(
 
         wtVModel.lateInit()
         wtHub.updateUiLiveData.counter.observe(this, Observer<Long> { wtVModel.changed() })
+
         customComposablesInit()
 
         wtCustomInit()
@@ -436,9 +437,4 @@ internal fun WTActivity.wtCustomInit(){
     /* To move to App init section */
     wtHub.wtComm.start()
 
-}
-
-fun WTActivity.customComposablesInit() {
-    wtHub.customComposables["About"] = { mod, theme -> WTInfo(mod, theme) }
-    wtHub.customComposables["Help"] = { mod, theme -> WTHelp(mod, theme) }
 }

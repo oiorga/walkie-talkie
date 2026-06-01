@@ -44,7 +44,6 @@ class WalkiePlayGroundTimer(private val delay: Long = 1000L) {
 }
 
 fun WalkieTalkie.jobby (scope: CoroutineScope = MainScope(),
-                        counter: CounterLive = wtHub.counterLive,
                         delay: Long = 1000L,
                         index: Int,
                         sharedInt: IntArray
@@ -52,8 +51,6 @@ fun WalkieTalkie.jobby (scope: CoroutineScope = MainScope(),
     val tag = "squirrelWheel"
     val job = scope.launch() {
         while (true) {
-            val c = counter.counter
-            counter.inc()
             sharedInt[index+1]++
             if (0 == index % 2) {
                 delay(1L)
@@ -63,13 +60,13 @@ fun WalkieTalkie.jobby (scope: CoroutineScope = MainScope(),
                 delay(1L)
             }
             delay(Random.nextLong(3 * delay))
-            Log.d(tag, "$tag jobby: sharedInt[${index+1}]: ${sharedInt[index+1]} sharedInt[0]: ${sharedInt[0]} ${counter.counter.value}")
+            Log.d(tag, "$tag jobby: sharedInt[${index+1}]: ${sharedInt[index+1]} sharedInt[0]: ${sharedInt[0]}")
         }
     }
     return job
 }
 
-fun WalkieTalkie.squirrelWheel (scope: CoroutineScope = MainScope(), counter: CounterLive = wtHub.counterLive, delay: Long = 1000L) = runBlocking {
+fun WalkieTalkie.squirrelWheel (scope: CoroutineScope = MainScope(), delay: Long = 1000L) = runBlocking {
     val tag: String = "squirrelWheel"
     val jobList = mutableListOf<Job>()
     val max = 4
@@ -79,7 +76,6 @@ fun WalkieTalkie.squirrelWheel (scope: CoroutineScope = MainScope(), counter: Co
         jobList.add(
             jobby(
             scope,
-            counter,
             delay,
             i,
             sharedInt
@@ -221,21 +217,6 @@ fun generateRandomGroupId(type: ChatGroupType = ChatGroupType.Etc) : ChatGroupId
         groupId = "${Random.nextLong(2L)}.${Random.nextLong(2L)}.${Random.nextLong(2L)}.${Random.nextLong(2L)}",
         type = type
     )
-}
-
-data class CounterLive(
-    private val _counter: MutableLiveData<Long> = MutableLiveData<Long>()
-) {
-    init {
-        _counter.value = 0
-    }
-
-    val counter: LiveData<Long>
-        get() = _counter
-
-    fun inc() {
-        _counter.value = _counter.value?.plus(1)
-    }
 }
 
 data class Counter(private var counter: Long = 0L) {
