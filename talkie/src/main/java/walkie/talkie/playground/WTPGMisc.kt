@@ -150,6 +150,7 @@ suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: 
         val div = 10
         val maxK = div.toLong()
         for (k in 0..maxK) {
+            delay (div + delay / div)
             scope.launch {
                 delay(div * (1 + Random.nextLong(maxK * delay / div)))
                 val messagePayload = "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid()}" +
@@ -171,6 +172,7 @@ suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: 
                 wtHub.sendChatMessage(message)
             }
 
+            delay (div + delay / div)
             scope.launch {
                 delay(div * (1 + Random.nextLong(maxK * delay / div)))
                 val messagePayload = "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid()} " + "" +

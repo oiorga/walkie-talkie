@@ -25,6 +25,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import walkie.talkie.api.wtsystem.NodeIdInt
+import walkie.util.Gate
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
@@ -33,6 +34,7 @@ import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.GenericList
+import walkie.util.generic.Mailbox
 import walkie.util.generic.RemoteCallMux
 import walkie.util.generic.typedCall
 import walkie.util.getInterfaceIpAddress
@@ -100,6 +102,8 @@ class WTWifiDirectManager(
     }
 
     private var mainLoopJob: Job? = null
+
+    private val mainLoopInbox = Mailbox<Unit>(10)
 
     val wifiP2pEnableInfo: AtomicReference<Boolean> = AtomicReference(false)
 
@@ -688,11 +692,60 @@ class WTWifiDirectManager(
         return wifiP2pInfo
     }
 
-    suspend fun mainLoop(delay: Long = 1000L) {
+    suspend fun mainloop(cadence: Long = 1000L) {
+        val tag = "mainLoop/${randomString(2u)}"
+        var oldP2pInfo: Triple<InetAddress?, InetAddress?, Int?> = Triple(null, null, null)
+
+        while (scope.isActive) {
+            mainLoopInbox.await(cadence)
+
+            if (!checkWifiPermission()) {
+                logd(tag, "Not enough Wifi permissions. Requesting.")
+                remoteCall(RemoteCallId.RCRequestWifiDPermission)
+                continue
+            }
+
+            logd(
+                tag, "thisDevice: ${thisDevice?.deviceName}" +
+                        "\nisWifiP2pEnabled: $wifiP2pEnable" +
+                        "\nwtIsGroupFormed: $wtIsGroupFormed" +
+                        "\ndiscoveryCountdown: $discoveryCountdown" +
+                        "\nconnectCountdown: $connectCountdown" +
+                        "\nchannelCountdown: ${channelCountdown()}" +
+                        "\ndeviceName = ${deviceId}/${deviceUid}" +
+                        "\nlocalIp = ${this.wtLocalIp}"
+            )
+
+            if (restartChannel()) {
+                logd(tag, "Restart channel")
+                break
+            }
+
+            wifiP2PEngineFailCoolDown()
+
+            if (connectCountdown > 0) connectCountdown--
+
+            if (wifiP2PEngineOk()) {
+                updatePeers(cadence)
+            }
+
+            val tP2pInfo = Triple(wtGroupIp, wtLocalIp, wtGroupServerPort)
+            notifyOfChange(oldP2pInfo, tP2pInfo)
+            oldP2pInfo = tP2pInfo
+
+            channelSend(
+                ChannelId.RCToWTActivity,
+                scope,
+                ChannelMessageType.RCWifiDebugInfoMessage,
+                wtWifiDirectInfo()
+            )
+        }
+
+    }
+
+    suspend fun mainLoop(cadence: Long = 1000L) {
         val tag = "mainLoop/${randomString(2u)}"
         val s = WTWiFiDirectStatic.INSTANCE
-        val divider = 5
-        var c = (Random.nextInt(delay.toInt()) % 5)
         var oldP2pInfo: Triple<InetAddress?, InetAddress?, Int?> = Triple(null, null, null)
 
         logd(tag, "Entry: ${s.scanPeersS}")
@@ -723,13 +776,11 @@ class WTWifiDirectManager(
 
         logd(tag, "Entering Main Loop: ${s.scanPeersS}")
         while (scope.isActive) {
+            mainLoopInbox.await(cadence)
             if (!checkWifiPermission()) {
                 remoteCall(RemoteCallId.RCRequestWifiDPermission)
-                delay(delay)
                 continue
             }
-
-            delay(c * delay / divider)
 
             logd(
                 tag, "thisDevice: ${thisDevice?.deviceName}" +
@@ -751,14 +802,14 @@ class WTWifiDirectManager(
             if (connectCountdown > 0) connectCountdown--
 
             if (wifiP2PEngineOk()) {
-                updatePeers(delay)
-            } else {
-                delay(4 * delay / 5)
+                updatePeers(cadence)
+
+                val tP2pInfo = Triple(wtGroupIp, wtLocalIp, wtGroupServerPort)
+                notifyOfChange(oldP2pInfo, tP2pInfo)
+                oldP2pInfo = tP2pInfo
             }
 
-            val tP2pInfo = Triple(wtGroupIp, wtLocalIp, wtGroupServerPort)
-            notifyOfChange(oldP2pInfo, tP2pInfo)
-            oldP2pInfo = tP2pInfo
+            restartChannelCountdown()
 
             channelSend(
                 ChannelId.RCToWTActivity,
@@ -766,14 +817,12 @@ class WTWifiDirectManager(
                 ChannelMessageType.RCWifiDebugInfoMessage,
                 wtWifiDirectInfo()
             )
-
-            c = (restartChannelCountdown() + c + 1) % divider
         }
 
         stop()
     }
 
-    suspend fun updatePeers(delay: Long = 1000L) {
+    suspend fun updatePeers(cadence: Long = 1000L) {
         val divider = 5
         val tag = "updatePeers/${randomString(2u)}"
 
@@ -786,7 +835,7 @@ class WTWifiDirectManager(
         updateDevice()
 
         if (wifiP2pEnable) {
-            delay(delay)
+            delay(cadence)
             logd(
                 tag,
                 "discoverPeersJob deviceName = $deviceUid failCoolDown: $failCooldown thisDevice: ${thisDevice?.deviceName}"
@@ -800,29 +849,29 @@ class WTWifiDirectManager(
             updateP2pInfo()
 
             if (null != thisDevice) {
-                delay(delay / divider)
+                delay(cadence / divider)
                 logd(
                     tag,
                     "updatePeersInfo deviceName = $deviceUid failCoolDown: $failCooldown"
                 )
                 updatePeersInfo()
 
-                delay(delay / divider)
+                delay(cadence / divider)
                 logd(
                     tag,
                     "updateGroupInfo deviceName = $deviceUid failCoolDown: $failCooldown"
                 )
                 updateGroupInfo()
 
-                delay(delay / divider)
+                delay(cadence / divider)
                 logd(
                     tag,
                     "connectToPeers deviceName = $deviceUid failCoolDown: $failCooldown"
                 )
-                connectToPeers(delay / divider)
+                connectToPeers(cadence / divider)
             }
 
-            delay(delay / divider)
+            delay(cadence / divider)
         }
         logd(tag, "Exit")
     }
@@ -1053,7 +1102,7 @@ class WTWifiDirectManager(
     fun notifyOfChange(
         oldGroupInfo: Triple<InetAddress?, InetAddress?, Int?>,
         wtGroupInfo: Triple<InetAddress?, InetAddress?, Int?>
-    ): Triple<InetAddress?, InetAddress?, Int?> {
+    ) {
         val tag = "notifyOfChange/${randomString(2u)}"
 
         val (oldGroupIp, oldLocalIp, oldGroupServerPort) = oldGroupInfo
@@ -1066,6 +1115,9 @@ class WTWifiDirectManager(
                     "\nwtGroupOwnerName: $wtGroupOwnerName" +
                     "\nwtIsGroupOwner: $wtIsGroupOwner"
         )
+
+        if (oldGroupInfo == wtGroupInfo)
+            return
 
         if (oldGroupInfo != wtGroupInfo) {
             var localIpAlreadyChanged = false
@@ -1135,7 +1187,6 @@ class WTWifiDirectManager(
                 }
             }
         }
-        return wtGroupInfo
     }
 
     suspend fun updateP2pInfo() {
