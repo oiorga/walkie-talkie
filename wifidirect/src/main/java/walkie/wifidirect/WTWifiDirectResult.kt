@@ -27,9 +27,11 @@ sealed class WTWifiDirectResult<out T> {
         override val errStr = "SuccessData"
     }
 
+    /*
     data class Exception(val throwable: Throwable): WTWifiDirectResult<Nothing>() {
         override val errStr: String = throwable.message ?: throwable::class.simpleName ?: "Unknown exception"
     }
+    */
 
     fun <T> WTWifiDirectResult<T>.dataOrNull(): T? {
         return (this as? WTWifiDirectResult.Data)?.data

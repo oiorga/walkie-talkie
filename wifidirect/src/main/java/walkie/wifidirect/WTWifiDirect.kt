@@ -20,6 +20,7 @@ import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.RemoteCallMux
 import walkie.util.logd
+import walkie.util.logging
 import walkie.util.randomString
 
 class WTWifiDirect(
@@ -37,6 +38,10 @@ class WTWifiDirect(
         val TAGKClass = WTWifiDirect::class
     }
     val tag = TAG
+
+    init {
+        logging(true)
+    }
 
     fun checkWifiPermission(): Boolean {
         val tag = "checkWifiPermission/${randomString(2u)}"
@@ -141,8 +146,7 @@ class WTWifiDirect(
 
         return p2pAction(tag,
             "Success.",
-            "Failed:",
-            "Exception:"
+            "Failed",
         ) { ch, listener ->
             manager.removeGroup(
                 ch,
@@ -167,7 +171,6 @@ class WTWifiDirect(
         return p2pAction(tag,
             "Success connecting to device: ${device.uniqueWifiId()}",
             "Failed connecting to device: ${device.uniqueWifiId()} - ",
-            "Exception"
         ) { ch, listener ->
             manager.connect(
                 ch,
@@ -201,7 +204,6 @@ class WTWifiDirect(
         return p2pAction(tag,
             "Success clearing service requests.",
             "Failed clearing service requests:",
-            "Exception:"
         ) { ch, listener ->
             manager.clearServiceRequests(
                 ch,
@@ -218,7 +220,6 @@ class WTWifiDirect(
         return p2pAction(tag,
             "Success clearing local service.",
             "Failed clearing local service:",
-            "Exception:"
         ) { ch, listener ->
             manager.clearLocalServices(
                 ch,
@@ -236,7 +237,6 @@ class WTWifiDirect(
         return p2pAction(tag,
             "Success stopping peers discovery.",
             "Failed stopping peers discovery:",
-            "Exception:"
         ) { ch, listener ->
             manager.stopListening(
                 ch,
@@ -254,7 +254,6 @@ class WTWifiDirect(
         return p2pAction(tag,
             "Success starting discovering services.",
             "Failed starting discovering services:",
-            "Exception:"
         ) { ch, listener ->
             manager.discoverServices(
                 ch,
@@ -298,7 +297,6 @@ class WTWifiDirect(
         return p2pAction(tag,
             "Success adding local service.",
             "Failed adding local service:",
-            "Exception:"
         ) { ch, listener ->
             manager.addLocalService(
                 ch,
@@ -322,7 +320,6 @@ class WTWifiDirect(
         return p2pAction(tag,
             "Success removing local service.",
             "Failed removing local service:",
-            "Exception:"
         ) { ch, listener ->
             manager.removeLocalService(
                 ch,
@@ -346,7 +343,6 @@ class WTWifiDirect(
         return p2pAction(tag,
             "Success removing service request.",
             "Failed removing service request:",
-            "Exception:"
         ) { ch, listener ->
             manager.removeServiceRequest(
                 ch,
@@ -366,7 +362,6 @@ class WTWifiDirect(
         return p2pAction(tag,
             "Success adding service request.",
             "Failed adding service request:",
-            "Exception:"
             ) { ch, listener ->
             manager.addServiceRequest(
                 ch,
@@ -390,7 +385,6 @@ class WTWifiDirect(
         tag: String,
         successMsg: String? = null,
         failureMsg: String? = null,
-        exceptionMsg: String? = null,
         crossinline action:
             (WifiP2pManager.Channel,
              WifiP2pManager.ActionListener) -> Unit
@@ -433,6 +427,7 @@ class WTWifiDirect(
                 )
                 error
             }
+            /*
             is CallbackResult.Exception -> {
                 val error = WTWifiDirectResult.Exception(res.exception)
                 if (null != exceptionMsg) logd(
@@ -442,6 +437,7 @@ class WTWifiDirect(
                 )
                 error
             }
+            */
         }
     }
 

@@ -71,12 +71,12 @@ class WTWifiDirectManager(
 
     companion object {
         const val TAG = "WTWiFiDirectManager"
+        val TAGKClass = WTWifiDirectManager::class
         const val DiscoveryCountdown = 26
         const val ConnectCountdown = 1
         const val FailCooldown = 1
         const val RestartChannelTimeout = (DiscoveryCountdown * 2).toInt()
         const val DiscoveryVsAdvertisementRatio = (2F / 3F)
-        val TAGKClass = WTWifiDirectManager::class
     }
 
     /*
@@ -447,9 +447,7 @@ class WTWifiDirectManager(
 
         logd(tag, "Entry")
 
-       wtWifiDirect?.removeGroup().let { res ->
-           logd(tag, if (res == WTWifiDirectResult.Success) "\t-> Success" else "\t-> Failed")
-       }
+        logd(tag, if (wtWifiDirect?.removeGroup() == WTWifiDirectResult.Success) "\t-> Success" else "\t-> Failed")
 
         wtWifiGroupInfo.getAndSet(null)
         wtWifiGroupInfoN.getAndSet(null)

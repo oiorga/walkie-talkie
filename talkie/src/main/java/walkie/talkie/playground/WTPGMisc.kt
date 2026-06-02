@@ -129,7 +129,6 @@ suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: 
         return
 
     val tag = "wifiDirectIpPeersRndMsgs/${randomString(2U)}"
-    var delaY = 0
     var i = 0
     val dPeersGroup = ChatGroupId("Direct Peers", type = ChatGroupType.RemoteChatTesting)
 
@@ -148,16 +147,13 @@ suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: 
         )
         i++
         val c = randomString(2U)
-        val maxK = 10.toLong()
+        val div = 10
+        val maxK = div.toLong()
         for (k in 0..maxK) {
-            delaY = 1 + (delaY + 1) % 7
-            delay(10L)
             scope.launch {
-                delay(delay * Random.nextLong((k + 1) * delaY))
-
+                delay(div * (1 + Random.nextLong(maxK * delay / div)))
                 val messagePayload = "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid()}" +
                         " $c$maxK $k " + "[" + randomString(8U) + "]"
-
                 val message = ChatMessage(
                     sender = Sender(wtHub.wtSystemNodeId),
                     receiver = Receiver(peerNodeId, peerGId),
@@ -176,7 +172,7 @@ suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: 
             }
 
             scope.launch {
-                delay(delay * Random.nextLong(delaY.toLong()))
+                delay(div * (1 + Random.nextLong(maxK * delay / div)))
                 val messagePayload = "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid()} " + "" +
                         "[" + randomString(8U) + "]"
                 val message = ChatMessage(
