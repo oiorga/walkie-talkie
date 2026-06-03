@@ -25,7 +25,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.util.Gate
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelIdInt
 import walkie.util.api.ChannelMessageType
@@ -35,6 +34,7 @@ import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.GenericList
 import walkie.util.generic.Mailbox
+import walkie.util.generic.MailboxData
 import walkie.util.generic.RemoteCallMux
 import walkie.util.generic.typedCall
 import walkie.util.getInterfaceIpAddress
@@ -103,7 +103,7 @@ class WTWifiDirectManager(
 
     private var mainLoopJob: Job? = null
 
-    private val mainLoopInbox = Mailbox<Unit>(10)
+    private val mainLoopInbox = Mailbox<WTWifiEvent>(10)
 
     val wifiP2pEnableInfo: AtomicReference<Boolean> = AtomicReference(false)
 
@@ -692,58 +692,110 @@ class WTWifiDirectManager(
         return wifiP2pInfo
     }
 
-    suspend fun mainloop(cadence: Long = 1000L) {
+    suspend fun mainLoop(cadence: Long = 1000L) {
         val tag = "mainLoop/${randomString(2u)}"
-        var oldP2pInfo: Triple<InetAddress?, InetAddress?, Int?> = Triple(null, null, null)
 
         while (scope.isActive) {
-            mainLoopInbox.await(cadence)
-
-            if (!checkWifiPermission()) {
-                logd(tag, "Not enough Wifi permissions. Requesting.")
-                remoteCall(RemoteCallId.RCRequestWifiDPermission)
-                continue
+            when (val event = mainLoopInbox.await(cadence)) {
+                is MailboxData.Message -> {
+                    processEvents(event.value)
+                }
+                MailboxData.Timeout -> {
+                    if (restartChannel()) {
+                        logd(tag, "Restart channel")
+                        break
+                    }
+                    processEventTimeout(cadence)
+                }
             }
-
-            logd(
-                tag, "thisDevice: ${thisDevice?.deviceName}" +
-                        "\nisWifiP2pEnabled: $wifiP2pEnable" +
-                        "\nwtIsGroupFormed: $wtIsGroupFormed" +
-                        "\ndiscoveryCountdown: $discoveryCountdown" +
-                        "\nconnectCountdown: $connectCountdown" +
-                        "\nchannelCountdown: ${channelCountdown()}" +
-                        "\ndeviceName = ${deviceId}/${deviceUid}" +
-                        "\nlocalIp = ${this.wtLocalIp}"
-            )
-
-            if (restartChannel()) {
-                logd(tag, "Restart channel")
-                break
-            }
-
-            wifiP2PEngineFailCoolDown()
-
-            if (connectCountdown > 0) connectCountdown--
-
-            if (wifiP2PEngineOk()) {
-                updatePeers(cadence)
-            }
-
-            val tP2pInfo = Triple(wtGroupIp, wtLocalIp, wtGroupServerPort)
-            notifyOfChange(oldP2pInfo, tP2pInfo)
-            oldP2pInfo = tP2pInfo
-
-            channelSend(
-                ChannelId.RCToWTActivity,
-                scope,
-                ChannelMessageType.RCWifiDebugInfoMessage,
-                wtWifiDirectInfo()
-            )
         }
+
+        stop()
+    }
+
+    suspend fun processEvents(event: WTWifiEvent) {
 
     }
 
-    suspend fun mainLoop(cadence: Long = 1000L) {
+    suspend fun processEventTimeout(cadence: Long) {
+        val tag = "processEventTimeout/${randomString(2u)}"
+
+        if (!checkWifiPermission()) {
+            logd(tag, "Not enough Wifi permissions. Requesting.")
+            remoteCall(RemoteCallId.RCRequestWifiDPermission)
+            return
+        }
+
+        logd(
+            tag, "\n\tthisDevice: ${thisDevice?.deviceName}" +
+                    "\n\tisWifiP2pEnabled: $wifiP2pEnable" +
+                    "\n\twtIsGroupFormed: $wtIsGroupFormed" +
+                    "\n\tdiscoveryCountdown: $discoveryCountdown" +
+                    "\n\tconnectCountdown: $connectCountdown" +
+                    "\n\tchannelCountdown: ${channelCountdown()}" +
+                    "\n\tdeviceName = ${deviceId}/${deviceUid}" +
+                    "\n\tlocalIp = ${this.wtLocalIp}"
+        )
+
+        if (restartChannel()) {
+            logd(tag, "Restart channel")
+            return
+        }
+
+        wifiP2PEngineFailCoolDown()
+
+        if (connectCountdown > 0) connectCountdown--
+
+        val oldP2pInfo: Triple<InetAddress?, InetAddress?, Int?> = Triple(wtGroupIp, wtLocalIp, wtGroupServerPort)
+
+        if (wifiP2PEngineOk()) {
+            updatePeers(cadence)
+        }
+
+        val tP2pInfo = Triple(wtGroupIp, wtLocalIp, wtGroupServerPort)
+        notifyOfChange(oldP2pInfo, tP2pInfo)
+
+        restartChannelCountdown()
+        channelSend(
+            ChannelId.RCToWTActivity,
+            scope,
+            ChannelMessageType.RCWifiDebugInfoMessage,
+            wtWifiDirectInfo()
+        )
+    }
+
+    suspend fun mainLoopInit() {
+        val tag = "mainLoopInit/${randomString(2u)}"
+        val s = WTWiFiDirectStatic.INSTANCE
+
+        logd(tag, "Entry: ${s.scanPeersS}")
+
+        if (s.scanPeersS) return
+        s.scanPeersS = true
+
+        channelSend(
+            ChannelId.RCToWTActivity,
+            scope,
+            ChannelMessageType.RCWifiDebugInfoMessage,
+            wtWifiDirectInfo()
+        )
+
+        cancelConnect()
+        clearAllServices()
+        removeGroup()
+        clearAllServices()
+
+        channelSend(
+            ChannelId.RCToComm,
+            scope,
+            ChannelMessageType.RCGroupInfo,
+            Triple(null, null, null)
+        )
+
+        initServices()
+    }
+
+    suspend fun mainLoopOld(cadence: Long = 1000L) {
         val tag = "mainLoop/${randomString(2u)}"
         val s = WTWiFiDirectStatic.INSTANCE
         var oldP2pInfo: Triple<InetAddress?, InetAddress?, Int?> = Triple(null, null, null)
@@ -1778,10 +1830,10 @@ class WTWifiDirectManager(
         resetData()
 
         mainLoopJob = scope.launch {
-            logd(TAGKClass, tag, "wtWifiDirectMain Starting Peers Scanning")
+            logd(TAGKClass, tag, "wtWifiDirectMain Starting WifiD main loop")
+            mainLoopInit()
             mainLoop(scanInterval)
         }
-
     }
 
     suspend fun stop() {

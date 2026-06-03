@@ -63,6 +63,7 @@ import walkie.util.api.RemoteCallId
 import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.RemoteCallMux
 import walkie.util.logd
+import walkie.util.logging
 import walkie.util.randomString
 import kotlin.getValue
 import kotlin.system.exitProcess
@@ -122,10 +123,10 @@ class WTActivity(
     init {
         /*
         Logging.ONE.setGlobal(true)
-        logging(true)
         Logging.enable(enclosingClass = LazyListState::class, true)
         Logging.enable(enclosingClass = CoroutineScope::class, true)
         */
+        logging(true)
     }
 
     private suspend fun wifiCleanUp() {
