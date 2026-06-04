@@ -7,19 +7,18 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 sealed class MailboxData<out T> {
     data class Message<T>(val value: T) : MailboxData<T>()
+
+    fun dataOrNull(): T? = if (this is Message<T>) {
+        value
+    } else {
+        null
+    }
+
     object Timeout : MailboxData<Nothing>()
 }
 
 open class Mailbox<T>(val capacity: Int) {
     val mbox = Channel<T>(capacity)
-
-    /*
-    suspend fun receiveDataOrNull(timeout: Long): T? {
-        return withTimeoutOrNull(timeout) {
-            mbox.receive()
-        }
-    }
-    */
 
     suspend fun receive(timeout: Long): MailboxData<T> {
         return try {
@@ -35,6 +34,10 @@ open class Mailbox<T>(val capacity: Int) {
 
     suspend fun send(element: T) {
         mbox.send(element)
+    }
+
+    fun trySend(element: T) {
+        mbox.trySend(element)
     }
 
     fun close() {

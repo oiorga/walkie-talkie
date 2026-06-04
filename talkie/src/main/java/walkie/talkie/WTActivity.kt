@@ -241,7 +241,7 @@ class WTActivity(
             }
         }
 
-        wtHub.wtWifiD.main(scanInterval = 1000L)
+        wtHub.wtWifiD.main(1000L)
     }
 
     private val groupIdWDI = "WIFI Direct Info"
@@ -368,7 +368,7 @@ internal fun WTActivity.wifiRestartChannel() {
 
     wifiInitChannel()
     wifiBindReceiver()
-    wtHub.wtWifiD.main(scanInterval = 1000L)
+    wtHub.wtWifiD.main(1000L)
 }
 
 internal fun WTActivity.wtDeviceName() : String{

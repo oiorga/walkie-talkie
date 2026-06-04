@@ -105,6 +105,8 @@ class WTWifiDirectManager(
 
     private val mainLoopInbox = Mailbox<WTWifiEvent>(10)
 
+    private var wifiDState: WTWifiState = WTWifiState.WifiNull
+
     val wifiP2pEnableInfo: AtomicReference<Boolean> = AtomicReference(false)
 
     val wifiP2pEnable: Boolean
@@ -246,8 +248,8 @@ class WTWifiDirectManager(
             tag,
             "restartChannelCountdown: $restartChannelCountdown wtLocalIp: $wtLocalIp wtGroupServerPort: $wtGroupServerPort yes: $yes"
         )
-        if (null != yes) {
-            restartChannelCountdown = if (yes) (RestartChannelTimeout) else restartChannelCountdown
+        if (null != yes && yes) {
+            restartChannelCountdown = RestartChannelTimeout
         } else if (restartChannelCountdown > 0 && (null == wtLocalIp || null == wtGroupServerPort)) {
             restartChannelCountdown--
         }
@@ -692,19 +694,30 @@ class WTWifiDirectManager(
         return wifiP2pInfo
     }
 
-    suspend fun mainLoop(cadence: Long = 1000L) {
+    suspend fun mainLoop(cadence: Long) {
         val tag = "mainLoop/${randomString(2u)}"
 
         while (scope.isActive) {
-            when (val event = mainLoopInbox.await(cadence)) {
+            updateInternalState()
+
+            val event = mainLoopInbox.await(cadence)
+
+            if (!checkWifiPermission()) {
+                logd(tag, "Not enough Wifi permissions. Requesting.")
+                remoteCall(RemoteCallId.RCRequestWifiDPermission)
+                continue
+            }
+
+            if (restartChannel()) {
+                logd(tag, "Restart channel")
+                break
+            }
+
+            when (event) {
                 is MailboxData.Message -> {
                     processEvents(event.value)
                 }
                 MailboxData.Timeout -> {
-                    if (restartChannel()) {
-                        logd(tag, "Restart channel")
-                        break
-                    }
                     processEventTimeout(cadence)
                 }
             }
@@ -714,18 +727,63 @@ class WTWifiDirectManager(
     }
 
     suspend fun processEvents(event: WTWifiEvent) {
+        val tag = "processEvents/${randomString(2u)}"
 
+        when (event) {
+            WTWifiEvent.WifiDisabled -> {
+                wifiP2pEnabledNInfo.getAndSet(false)
+            }
+            WTWifiEvent.WifiEnabled -> {
+                logd(tag, "P2P state changed to enabled")
+                wifiP2pEnabledNInfo.getAndSet(true)
+                updateWifiDState(WTWifiState.WifiEnabled)
+                onDeviceInfoAvailable(requestDeviceInfo())
+            }
+            WTWifiEvent.PeersChanged -> {
+                logd(tag, "P2P peers changed")
+                requestPeersInfo()
+            }
+            WTWifiEvent.ConnectionChanged -> {
+                logd(tag, "P2P Connection changed")
+                requestConnectionInfo()
+                requestGroupInfo()
+            }
+            WTWifiEvent.ThisDeviceChanged -> {
+                logd(tag, "P2P this device changed")
+                onDeviceInfoAvailable(requestDeviceInfo())
+                requestGroupInfo()
+            }
+            is WTWifiEvent.TxtRecordListener -> {
+                logd(tag, "P2P Process TxtRecordListener info")
+                dnsSdTxtRecordListener(event.fullDomain, event.record, event.device)
+            }
+            is WTWifiEvent.ServiceResponseListener -> {
+                logd(tag, "P2P Process ServiceResponseListener info")
+                dnsSdServiceResponseListener(event.instanceName, event.registrationType, event.resourceType)
+            }
+            else -> {
+                logd(
+                    tag, "Unprocessed WifiD Event: ${event.toString()}")
+            }
+        }
     }
 
-    suspend fun processEventTimeout(cadence: Long) {
-        val tag = "processEventTimeout/${randomString(2u)}"
-
-        if (!checkWifiPermission()) {
-            logd(tag, "Not enough Wifi permissions. Requesting.")
-            remoteCall(RemoteCallId.RCRequestWifiDPermission)
-            return
+    fun updateWifiDState(newState: WTWifiState) {
+        when (newState) {
+            WTWifiState.WifiEnabled -> {
+                when (wifiDState) {
+                    WTWifiState.WifiNull, WTWifiState.WifiDisabled -> {
+                        wifiDState = WTWifiState.WifiEnabled
+                    }
+                    else -> { }
+                }
+            }
+            else -> { }
         }
+    }
 
+    fun updateInternalState() {
+        val tag = "processEventTimeout/${randomString(2u)}"
         logd(
             tag, "\n\tthisDevice: ${thisDevice?.deviceName}" +
                     "\n\tisWifiP2pEnabled: $wifiP2pEnable" +
@@ -737,12 +795,30 @@ class WTWifiDirectManager(
                     "\n\tlocalIp = ${this.wtLocalIp}"
         )
 
+        channelSend(
+            ChannelId.RCToWTActivity,
+            scope,
+            ChannelMessageType.RCWifiDebugInfoMessage,
+            wtWifiDirectInfo()
+        )
+
+        wifiP2PEngineFailCoolDown()
+        restartChannelCountdown()
+    }
+
+    suspend fun processEventTimeout(cadence: Long) {
+        val tag = "processEventTimeout/${randomString(2u)}"
+
+        if (!checkWifiPermission()) {
+            logd(tag, "Not enough Wifi permissions. Requesting.")
+            remoteCall(RemoteCallId.RCRequestWifiDPermission)
+            return
+        }
+
         if (restartChannel()) {
             logd(tag, "Restart channel")
             return
         }
-
-        wifiP2PEngineFailCoolDown()
 
         if (connectCountdown > 0) connectCountdown--
 
@@ -755,13 +831,6 @@ class WTWifiDirectManager(
         val tP2pInfo = Triple(wtGroupIp, wtLocalIp, wtGroupServerPort)
         notifyOfChange(oldP2pInfo, tP2pInfo)
 
-        restartChannelCountdown()
-        channelSend(
-            ChannelId.RCToWTActivity,
-            scope,
-            ChannelMessageType.RCWifiDebugInfoMessage,
-            wtWifiDirectInfo()
-        )
     }
 
     suspend fun mainLoopInit() {
@@ -795,7 +864,7 @@ class WTWifiDirectManager(
         initServices()
     }
 
-    suspend fun mainLoopOld(cadence: Long = 1000L) {
+    suspend fun mainLoopOld(cadence: Long) {
         val tag = "mainLoop/${randomString(2u)}"
         val s = WTWiFiDirectStatic.INSTANCE
         var oldP2pInfo: Triple<InetAddress?, InetAddress?, Int?> = Triple(null, null, null)
@@ -874,7 +943,7 @@ class WTWifiDirectManager(
         stop()
     }
 
-    suspend fun updatePeers(cadence: Long = 1000L) {
+    suspend fun updatePeers(cadence: Long) {
         val divider = 5
         val tag = "updatePeers/${randomString(2u)}"
 
@@ -1273,7 +1342,7 @@ class WTWifiDirectManager(
         logd(tag, "Exit--------------------------------------------------------------")
     }
 
-    suspend fun connectToPeers(delay: Long = 1000L) {
+    suspend fun connectToPeers(delay: Long) {
         val tag = "connectToPeers/${randomString(2u)}"
         var c = 0
         val divider = 5
@@ -1557,62 +1626,82 @@ class WTWifiDirectManager(
         }
     }
 
+    fun dnsSdTxtRecordListener (fullDomain: String,
+                                record: Map<String, String>,
+                                device: WifiP2pDevice) {
+        val tag = "dnsSdTxtRecordListener/${randomString(2u)}"
+
+        logd(tag,
+            "DnsSdTxtRecord available: [$fullDomain] [$record] [${device.deviceName}]"
+        )
+        if (record[WT_SERVICE_WALKIETALKIE] != null && record[WT_SERVICE_WALKIETALKIE] == WT_SERVICE_WALKIETALKIE) {
+            if (null == directWifiServices[device.uniqueWifiId()]) {
+                directWifiServices[device.uniqueWifiId()] =
+                    WTWifiDirectServiceInfo(
+                        id = record[WT_SERVICE_ID],
+                        unique = record[WT_SERVICE_UNIQUE],
+                        rnd = record[WT_SERVICE_RND],
+                        localServerPort = record[WT_SERVICE_LOCAL_SERVER_PORT]
+                    )
+            } else {
+                directWifiServices[device.uniqueWifiId()]?.id = record[WT_SERVICE_ID]
+                directWifiServices[device.uniqueWifiId()]?.unique = record[WT_SERVICE_UNIQUE]
+                directWifiServices[device.uniqueWifiId()]?.rnd = record[WT_SERVICE_RND]
+                directWifiServices[device.uniqueWifiId()]?.localServerPort =
+                    record[WT_SERVICE_LOCAL_SERVER_PORT]
+            }
+            logd(
+                tag,
+                "directWifiServices[${device.uniqueWifiId()}] = " +
+                        "${directWifiServices[device.uniqueWifiId()]?.id} " +
+                        "${directWifiServices[device.uniqueWifiId()]?.unique} " +
+                        "${directWifiServices[device.uniqueWifiId()]?.rnd} " +
+                        "${directWifiServices[device.uniqueWifiId()]?.localServerPort}"
+            )
+        }
+    }
+
+    fun dnsSdServiceResponseListener(instanceName: String,
+                                     registrationType: String,
+                                     resourceType: WifiP2pDevice) {
+        val tag = "dnsSdServiceResponseListener/${randomString(2u)}"
+        logd(tag,
+            "onBonjourServiceAvailable [$instanceName] [$registrationType] [${resourceType.deviceName}]"
+        )
+        if (WT_SERVICE_WALKIETALKIE == instanceName.subSequence(WT_SERVICE_WALKIETALKIE.indices)) {
+            logd(
+                TAGKClass,
+                tag,
+                "device.deviceName: ${resourceType.deviceName} resourceType.uniqueWifiId: ${resourceType.uniqueWifiId()} ${directWifiPeers[resourceType.uniqueWifiId()]?.name}"
+            )
+            if (null == directWifiServices[resourceType.uniqueWifiId()]) {
+                directWifiServices[resourceType.uniqueWifiId()] = WTWifiDirectServiceInfo()
+            }
+        }
+    }
+
     fun registerServiceListeners() {
         val tag = "registerServiceListeners/${randomString(2u)}"
 
         logd(tag, "Entry")
 
         val txtListener = WifiP2pManager.DnsSdTxtRecordListener { fullDomain, record, device ->
-            logd(
-                TAGKClass,
-                tag,
-                "DnsSdTxtRecord available: [$fullDomain] [$record] [${device.deviceName}]"
-            )
-            if (record[WT_SERVICE_WALKIETALKIE] != null && record[WT_SERVICE_WALKIETALKIE] == WT_SERVICE_WALKIETALKIE) {
-                if (null == directWifiServices[device.uniqueWifiId()]) {
-                    directWifiServices[device.uniqueWifiId()] =
-                        WTWifiDirectServiceInfo(
-                            id = record[WT_SERVICE_ID],
-                            unique = record[WT_SERVICE_UNIQUE],
-                            rnd = record[WT_SERVICE_RND],
-                            localServerPort = record[WT_SERVICE_LOCAL_SERVER_PORT]
-                        )
-                } else {
-                    directWifiServices[device.uniqueWifiId()]?.id = record[WT_SERVICE_ID]
-                    directWifiServices[device.uniqueWifiId()]?.unique = record[WT_SERVICE_UNIQUE]
-                    directWifiServices[device.uniqueWifiId()]?.rnd = record[WT_SERVICE_RND]
-                    directWifiServices[device.uniqueWifiId()]?.localServerPort =
-                        record[WT_SERVICE_LOCAL_SERVER_PORT]
-                }
-                logd(
-                    TAGKClass,
-                    tag,
-                    "directWifiServices[${device.uniqueWifiId()}] = " +
-                            "${directWifiServices[device.uniqueWifiId()]?.id} " +
-                            "${directWifiServices[device.uniqueWifiId()]?.unique} " +
-                            "${directWifiServices[device.uniqueWifiId()]?.rnd} " +
-                            "${directWifiServices[device.uniqueWifiId()]?.localServerPort}"
-                )
+            scope.launch {
+                mainLoopInbox.send(WTWifiEvent.TxtRecordListener(fullDomain, record, device))
             }
         }
 
-        val servListener =
-            WifiP2pManager.DnsSdServiceResponseListener { instanceName, registrationType, resourceType ->
-                logd(
-                    TAGKClass, tag,
-                    "onBonjourServiceAvailable [$instanceName] [$registrationType] [${resourceType.deviceName}]"
-                )
-                if (WT_SERVICE_WALKIETALKIE == instanceName.subSequence(WT_SERVICE_WALKIETALKIE.indices)) {
-                    logd(
-                        TAGKClass,
-                        tag,
-                        "device.deviceName: ${resourceType.deviceName} resourceType.uniqueWifiId: ${resourceType.uniqueWifiId()} ${directWifiPeers[resourceType.uniqueWifiId()]?.name}"
+        val servListener = WifiP2pManager.DnsSdServiceResponseListener { instanceName, registrationType, resourceType ->
+            scope.launch {
+                mainLoopInbox.send(
+                    WTWifiEvent.ServiceResponseListener(
+                        instanceName,
+                        registrationType,
+                        resourceType
                     )
-                    if (null == directWifiServices[resourceType.uniqueWifiId()]) {
-                        directWifiServices[resourceType.uniqueWifiId()] = WTWifiDirectServiceInfo()
-                    }
-                }
+                )
             }
+        }
 
         logd(tag, "Registering listeners...")
         wtWifiDirect?.registerServiceListeners( txtListener, servListener)
@@ -1737,8 +1826,8 @@ class WTWifiDirectManager(
     }
 
     suspend fun processBcastReceiverMessage(intent: Intent) {
+        val tag = "WiFiDirectBroadcastReceiver${randomString(2u)}"
         val action = intent.action
-        val tag = "WiFiDirectBroadcastReceiver"
 
         logd(tag, "action: ${action.toString()}")
 
@@ -1749,80 +1838,55 @@ class WTWifiDirectManager(
                     tag, "P2P discovery has $state " +
                             if (state == WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED) "Started" else "Stopped"
                 )
+                mainLoopInbox.send(
+                    if (state == WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED) {
+                        WTWifiEvent.PeersDiscoveryStarted
+                    } else {
+                        WTWifiEvent.PeersDiscoveryStopped
+                    }
+                )
             }
-
             WIFI_P2P_STATE_CHANGED_ACTION -> {
-                val state = intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1)
-                val enabled: Boolean = (state == WifiP2pManager.WIFI_P2P_STATE_ENABLED)
-
+                val enabled: Boolean = (WifiP2pManager.WIFI_P2P_STATE_ENABLED == intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1))
                 logd(
-                    tag, "processBcastReceiverMessage(0): P2P state changed to " +
+                    tag, "P2P state changed to " +
                             if (enabled) "enabled" else "disabled" + " " + "manager: \n\t\t\$manager"
                 )
-
-                wifiP2pEnabledNInfo.getAndSet(enabled)
-                if (wifiP2pEnabledNInfo.get()) {
-                    val device = requestDeviceInfo()
-                    onDeviceInfoAvailable(device)
-                    logd(
-                        tag, "processBcastReceiverMessage(1): P2P state changed to enabled" +
-                                "\n\t\t\t\tGO: ${device?.isGroupOwner}" +
-                                "\n\t\t\t\tdeviceName: ${device?.deviceName}" +
-                                "\n\t\t\t\tdeviceAddress: ${device?.deviceAddress}"
-                    )
-                }
+                mainLoopInbox.send(
+                    if (enabled) {
+                        WTWifiEvent.WifiEnabled
+                    } else {
+                        WTWifiEvent.WifiDisabled
+                    }
+                )
             }
-
             WIFI_P2P_PEERS_CHANGED_ACTION -> {
-                /*
-                 Request available peers from the wifi p2p manager. This is an
-                 asynchronous call and the calling activity is notified with a
-                 callback on PeerListListener.onPeersAvailable()
-                */
-                logd(tag, "processBcastReceiverMessage: P2P peers changed")
-
-                if (!checkWifiPermission()) {
-                    logd(tag, "processBcastReceiverMessage: Not enough permissions.")
-                    return
-                }
-                requestPeersInfo()
+                logd(tag, "P2P peers changed")
+                mainLoopInbox.send(WTWifiEvent.PeersChanged)
             }
-
             WIFI_P2P_CONNECTION_CHANGED_ACTION -> {
                 val networkInfo = intent
                     .getParcelableExtra<Parcelable>(WifiP2pManager.EXTRA_NETWORK_INFO) as NetworkInfo
-
                 logd(
-                    tag, "processBcastReceiverMessage: P2P connection changed to: " +
+                    tag, "P2P connection changed to: " +
                             if (networkInfo.isConnected) "Connected" else "Disconnected"
                 )
-
-                requestConnectionInfo()
-                requestGroupInfo()
+                mainLoopInbox.send(WTWifiEvent.ConnectionChanged)
             }
-
             WIFI_P2P_THIS_DEVICE_CHANGED_ACTION -> {
-                val device = requestDeviceInfo()
-                onDeviceInfoAvailable(device)
-                requestGroupInfo()
-                logd(
-                    tag, "processBcastReceiverMessage: P2P this device changed:" +
-                            "\n\t\t\t\tGO: ${device?.isGroupOwner}" +
-                            "\n\t\t\t\tdeviceName: ${device?.deviceName}" +
-                            "\n\t\t\t\tdeviceAddress${device?.deviceAddress}"
-                )
+                logd(tag, "P2P this device changed")
+                mainLoopInbox.send(WTWifiEvent.ThisDeviceChanged)
             }
-
             else -> {
                 logd(
                     tag,
-                    "processBcastReceiverMessage: P2P changed to ${action.toString()} NOT Addressed"
+                    "P2P changed to ${action.toString()} NOT Addressed"
                 )
             }
         }
     }
 
-    fun main(scanInterval: Long = 1000L) {
+    fun main(cadence: Long = 1000L) {
         val tag = "wtWifiDirectMain/${randomString(2u)}"
 
         logd("Entry")
@@ -1832,7 +1896,7 @@ class WTWifiDirectManager(
         mainLoopJob = scope.launch {
             logd(TAGKClass, tag, "wtWifiDirectMain Starting WifiD main loop")
             mainLoopInit()
-            mainLoop(scanInterval)
+            mainLoop(cadence)
         }
     }
 
