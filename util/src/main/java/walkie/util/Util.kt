@@ -73,7 +73,8 @@ fun getIPAddressesString(useIPv4: Boolean = true): String {
             }
         }
     } catch (_: java.lang.Exception) {
-    } // for now eat exceptions
+        // for now eat exceptions
+    }
 
     return sAddrs
 }

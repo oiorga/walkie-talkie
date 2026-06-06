@@ -4,6 +4,8 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 sealed class MailboxData<out T> {
     data class Message<T>(val value: T) : MailboxData<T>()
@@ -20,7 +22,7 @@ sealed class MailboxData<out T> {
 open class Mailbox<T>(val capacity: Int) {
     val mbox = Channel<T>(capacity)
 
-    suspend fun receive(timeout: Long): MailboxData<T> {
+    suspend fun receive(timeout: Duration): MailboxData<T> {
         return try {
             withTimeout(timeout) {
                 MailboxData.Message (mbox.receive())
@@ -30,7 +32,7 @@ open class Mailbox<T>(val capacity: Int) {
         }
     }
 
-    suspend fun await(timeout: Long) = receive(timeout)
+    suspend fun await(timeout: Duration) = receive(timeout)
 
     suspend fun send(element: T) {
         mbox.send(element)

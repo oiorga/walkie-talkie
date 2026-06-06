@@ -50,6 +50,7 @@ import walkie.wifidirect.WTWifiDirectServiceInfo.Companion.WT_SERVICE_WALKIETALK
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 
 /* Ugly. To revisit. To prevent coroutines to restart at onCreate on screen rotation */
 class WTWiFiDirectStatic private constructor() {
@@ -77,7 +78,7 @@ class WTWifiDirectManager(
         const val DiscoveryCountdown = 26
         const val ConnectCountdown = 1
         const val FailCooldown = 1
-        const val RestartChannelTimeout = (DiscoveryCountdown * 2).toInt()
+        const val RestartChannelTimeout = (DiscoveryCountdown * 2)
         const val DiscoveryVsAdvertisementRatio = (2F / 3F)
     }
 
@@ -103,11 +104,19 @@ class WTWifiDirectManager(
         remoteCall(RemoteCallId.RCRequestWifiDPermission)
     }
 
+    val deviceUid: String
+        get() = nodeId.uid()
+
     private var mainLoopJob: Job? = null
 
     private val mainLoopInbox = Mailbox<WTWifiEvent>(10)
 
-    private var wifiDState: WTWifiState = WTWifiState.WifiNull
+    private var wtWifi = WTWifiDB(deviceUid,
+        if (checkWifiPermission()) {
+            WTWifiState.Inactive.Disabled
+        } else {
+            WTWifiState.Inactive.NoWifiPermissions
+        })
 
     val wifiP2pEnableInfo: AtomicReference<Boolean> = AtomicReference(false)
 
@@ -168,8 +177,6 @@ class WTWifiDirectManager(
                 ?: p2pOwner?.let { device -> WTWifiDirectPeerInfo(device) }
         }
 
-    val deviceUid: String
-        get() = nodeId.uid()
 
     val deviceId: String
         get() = nodeId.id()
@@ -702,7 +709,7 @@ class WTWifiDirectManager(
         while (scope.isActive) {
             updateInternalState()
 
-            val event = mainLoopInbox.await(cadence)
+            val event = mainLoopInbox.await(cadence.milliseconds)
 
             if (!checkWifiPermission()) {
                 logd(tag, "Not enough Wifi permissions. Requesting.")
@@ -738,7 +745,7 @@ class WTWifiDirectManager(
             WTWifiEvent.P2p.WifiEnabled -> {
                 logd(tag, "P2P state changed to enabled")
                 wifiP2pEnabledNInfo.getAndSet(true)
-                updateWifiDState(WTWifiState.WifiEnabled)
+                updateWifiDState(WTWifiState.Enabled.Ready)
                 onDeviceInfoAvailable(requestDeviceInfo())
             }
             WTWifiEvent.P2p.PeersChanged -> {
@@ -772,10 +779,12 @@ class WTWifiDirectManager(
 
     fun updateWifiDState(newState: WTWifiState) {
         when (newState) {
-            WTWifiState.WifiEnabled -> {
-                when (wifiDState) {
-                    WTWifiState.WifiNull, WTWifiState.WifiDisabled -> {
-                        wifiDState = WTWifiState.WifiEnabled
+            is WTWifiState.Enabled -> {
+                when (wtWifi.state) {
+                    is WTWifiState.Inactive -> {
+                        wtWifi = wtWifi.copy(
+                            state = WTWifiState.Enabled.Ready
+                        )
                     }
                     else -> { }
                 }
@@ -899,7 +908,7 @@ class WTWifiDirectManager(
 
         logd(tag, "Entering Main Loop: ${s.scanPeersS}")
         while (scope.isActive) {
-            mainLoopInbox.await(cadence)
+            mainLoopInbox.await(cadence.milliseconds)
             if (!checkWifiPermission()) {
                 requestWifiPermission()
                 continue
@@ -957,45 +966,49 @@ class WTWifiDirectManager(
 
         updateDevice()
 
-        if (wifiP2pEnable) {
-            delay(cadence)
-            logd(
-                tag,
-                "discoverPeersJob deviceName = $deviceUid failCoolDown: $failCooldown thisDevice: ${thisDevice?.deviceName}"
-            )
-            discoverPeersJob()
-
-            logd(
-                tag,
-                "updateP2pInfo deviceName = $deviceUid failCoolDown: $failCooldown thisDevice: ${thisDevice?.deviceName}"
-            )
-            updateP2pInfo()
-
-            if (null != thisDevice) {
-                delay(cadence / divider)
-                logd(
-                    tag,
-                    "updatePeersInfo deviceName = $deviceUid failCoolDown: $failCooldown"
-                )
-                updatePeersInfo()
-
-                delay(cadence / divider)
-                logd(
-                    tag,
-                    "updateGroupInfo deviceName = $deviceUid failCoolDown: $failCooldown"
-                )
-                updateGroupInfo()
-
-                delay(cadence / divider)
-                logd(
-                    tag,
-                    "connectToPeers deviceName = $deviceUid failCoolDown: $failCooldown"
-                )
-                connectToPeers(cadence / divider)
-            }
-
-            delay(cadence / divider)
+        if (!wifiP2pEnable) {
+            logd(tag, "Exit: wifiP2pEnable: $wifiP2pEnable")
+            return
         }
+
+        delay(cadence.milliseconds)
+        logd(
+            tag,
+            "discoverPeersJob deviceName = $deviceUid failCoolDown: $failCooldown thisDevice: ${thisDevice?.deviceName}"
+        )
+        discoverPeersJob()
+
+        logd(
+            tag,
+            "updateP2pInfo deviceName = $deviceUid failCoolDown: $failCooldown thisDevice: ${thisDevice?.deviceName}"
+        )
+        updateP2pInfo()
+
+        if (null != thisDevice) {
+            delay((cadence / divider).milliseconds)
+            logd(
+                tag,
+                "updatePeersInfo deviceName = $deviceUid failCoolDown: $failCooldown"
+            )
+            updatePeersInfo()
+
+            delay((cadence / divider).milliseconds)
+            logd(
+                tag,
+                "updateGroupInfo deviceName = $deviceUid failCoolDown: $failCooldown"
+            )
+            updateGroupInfo()
+
+            delay((cadence / divider).milliseconds)
+            logd(
+                tag,
+                "connectToPeers deviceName = $deviceUid failCoolDown: $failCooldown"
+            )
+            connectToPeers(cadence / divider)
+        }
+
+        delay((cadence / divider).milliseconds)
+
         logd(tag, "Exit")
     }
 
@@ -1010,7 +1023,6 @@ class WTWifiDirectManager(
             thisDeviceInfo.getAndSet(thisDeviceNInfo.get())
         }
     }
-
 
     suspend fun discoverPeersJob() {
         val tag = "discoverPeersJob/${randomString(2u)}"

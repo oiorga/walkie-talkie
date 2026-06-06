@@ -244,9 +244,7 @@ suspend fun WTIPComm.wifiServer(localIp: InetAddress? = null,
                 "ipInMessageQueue: mainLoop $count"
             )
             val packet = ipInQueue.dequeue()
-            if (packet != null) {
-                wifiServerProcessInput(packet)
-            }
+            wifiServerProcessInput(packet)
         }
     }
 

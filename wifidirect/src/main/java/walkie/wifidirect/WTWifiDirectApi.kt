@@ -1,6 +1,9 @@
 package walkie.wifidirect
 
 import android.net.wifi.p2p.WifiP2pDevice
+import android.net.wifi.p2p.WifiP2pGroup
+import android.net.wifi.p2p.WifiP2pInfo
+import java.net.InetAddress
 
 interface WTWifiDirectEnv {
     fun checkWifiPermission(): Boolean
@@ -38,10 +41,36 @@ sealed class WTWifiEvent {
 }
 
 sealed class WTWifiState {
-    object WifiNull: WTWifiState()
-    object WifiNoPermissions: WTWifiState()
-    object WifiEnabled: WTWifiState()
-    object WifiDisabled: WTWifiState()
-    object WifiPeersScanning: WTWifiState()
-    object WifiConnecting: WTWifiState()
+    sealed class Inactive : WTWifiState() {
+        object NoWifiPermissions : Inactive()
+        object Disabled : Inactive()
+    }
+
+    sealed class Enabled : WTWifiState() {
+        object Ready: Enabled()
+        object PeersScanning : Enabled()
+        object Connecting : Enabled()
+        object ServiceDiscovery: Enabled()
+    }
 }
+
+data class WTWifiDB(
+    val deviceUid: String,
+    val state: WTWifiState,
+    val thisDevice: WifiP2pDevice? = null,
+    val p2pInfo: WifiP2pInfo? = null,
+    val groupInfo: WifiP2pGroup? = null,
+    val peers: List<WifiP2pDevice> = emptyList()) {
+
+    val isGroupOwner: Boolean
+        get() = ((true == p2pInfo?.groupFormed) && p2pInfo.isGroupOwner)
+    val isGroupFormed: Boolean
+        get() = (true == p2pInfo?.groupFormed)
+    val groupIp: InetAddress?
+        get() = p2pInfo?.groupOwnerAddress
+    val groupOwnerName: String?
+        get() = (if (isGroupOwner) thisDevice?.deviceName else groupInfo?.owner?.deviceName)
+    val groupOwnerDevice: WifiP2pDevice?
+        get() = groupInfo?.owner
+}
+
