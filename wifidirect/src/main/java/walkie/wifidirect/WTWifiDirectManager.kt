@@ -132,7 +132,6 @@ class WTWifiDirectManager(
     val wtWifiP2pInfoN: AtomicReference<WifiP2pInfo?> = AtomicReference(null)
     val wtWifiGroupInfoN: AtomicReference<WifiP2pGroup?> = AtomicReference(null)
     val thisDeviceInfo: AtomicReference<WifiP2pDevice?> = AtomicReference(null)
-    val thisDeviceNInfo: AtomicReference<WifiP2pDevice?> = AtomicReference(null)
 
     val thisDevice: WifiP2pDevice?
         get() = (thisDeviceInfo.get())
@@ -301,22 +300,6 @@ class WTWifiDirectManager(
 
     init {
         logging(true)
-    }
-
-    fun onDeviceInfoAvailable(device: WifiP2pDevice?) {
-        val tag = "onDeviceInfoAvailable/${randomString(2U)}"
-
-        if (wifiP2pEnable) {
-            thisDeviceNInfo.getAndSet(device)
-        }
-
-        logd(
-            tag, "onDeviceInfoAvailable: " +
-                    "\n\t\t\t\tisWifiP2pEnabled: $wifiP2pEnable " +
-                    "\n\t\t\t\tGO: ${thisDevice?.isGroupOwner}" +
-                    "\n\t\t\t\tdeviceName: ${thisDevice?.deviceName}" +
-                    "\n\t\t\t\tdeviceAddress${thisDevice?.deviceAddress}"
-        )
     }
 
     override suspend fun channelOnReceive(
@@ -744,7 +727,7 @@ class WTWifiDirectManager(
                 logd(tag, "P2P state changed to enabled")
                 wifiP2pEnableInfo.getAndSet(true)
                 updateWifiDState(WTWifiState.Enabled.Ready)
-                onDeviceInfoAvailable(requestDeviceInfo())
+                thisDeviceInfo.getAndSet(requestDeviceInfo())
             }
             WTWifiEvent.P2p.PeersChanged -> {
                 logd(tag, "P2P peers changed")
@@ -757,7 +740,8 @@ class WTWifiDirectManager(
             }
             WTWifiEvent.P2p.ThisDeviceChanged -> {
                 logd(tag, "P2P this device changed")
-                onDeviceInfoAvailable(requestDeviceInfo())
+                thisDeviceInfo.getAndSet(requestDeviceInfo())
+
                 requestGroupInfo()
             }
             is WTWifiEvent.P2p.TxtRecordListener -> {
@@ -962,7 +946,10 @@ class WTWifiDirectManager(
             "deviceName = $deviceUid localIp = $wtLocalIp failCoolDown: $failCooldown wifiP2pEnable: $wifiP2pEnable"
         )
 
-        updateDevice()
+        if (null == thisDeviceInfo.get()) {
+            logd(tag, "Exit: Device info not available: $wifiP2pEnable")
+            return
+        }
 
         if (!wifiP2pEnable) {
             logd(tag, "Exit: wifiP2pEnable: $wifiP2pEnable")
@@ -1008,14 +995,6 @@ class WTWifiDirectManager(
         delay((cadence / divider).milliseconds)
 
         logd(tag, "Exit")
-    }
-
-    fun updateDevice() {
-        val tag = "updateThisDevice/${randomString(2u)}"
-
-        if (wifiP2pEnable && thisDeviceInfo.get() != thisDeviceNInfo.get()) {
-            thisDeviceInfo.getAndSet(thisDeviceNInfo.get())
-        }
     }
 
     suspend fun discoverPeersJob() {
