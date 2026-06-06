@@ -7,27 +7,34 @@ interface WTWifiDirectEnv {
 }
 
 sealed class WTWifiEvent {
-    object Timeout : WTWifiEvent()
-    object WifiStop : WTWifiEvent()
-    object WifiEnabled : WTWifiEvent()
-    object WifiDisabled : WTWifiEvent()
-    object WifiPermissionGranted : WTWifiEvent()
-    object WifiPermissionWithdrawn : WTWifiEvent()
-    object PeersChanged : WTWifiEvent()
-    object ConnectionChanged : WTWifiEvent()
-    object ThisDeviceChanged : WTWifiEvent()
-    object PeersDiscoveryStarted : WTWifiEvent()
-    object PeersDiscoveryStopped : WTWifiEvent()
-    data class TxtRecordListener(
-        val fullDomain: String,
-        val record: Map<String, String>,
-        val device: WifiP2pDevice
-    ): WTWifiEvent()
-    data class ServiceResponseListener(
-        val instanceName: String,
-        val registrationType: String,
-        val resourceType: WifiP2pDevice
-    ): WTWifiEvent()
+    sealed class WTWifi: WTWifiEvent() {
+        object Timeout : WTWifi()
+        object WifiStop : WTWifi()
+        object PeersDiscoveryStart : WTWifi()
+        object PeersDiscoveryStop : WTWifi()
+    }
+
+    sealed class P2p: WTWifiEvent() {
+        object WifiEnabled : P2p()
+        object WifiDisabled : P2p()
+        object PermissionGranted : P2p()
+        object PermissionWithdrawn : P2p()
+        object PeersChanged : P2p()
+        object ConnectionChanged : P2p()
+        object ThisDeviceChanged : P2p()
+        object PeersDiscoveryStarted : P2p()
+        object PeersDiscoveryStopped : P2p()
+        data class TxtRecordListener(
+            val fullDomain: String,
+            val record: Map<String, String>,
+            val device: WifiP2pDevice
+        ) : P2p()
+        data class ServiceResponseListener(
+            val instanceName: String,
+            val registrationType: String,
+            val resourceType: WifiP2pDevice
+        ) : P2p()
+    }
 }
 
 sealed class WTWifiState {
@@ -35,7 +42,6 @@ sealed class WTWifiState {
     object WifiNoPermissions: WTWifiState()
     object WifiEnabled: WTWifiState()
     object WifiDisabled: WTWifiState()
-    object WifiPermissionMissing: WTWifiState()
     object WifiPeersScanning: WTWifiState()
     object WifiConnecting: WTWifiState()
 }

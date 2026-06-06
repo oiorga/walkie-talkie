@@ -96,9 +96,11 @@ class WTWifiDirectManager(
     }
 
     fun checkWifiPermission(): Boolean {
-        val tag = "checkWifiDPermission/${randomString(2u)}"
-        logd(tag, "checkWifiDPermission perm = ${remoteCall(RemoteCallId.RCCheckWifiDPermission)}")
         return (true == typedCall<Boolean>(RemoteCallId.RCCheckWifiDPermission))
+    }
+
+    fun requestWifiPermission() {
+        remoteCall(RemoteCallId.RCRequestWifiDPermission)
     }
 
     private var mainLoopJob: Job? = null
@@ -704,7 +706,7 @@ class WTWifiDirectManager(
 
             if (!checkWifiPermission()) {
                 logd(tag, "Not enough Wifi permissions. Requesting.")
-                remoteCall(RemoteCallId.RCRequestWifiDPermission)
+                requestWifiPermission()
                 continue
             }
 
@@ -730,34 +732,34 @@ class WTWifiDirectManager(
         val tag = "processEvents/${randomString(2u)}"
 
         when (event) {
-            WTWifiEvent.WifiDisabled -> {
+            WTWifiEvent.P2p.WifiDisabled -> {
                 wifiP2pEnabledNInfo.getAndSet(false)
             }
-            WTWifiEvent.WifiEnabled -> {
+            WTWifiEvent.P2p.WifiEnabled -> {
                 logd(tag, "P2P state changed to enabled")
                 wifiP2pEnabledNInfo.getAndSet(true)
                 updateWifiDState(WTWifiState.WifiEnabled)
                 onDeviceInfoAvailable(requestDeviceInfo())
             }
-            WTWifiEvent.PeersChanged -> {
+            WTWifiEvent.P2p.PeersChanged -> {
                 logd(tag, "P2P peers changed")
                 requestPeersInfo()
             }
-            WTWifiEvent.ConnectionChanged -> {
+            WTWifiEvent.P2p.ConnectionChanged -> {
                 logd(tag, "P2P Connection changed")
                 requestConnectionInfo()
                 requestGroupInfo()
             }
-            WTWifiEvent.ThisDeviceChanged -> {
+            WTWifiEvent.P2p.ThisDeviceChanged -> {
                 logd(tag, "P2P this device changed")
                 onDeviceInfoAvailable(requestDeviceInfo())
                 requestGroupInfo()
             }
-            is WTWifiEvent.TxtRecordListener -> {
+            is WTWifiEvent.P2p.TxtRecordListener -> {
                 logd(tag, "P2P Process TxtRecordListener info")
                 dnsSdTxtRecordListener(event.fullDomain, event.record, event.device)
             }
-            is WTWifiEvent.ServiceResponseListener -> {
+            is WTWifiEvent.P2p.ServiceResponseListener -> {
                 logd(tag, "P2P Process ServiceResponseListener info")
                 dnsSdServiceResponseListener(event.instanceName, event.registrationType, event.resourceType)
             }
@@ -811,7 +813,7 @@ class WTWifiDirectManager(
 
         if (!checkWifiPermission()) {
             logd(tag, "Not enough Wifi permissions. Requesting.")
-            remoteCall(RemoteCallId.RCRequestWifiDPermission)
+            requestWifiPermission()
             return
         }
 
@@ -899,7 +901,7 @@ class WTWifiDirectManager(
         while (scope.isActive) {
             mainLoopInbox.await(cadence)
             if (!checkWifiPermission()) {
-                remoteCall(RemoteCallId.RCRequestWifiDPermission)
+                requestWifiPermission()
                 continue
             }
 
@@ -1687,14 +1689,14 @@ class WTWifiDirectManager(
 
         val txtListener = WifiP2pManager.DnsSdTxtRecordListener { fullDomain, record, device ->
             scope.launch {
-                mainLoopInbox.send(WTWifiEvent.TxtRecordListener(fullDomain, record, device))
+                mainLoopInbox.send(WTWifiEvent.P2p.TxtRecordListener(fullDomain, record, device))
             }
         }
 
         val servListener = WifiP2pManager.DnsSdServiceResponseListener { instanceName, registrationType, resourceType ->
             scope.launch {
                 mainLoopInbox.send(
-                    WTWifiEvent.ServiceResponseListener(
+                    WTWifiEvent.P2p.ServiceResponseListener(
                         instanceName,
                         registrationType,
                         resourceType
@@ -1840,9 +1842,9 @@ class WTWifiDirectManager(
                 )
                 mainLoopInbox.send(
                     if (state == WifiP2pManager.WIFI_P2P_DISCOVERY_STARTED) {
-                        WTWifiEvent.PeersDiscoveryStarted
+                        WTWifiEvent.P2p.PeersDiscoveryStarted
                     } else {
-                        WTWifiEvent.PeersDiscoveryStopped
+                        WTWifiEvent.P2p.PeersDiscoveryStopped
                     }
                 )
             }
@@ -1854,15 +1856,15 @@ class WTWifiDirectManager(
                 )
                 mainLoopInbox.send(
                     if (enabled) {
-                        WTWifiEvent.WifiEnabled
+                        WTWifiEvent.P2p.WifiEnabled
                     } else {
-                        WTWifiEvent.WifiDisabled
+                        WTWifiEvent.P2p.WifiDisabled
                     }
                 )
             }
             WIFI_P2P_PEERS_CHANGED_ACTION -> {
                 logd(tag, "P2P peers changed")
-                mainLoopInbox.send(WTWifiEvent.PeersChanged)
+                mainLoopInbox.send(WTWifiEvent.P2p.PeersChanged)
             }
             WIFI_P2P_CONNECTION_CHANGED_ACTION -> {
                 val networkInfo = intent
@@ -1871,11 +1873,11 @@ class WTWifiDirectManager(
                     tag, "P2P connection changed to: " +
                             if (networkInfo.isConnected) "Connected" else "Disconnected"
                 )
-                mainLoopInbox.send(WTWifiEvent.ConnectionChanged)
+                mainLoopInbox.send(WTWifiEvent.P2p.ConnectionChanged)
             }
             WIFI_P2P_THIS_DEVICE_CHANGED_ACTION -> {
                 logd(tag, "P2P this device changed")
-                mainLoopInbox.send(WTWifiEvent.ThisDeviceChanged)
+                mainLoopInbox.send(WTWifiEvent.P2p.ThisDeviceChanged)
             }
             else -> {
                 logd(
