@@ -129,7 +129,6 @@ class WTWifiDirectManager(
 
     val wtWifiP2pInfo: AtomicReference<WifiP2pInfo?> = AtomicReference(null)
     val wtWifiGroupInfo: AtomicReference<WifiP2pGroup?> = AtomicReference(null)
-    val wtWifiP2pInfoN: AtomicReference<WifiP2pInfo?> = AtomicReference(null)
     val wtWifiGroupInfoN: AtomicReference<WifiP2pGroup?> = AtomicReference(null)
     val thisDeviceInfo: AtomicReference<WifiP2pDevice?> = AtomicReference(null)
 
@@ -357,7 +356,7 @@ class WTWifiDirectManager(
         directWifiServices.clear()
         wtWifiP2pInfo.getAndSet(null)
         wtWifiGroupInfo.getAndSet(null)
-        wtWifiP2pInfoN.getAndSet(null)
+        //wtWifiP2pInfoN.getAndSet(null)
         wtWifiGroupInfoN.getAndSet(null)
 
         connectToDevice = null
@@ -660,29 +659,8 @@ class WTWifiDirectManager(
         return device.directWifiConnection
     }
 
-    suspend fun requestConnectionInfo(): WifiP2pInfo? {
-        val tag = "requestConnectionInfo/${randomString(2u)}"
-
-        logd(tag, "Entry")
-
-        wtWifiP2pInfoN.get()?.logD(tag)
-
-        val wifiP2pInfo: WifiP2pInfo? = wtWifiDirect?.requestConnectionInfo()?.dataOrNull()
-
-        logd(
-            TAGKClass,
-            tag,
-            "Entry: ${wifiP2pInfo?.groupFormed}  ${wifiP2pInfo?.isGroupOwner} ${wifiP2pInfo?.groupOwnerAddress}"
-        )
-
-        if (wifiP2pInfo != wtWifiP2pInfoN.get()) {
-            wtWifiP2pInfoN.compareAndSet(wtWifiP2pInfoN.get(), wifiP2pInfo)
-        }
-
-        wtWifiP2pInfoN.get()?.logD(tag)
-
-        return wifiP2pInfo
-    }
+    suspend fun requestConnectionInfo(): WifiP2pInfo? =
+        wtWifiDirect?.requestConnectionInfo()?.dataOrNull()
 
     suspend fun mainLoop(cadence: Long) {
         val tag = "mainLoop/${randomString(2u)}"
@@ -735,7 +713,7 @@ class WTWifiDirectManager(
             }
             WTWifiEvent.P2p.ConnectionChanged -> {
                 logd(tag, "P2P Connection changed")
-                requestConnectionInfo()
+                updateP2pInfo(AtomicReference(requestConnectionInfo()))
                 requestGroupInfo()
             }
             WTWifiEvent.P2p.ThisDeviceChanged -> {
@@ -963,11 +941,13 @@ class WTWifiDirectManager(
         )
         discoverPeersJob()
 
+        /*
         logd(
             tag,
             "updateP2pInfo deviceName = $deviceUid failCoolDown: $failCooldown thisDevice: ${thisDevice?.deviceName}"
         )
         updateP2pInfo()
+        */
 
         if (null != thisDevice) {
             delay((cadence / divider).milliseconds)
@@ -1297,10 +1277,10 @@ class WTWifiDirectManager(
         }
     }
 
-    suspend fun updateP2pInfo() {
+    fun updateP2pInfo(wtWifiP2pInfoN: AtomicReference<WifiP2pInfo>) {
         val tag = "updateP2pInfo/${randomString(2u)}"
 
-        logd(tag, "Entry++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+        logd(tag, "Entry")
 
         wtWifiP2pInfo.get()?.logD(tag)
         wtWifiP2pInfoN.get()?.logD(tag)
@@ -1319,14 +1299,12 @@ class WTWifiDirectManager(
                 ChannelMessageType.RCGroupInfo,
                 Triple(null, null, null)
             )
-            /* channelSend(WTChannelId.RCToIpComm, WTChannelMessageType.RCStop) */
             restartChannel(true)
         }
 
         wtWifiP2pInfo.getAndSet(wtWifiP2pInfoN.get())
 
         wtWifiP2pInfo.get()?.logD(tag)
-        logd(tag, "Exit--------------------------------------------------------------")
     }
 
     suspend fun connectToPeers(delay: Long) {
