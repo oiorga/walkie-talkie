@@ -122,7 +122,6 @@ class WTWifiDirectManager(
 
     val wifiP2pEnable: Boolean
         get() = wifiP2pEnableInfo.get()
-    private val wifiP2pEnabledNInfo: AtomicReference<Boolean> = AtomicReference(false)
 
     val directWifiPeers = mutableMapOf<String, WTWifiDirectPeerInfo>()
     val directWifiPeersN = GenericList<WifiP2pDevice>()
@@ -307,7 +306,7 @@ class WTWifiDirectManager(
     fun onDeviceInfoAvailable(device: WifiP2pDevice?) {
         val tag = "onDeviceInfoAvailable/${randomString(2U)}"
 
-        if (wifiP2pEnabledNInfo.get()) {
+        if (wifiP2pEnable) {
             thisDeviceNInfo.getAndSet(device)
         }
 
@@ -369,7 +368,6 @@ class WTWifiDirectManager(
 
         mainLoopJob = null
         wifiP2pEnableInfo.getAndSet(false)
-        wifiP2pEnabledNInfo.getAndSet(false)
 
         directWifiPeers.clear()
         directWifiPeersN.clear()
@@ -740,11 +738,11 @@ class WTWifiDirectManager(
 
         when (event) {
             WTWifiEvent.P2p.WifiDisabled -> {
-                wifiP2pEnabledNInfo.getAndSet(false)
+                wifiP2pEnableInfo.getAndSet(false)
             }
             WTWifiEvent.P2p.WifiEnabled -> {
                 logd(tag, "P2P state changed to enabled")
-                wifiP2pEnabledNInfo.getAndSet(true)
+                wifiP2pEnableInfo.getAndSet(true)
                 updateWifiDState(WTWifiState.Enabled.Ready)
                 onDeviceInfoAvailable(requestDeviceInfo())
             }
@@ -961,7 +959,7 @@ class WTWifiDirectManager(
         logd(tag, "Entry")
         logd(
             tag,
-            "deviceName = $deviceUid localIp = $wtLocalIp failCoolDown: $failCooldown wifiP2pEnable: ${wifiP2pEnable}/${wifiP2pEnabledNInfo.get()}/${wifiP2pEnable}"
+            "deviceName = $deviceUid localIp = $wtLocalIp failCoolDown: $failCooldown wifiP2pEnable: $wifiP2pEnable"
         )
 
         updateDevice()
@@ -1015,11 +1013,7 @@ class WTWifiDirectManager(
     fun updateDevice() {
         val tag = "updateThisDevice/${randomString(2u)}"
 
-        if (wifiP2pEnableInfo.get() != wifiP2pEnabledNInfo.get()) {
-            wifiP2pEnableInfo.getAndSet(wifiP2pEnabledNInfo.get())
-        }
-
-        if (wifiP2pEnableInfo.get() && thisDeviceInfo.get() != thisDeviceNInfo.get()) {
+        if (wifiP2pEnable && thisDeviceInfo.get() != thisDeviceNInfo.get()) {
             thisDeviceInfo.getAndSet(thisDeviceNInfo.get())
         }
     }
