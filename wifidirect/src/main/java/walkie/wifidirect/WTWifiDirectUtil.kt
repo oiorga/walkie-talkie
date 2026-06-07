@@ -45,24 +45,24 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
             "\n\tis Owner: " + this.wtWifiP2pInfo?.isGroupOwner +
             "\n\tis Formed: " + this.wtWifiP2pInfo?.groupFormed +
             "\n\tGroup Address: " + this.wtWifiP2pInfo?.groupOwnerAddress +
-            "\n\tLocal IPAddress: " + this.wtWifiGroupInfo.get()?.`interface`?.let { getInterfaceIpAddress(it) }
+            "\n\tLocal IPAddress: " + this.wtWifiGroupInfo?.`interface`?.let { getInterfaceIpAddress(it) }
 
-    info += "\nGroup Info: " + "${this.wtWifiGroupInfo.get()?.owner?.uniqueWifiId()}/${wtGroupOwnerName}" + " " + wtGroupOwner?.p2pInfo?.uniqueWifiId()
+    info += "\nGroup Info: " + "${this.wtWifiGroupInfo?.owner?.uniqueWifiId()}/${wtGroupOwnerName}" + " " + wtGroupOwner?.p2pInfo?.uniqueWifiId()
     var cList = ""
-    this.wtWifiGroupInfo.get()?.clientList?.forEach { device ->
+    this.wtWifiGroupInfo?.clientList?.forEach { device ->
         cList += "\t[${device.deviceName}]"
     }
 
     info += "\n\tCurrent Device: ${thisDevice?.uniqueWifiId()} $deviceUid" +
-            "\n\tGroup Owner: " + this.wtWifiGroupInfo.get()?.owner?.deviceName +
+            "\n\tGroup Owner: " + this.wtWifiGroupInfo?.owner?.deviceName +
             "\n\tGroup IP Address: " + this.wtGroupIp + " $wtGroupServerPort" +
             //"\n\tOwner device address: " + wtWifiGroupInfo?.owner?.deviceAddress +
-            "\n\tis Owner: " + this.wtWifiGroupInfo.get()?.isGroupOwner + " " + wtIsGroupOwner + " " + this.wtWifiGroupInfo.get()?.owner?.isGroupOwner +
+            "\n\tis Owner: " + this.wtWifiGroupInfo?.isGroupOwner + " " + wtIsGroupOwner + " " + this.wtWifiGroupInfo?.owner?.isGroupOwner +
             "\n\tis Formed: " + wtIsGroupFormed +
             //"\n\tPassphrase: " + wtWifiGroupInfo?.passphrase +
-            "\n\tnetworkName: " + this.wtWifiGroupInfo.get()?.networkName +
+            "\n\tnetworkName: " + this.wtWifiGroupInfo?.networkName +
             "\n\tClient List: " + cList +
-            "\n\tInterface: " + this.wtWifiGroupInfo.get()?.`interface` + "" + this.wtWifiGroupInfo.get()?.`interface`?.let { getInterfaceIpAddress(it) }
+            "\n\tInterface: " + this.wtWifiGroupInfo?.`interface` + "" + this.wtWifiGroupInfo?.`interface`?.let { getInterfaceIpAddress(it) }
             //"\n\tnetworkId: " + wtWifiGroupInfo?.networkId +
             //"\n\tIPAddress: " + this.wtWifiGroupInfo?.`interface`?.let { getInterfaceIpAddress(it) }
 

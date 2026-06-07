@@ -125,7 +125,7 @@ class WTWifiDirectManager(
     val directWifiServices = mutableMapOf<String, WTWifiDirectServiceInfo>()
 
     var wtWifiP2pInfo: WifiP2pInfo? = null
-    val wtWifiGroupInfo: AtomicReference<WifiP2pGroup?> = AtomicReference(null)
+    var wtWifiGroupInfo: WifiP2pGroup? = null
     val wtWifiGroupInfoN: AtomicReference<WifiP2pGroup?> = AtomicReference(null)
     var thisDeviceInfo: WifiP2pDevice? = null
 
@@ -135,7 +135,7 @@ class WTWifiDirectManager(
     var wtLocalServiceRecord: Map<String, String>? = null
 
     val wtLocalIp: InetAddress?
-        get() = wtWifiGroupInfo.get()?.`interface`?.let { iFace ->
+        get() = wtWifiGroupInfo?.`interface`?.let { iFace ->
             getInterfaceIpAddress(iFace)
         }
 
@@ -161,12 +161,12 @@ class WTWifiDirectManager(
         get() = wtWifiP2pInfo?.groupOwnerAddress
 
     val wtGroupOwnerName: String?
-        get() = (if (wtIsGroupOwner) thisDevice?.deviceName else wtWifiGroupInfo.get()?.owner?.deviceName)
+        get() = (if (wtIsGroupOwner) thisDevice?.deviceName else wtWifiGroupInfo?.owner?.deviceName)
 
 
     val wtGroupOwner: WTWifiDirectPeerInfo?
         get() = let { _ ->
-            val p2pOwner = if (wtIsGroupOwner) thisDevice else wtWifiGroupInfo.get()?.owner
+            val p2pOwner = if (wtIsGroupOwner) thisDevice else wtWifiGroupInfo?.owner
             directWifiPeers[p2pOwner?.uniqueWifiId()]
                 ?: p2pOwner?.let { device -> WTWifiDirectPeerInfo(device) }
         }
@@ -352,7 +352,7 @@ class WTWifiDirectManager(
         directWifiPeersN.clear()
         directWifiServices.clear()
         wtWifiP2pInfo = null
-        wtWifiGroupInfo.getAndSet(null)
+        wtWifiGroupInfo = null
         //wtWifiP2pInfoN.getAndSet(null)
         wtWifiGroupInfoN.getAndSet(null)
 
@@ -441,7 +441,7 @@ class WTWifiDirectManager(
 
         logd(tag, if (wtWifiDirect?.removeGroup() == WTWifiDirectResult.Success) "\t-> Success" else "\t-> Failed")
 
-        wtWifiGroupInfo.getAndSet(null)
+        wtWifiGroupInfo = null
         wtWifiGroupInfoN.getAndSet(null)
     }
 
@@ -1119,7 +1119,7 @@ class WTWifiDirectManager(
     fun updateGroupInfo() {
         val tag = "updateGroupInfo/${randomString(2u)}"
         val p2pInfo = wtWifiP2pInfo
-        val oldGroup = wtWifiGroupInfo.get()
+        val oldGroup = wtWifiGroupInfo
         val newGroup = wtWifiGroupInfoN.get()
 
         logd(tag, "Entry")
@@ -1133,7 +1133,7 @@ class WTWifiDirectManager(
             return
         }
 
-        wtWifiGroupInfo.getAndSet(newGroup)
+        wtWifiGroupInfo = newGroup
 
         if (null == newGroup) connectToDevice = null
 
@@ -1289,7 +1289,7 @@ class WTWifiDirectManager(
             directWifiPeers.clear()
             directWifiServices.clear()
             connectToDevice = null
-            wtWifiGroupInfo.getAndSet(null)
+            wtWifiGroupInfo = null
             channelSend(
                 ChannelId.RCToComm,
                 scope,
