@@ -130,10 +130,10 @@ class WTWifiDirectManager(
     var wtWifiP2pInfo: WifiP2pInfo? = null
     val wtWifiGroupInfo: AtomicReference<WifiP2pGroup?> = AtomicReference(null)
     val wtWifiGroupInfoN: AtomicReference<WifiP2pGroup?> = AtomicReference(null)
-    val thisDeviceInfo: AtomicReference<WifiP2pDevice?> = AtomicReference(null)
+    var thisDeviceInfo: WifiP2pDevice? = null
 
     val thisDevice: WifiP2pDevice?
-        get() = (thisDeviceInfo.get())
+        get() = thisDeviceInfo
 
     var wtLocalServiceRecord: Map<String, String>? = null
 
@@ -705,7 +705,7 @@ class WTWifiDirectManager(
                 logd(tag, "P2P state changed to enabled")
                 wifiP2pEnableInfo.getAndSet(true)
                 updateWifiDState(WTWifiState.Enabled.Ready)
-                thisDeviceInfo.getAndSet(requestDeviceInfo())
+                thisDeviceInfo = requestDeviceInfo()
             }
             WTWifiEvent.P2p.PeersChanged -> {
                 logd(tag, "P2P peers changed")
@@ -718,7 +718,7 @@ class WTWifiDirectManager(
             }
             WTWifiEvent.P2p.ThisDeviceChanged -> {
                 logd(tag, "P2P this device changed")
-                thisDeviceInfo.getAndSet(requestDeviceInfo())
+                thisDeviceInfo = requestDeviceInfo()
 
                 requestGroupInfo()
             }
@@ -924,7 +924,7 @@ class WTWifiDirectManager(
             "deviceName = $deviceUid localIp = $wtLocalIp failCoolDown: $failCooldown wifiP2pEnable: $wifiP2pEnable"
         )
 
-        if (null == thisDeviceInfo.get()) {
+        if (null == thisDeviceInfo) {
             logd(tag, "Exit: Device info not available: $wifiP2pEnable")
             return
         }
