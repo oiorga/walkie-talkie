@@ -11,8 +11,8 @@ import walkie.util.awaitResult
 import walkie.util.awaitValue
 import walkie.util.getInterfaceIpAddress
 import walkie.util.logd
+import walkie.util.randomString
 import walkie.wifidirect.WTWifiDirect.Companion.TAGKClass
-
 
 internal fun WifiP2pGroup.logD(tag: String = "WifiP2pGroup") {
     Log.d(
@@ -38,6 +38,8 @@ internal fun WifiP2pInfo.logD(tag: String = "WifiP2pInfo") {
 }
 
 internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
+    val tag = "wtWifiDirectInfo/${randomString(2u)}"
+
     var info = ""
 
     info += "P2P Info: " + if (null == this.wtWifiP2pInfo) "null" else ""
@@ -62,7 +64,7 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
             //"\n\tPassphrase: " + wtWifiGroupInfo?.passphrase +
             "\n\tnetworkName: " + this.wtWifiGroupInfo?.networkName +
             "\n\tClient List: " + cList +
-            "\n\tInterface: " + this.wtWifiGroupInfo?.`interface` + "" + this.wtWifiGroupInfo?.`interface`?.let { getInterfaceIpAddress(it) }
+            "\n\tInterface: " + this.wtWifiGroupInfo?.`interface` + " " + this.wtWifiGroupInfo?.`interface`?.let { getInterfaceIpAddress(it) }
             //"\n\tnetworkId: " + wtWifiGroupInfo?.networkId +
             //"\n\tIPAddress: " + this.wtWifiGroupInfo?.`interface`?.let { getInterfaceIpAddress(it) }
 
@@ -90,6 +92,8 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     this.directWifiPeers.forEach { (_, device) ->
         info += if (device.wtService()) "\n${device.uniqueWifiId()} " else " "
     }
+
+    logd(tag, info)
 
     return info
 }
