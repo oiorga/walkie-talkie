@@ -697,14 +697,16 @@ class WTWifiDirectManager(
             }
             WTWifiEvent.P2p.ConnectionChanged -> {
                 logd(tag, "P2P Connection changed")
-                updateP2pInfo(requestConnectionInfo())
-                requestGroupInfo()
+                val p2pInfo = requestConnectionInfo()
+                updateP2pInfo(p2pInfo)
+                if (p2pInfo?.groupFormed == true)
+                    requestGroupInfo()
+                else
+                    removeGroup()
             }
             WTWifiEvent.P2p.ThisDeviceChanged -> {
                 logd(tag, "P2P this device changed")
                 thisDeviceInfo = requestDeviceInfo()
-
-                requestGroupInfo()
             }
             is WTWifiEvent.P2p.TxtRecordListener -> {
                 logd(tag, "P2P Process TxtRecordListener info")
