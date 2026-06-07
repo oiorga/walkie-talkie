@@ -40,11 +40,11 @@ internal fun WifiP2pInfo.logD(tag: String = "WifiP2pInfo") {
 internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     var info = ""
 
-    info += "P2P Info: " + if (null == this.wtWifiP2pInfo.get()) "null" else ""
+    info += "P2P Info: " + if (null == this.wtWifiP2pInfo) "null" else ""
     info += "\n\tWifiD is: " + (if (this.wifiP2pEnable) "Enabled" else "Disabled") +
-            "\n\tis Owner: " + this.wtWifiP2pInfo.get()?.isGroupOwner +
-            "\n\tis Formed: " + this.wtWifiP2pInfo.get()?.groupFormed +
-            "\n\tGroup Address: " + this.wtWifiP2pInfo.get()?.groupOwnerAddress +
+            "\n\tis Owner: " + this.wtWifiP2pInfo?.isGroupOwner +
+            "\n\tis Formed: " + this.wtWifiP2pInfo?.groupFormed +
+            "\n\tGroup Address: " + this.wtWifiP2pInfo?.groupOwnerAddress +
             "\n\tLocal IPAddress: " + this.wtWifiGroupInfo.get()?.`interface`?.let { getInterfaceIpAddress(it) }
 
     info += "\nGroup Info: " + "${this.wtWifiGroupInfo.get()?.owner?.uniqueWifiId()}/${wtGroupOwnerName}" + " " + wtGroupOwner?.p2pInfo?.uniqueWifiId()
