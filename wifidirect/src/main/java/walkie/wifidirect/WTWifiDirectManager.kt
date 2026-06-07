@@ -121,7 +121,6 @@ class WTWifiDirectManager(
     var wifiP2pEnable: Boolean = false
 
     val directWifiPeers = mutableMapOf<String, WTWifiDirectPeerInfo>()
-    val directWifiPeersN = GenericList<WifiP2pDevice>()
     val directWifiServices = mutableMapOf<String, WTWifiDirectServiceInfo>()
 
     var wtWifiP2pInfo: WifiP2pInfo? = null
@@ -349,7 +348,6 @@ class WTWifiDirectManager(
         wifiP2pEnable = false
 
         directWifiPeers.clear()
-        directWifiPeersN.clear()
         directWifiServices.clear()
         wtWifiP2pInfo = null
         wtWifiGroupInfo = null
@@ -373,27 +371,16 @@ class WTWifiDirectManager(
     /*
     * Transition to self-contained Wi-Fi direct manager
     */
-    suspend fun requestPeersInfo(): MutableList<WifiP2pDevice> {
+    suspend fun requestPeersInfo(): GenericList<WifiP2pDevice> {
         val tag = "requestPeersInfo/${randomString(2u)}"
 
         logd("Entry")
 
-        val peerList = wtWifiDirect?.requestPeersInfo()?.dataOrNull()
+        val newPeersList = GenericList<WifiP2pDevice>()
 
-        peerList?.deviceList?.let { deviceList ->
-            logd(
-                TAGKClass,
-                tag,
-                "NEW Peers: " +
-                        deviceList.joinToString(" ") { device ->
-                            "${device.deviceName}/${device.deviceAddress}"
-                        }
-            )
-        }
+        wtWifiDirect?.requestPeersInfo()?.dataOrNull()?.deviceList?.let { newPeersList.addAll(it) }
 
-        peerList?.deviceList?.let { directWifiPeersN.addAll(it) }
-
-        return directWifiPeersN
+        return newPeersList
     }
 
     suspend fun requestDeviceInfo(): WifiP2pDevice? {
@@ -706,7 +693,7 @@ class WTWifiDirectManager(
             }
             WTWifiEvent.P2p.PeersChanged -> {
                 logd(tag, "P2P peers changed")
-                requestPeersInfo()
+                updatePeersInfo(requestPeersInfo())
             }
             WTWifiEvent.P2p.ConnectionChanged -> {
                 logd(tag, "P2P Connection changed")
@@ -938,36 +925,19 @@ class WTWifiDirectManager(
         )
         discoverPeersJob()
 
-        /*
+        delay((cadence / divider).milliseconds)
         logd(
             tag,
-            "updateP2pInfo deviceName = $deviceUid failCoolDown: $failCooldown thisDevice: ${thisDevice?.deviceName}"
+            "updateGroupInfo deviceName = $deviceUid failCoolDown: $failCooldown"
         )
-        updateP2pInfo()
-        */
+        updateGroupInfo()
 
-        if (null != thisDevice) {
-            delay((cadence / divider).milliseconds)
-            logd(
-                tag,
-                "updatePeersInfo deviceName = $deviceUid failCoolDown: $failCooldown"
-            )
-            updatePeersInfo()
-
-            delay((cadence / divider).milliseconds)
-            logd(
-                tag,
-                "updateGroupInfo deviceName = $deviceUid failCoolDown: $failCooldown"
-            )
-            updateGroupInfo()
-
-            delay((cadence / divider).milliseconds)
-            logd(
-                tag,
-                "connectToPeers deviceName = $deviceUid failCoolDown: $failCooldown"
-            )
-            connectToPeers(cadence / divider)
-        }
+        delay((cadence / divider).milliseconds)
+        logd(
+            tag,
+            "connectToPeers deviceName = $deviceUid failCoolDown: $failCooldown"
+        )
+        connectToPeers(cadence / divider)
 
         delay((cadence / divider).milliseconds)
 
@@ -1020,7 +990,7 @@ class WTWifiDirectManager(
         }
     }
 
-    fun updatePeersInfo() {
+    fun updatePeersInfo(newList: GenericList< WifiP2pDevice>) {
         val tag = "updatePeersInfo/${randomString(2u)}"
         var change = false
 
@@ -1048,18 +1018,18 @@ class WTWifiDirectManager(
         }
         logd(tag, "directWifiPeers: $str")
 
-        if (directWifiPeersN.isEmpty()) {
+        if (newList.isEmpty()) {
             logd(tag, "No New Peers.")
         } else {
             logd(tag, "Got New Peers: " +
-                    directWifiPeersN.joinToString(" ") { device ->
+                    newList.joinToString(" ") { device ->
                         "${device.deviceName}/${device.deviceAddress}"
             })
             change = true
         }
 
-        while (directWifiPeersN.isNotEmpty()) {
-            val wd = directWifiPeersN.removeFirst()
+        while (newList.isNotEmpty()) {
+            val wd = newList.removeFirst()
             val wdId = wd.uniqueWifiId()
 
             logd(
