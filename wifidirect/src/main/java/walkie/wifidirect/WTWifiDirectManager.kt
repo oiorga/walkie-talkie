@@ -126,7 +126,7 @@ class WTWifiDirectManager(
 
     var wtWifiP2pInfo: WifiP2pInfo? = null
     var wtWifiGroupInfo: WifiP2pGroup? = null
-    val wtWifiGroupInfoN: AtomicReference<WifiP2pGroup?> = AtomicReference(null)
+    var wtWifiGroupInfoN: WifiP2pGroup? = null
     var thisDeviceInfo: WifiP2pDevice? = null
 
     val thisDevice: WifiP2pDevice?
@@ -353,8 +353,8 @@ class WTWifiDirectManager(
         directWifiServices.clear()
         wtWifiP2pInfo = null
         wtWifiGroupInfo = null
-        //wtWifiP2pInfoN.getAndSet(null)
-        wtWifiGroupInfoN.getAndSet(null)
+
+        wtWifiGroupInfoN = null
 
         connectToDevice = null
         wtLocalServiceRecord = null
@@ -428,7 +428,7 @@ class WTWifiDirectManager(
                         gInfo.clientList?.joinToString(" ") { device -> device.deviceName }
             )
 
-            if (wtWifiGroupInfoN.get() != gInfo) wtWifiGroupInfoN.getAndSet(gInfo)
+            if (wtWifiGroupInfoN != gInfo) wtWifiGroupInfoN = gInfo
         }
 
         return groupInfo
@@ -442,7 +442,7 @@ class WTWifiDirectManager(
         logd(tag, if (wtWifiDirect?.removeGroup() == WTWifiDirectResult.Success) "\t-> Success" else "\t-> Failed")
 
         wtWifiGroupInfo = null
-        wtWifiGroupInfoN.getAndSet(null)
+        wtWifiGroupInfoN = null
     }
 
     private fun connectedToGroup(): Boolean {
@@ -921,7 +921,7 @@ class WTWifiDirectManager(
             "deviceName = $deviceUid localIp = $wtLocalIp failCoolDown: $failCooldown wifiP2pEnable: $wifiP2pEnable"
         )
 
-        if (null == thisDeviceInfo) {
+        if (null == thisDevice) {
             logd(tag, "Exit: Device info not available: $wifiP2pEnable")
             return
         }
@@ -1120,7 +1120,7 @@ class WTWifiDirectManager(
         val tag = "updateGroupInfo/${randomString(2u)}"
         val p2pInfo = wtWifiP2pInfo
         val oldGroup = wtWifiGroupInfo
-        val newGroup = wtWifiGroupInfoN.get()
+        val newGroup = wtWifiGroupInfoN
 
         logd(tag, "Entry")
         logd(
@@ -1408,10 +1408,10 @@ class WTWifiDirectManager(
                 logd(
                     tag,
                     "$tag($c) Group is not formed: ${connectToDevice!!.name}/${connectToDevice!!.address} " +
-                            "[GO: ${wtIsGroupFormed} / ${wtIsGroupOwner} / ${connectToDevice!!.isGroupOwner}] " +
+                            "[GO: $wtIsGroupFormed / $wtIsGroupOwner / ${connectToDevice!!.isGroupOwner}] " +
                             "[connectionStatus: ${connectToDevice!!.directWifiConnection}]"
                 ).also { c++ }
-                delay(delay / divider)
+                delay((delay / divider).milliseconds)
                 connectTo(connectToDevice!!)
             } else {
                 if (wtIsGroupOwner && null != connectToDevice) {
