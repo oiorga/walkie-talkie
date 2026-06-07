@@ -118,10 +118,7 @@ class WTWifiDirectManager(
             WTWifiState.Inactive.NoWifiPermissions
         })
 
-    val wifiP2pEnableInfo: AtomicReference<Boolean> = AtomicReference(false)
-
-    val wifiP2pEnable: Boolean
-        get() = wifiP2pEnableInfo.get()
+    var wifiP2pEnable: Boolean = false
 
     val directWifiPeers = mutableMapOf<String, WTWifiDirectPeerInfo>()
     val directWifiPeersN = GenericList<WifiP2pDevice>()
@@ -349,7 +346,7 @@ class WTWifiDirectManager(
         )
 
         mainLoopJob = null
-        wifiP2pEnableInfo.getAndSet(false)
+        wifiP2pEnable = false
 
         directWifiPeers.clear()
         directWifiPeersN.clear()
@@ -699,11 +696,11 @@ class WTWifiDirectManager(
 
         when (event) {
             WTWifiEvent.P2p.WifiDisabled -> {
-                wifiP2pEnableInfo.getAndSet(false)
+                wifiP2pEnable = false
             }
             WTWifiEvent.P2p.WifiEnabled -> {
                 logd(tag, "P2P state changed to enabled")
-                wifiP2pEnableInfo.getAndSet(true)
+                wifiP2pEnable = true
                 updateWifiDState(WTWifiState.Enabled.Ready)
                 thisDeviceInfo = requestDeviceInfo()
             }
