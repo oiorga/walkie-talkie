@@ -3,6 +3,11 @@ package walkie.wifidirect
 import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pInfo
+import walkie.talkie.api.wtsystem.NodeIdInt
+import walkie.util.getInterfaceIpAddress
+import walkie.util.logd
+import walkie.util.logging
+import walkie.util.randomString
 import java.net.InetAddress
 
 interface WTWifiDirectEnv {
@@ -55,13 +60,59 @@ sealed class WTWifiState {
 }
 
 data class WTWifiDB(
-    val deviceUid: String,
+    val nodeId: NodeIdInt,
     val state: WTWifiState,
     val thisDevice: WifiP2pDevice? = null,
     val p2pInfo: WifiP2pInfo? = null,
     val groupInfo: WifiP2pGroup? = null,
-    val peers: List<WifiP2pDevice> = emptyList()) {
+    val peers: List<WifiP2pDevice> = emptyList(),
+    val directPeers: Map<String, WTWifiDirectPeerInfo> = emptyMap(),
+    val directWifiServices: Map<String, WTWifiDirectServiceInfo> = emptyMap()
+    ) {
 
+    companion object {
+        const val TAG = "WTWifiDB"
+        val TAGKClass = WTWifiDB::class
+    }
+
+    val tag = TAG
+
+    init {
+        logging(true)
+    }
+
+    fun transition(
+        event: WTWifiEvent,
+        thisDevice: WifiP2pDevice? = null,
+        p2pInfo: WifiP2pInfo? = null,
+        groupInfo: WifiP2pGroup? = null,
+        peers: List<WifiP2pDevice> = emptyList(),
+    ): WTWifiDB {
+        val tag = "transition/${randomString(2U)}"
+
+        logd(tag, event.toString())
+
+        return when (event) {
+            WTWifiEvent.P2p.WifiEnabled ->
+                if (state is WTWifiState.Enabled) this
+                else copy(
+                    state = WTWifiState.Enabled.Ready,
+                    thisDevice = thisDevice ?: this.thisDevice
+                )
+
+            WTWifiEvent.P2p.WifiDisabled ->
+                copy(state = WTWifiState.Inactive.Disabled)
+
+            WTWifiEvent.P2p.ThisDeviceChanged -> {
+                copy(thisDevice = thisDevice)
+            }
+
+            else -> this
+        }
+    }
+
+    val isWifiEnabled: Boolean
+        get() = (state is WTWifiState.Enabled)
     val isGroupOwner: Boolean
         get() = ((true == p2pInfo?.groupFormed) && p2pInfo.isGroupOwner)
     val isGroupFormed: Boolean
@@ -72,5 +123,17 @@ data class WTWifiDB(
         get() = (if (isGroupOwner) thisDevice?.deviceName else groupInfo?.owner?.deviceName)
     val groupOwnerDevice: WifiP2pDevice?
         get() = groupInfo?.owner
+    val localIp: InetAddress?
+        get() = groupInfo?.`interface`?.let { iFace ->
+            getInterfaceIpAddress(iFace)
+        }
+    val deviceId: String
+        get() = nodeId.id()
+    val deviceUnique: String
+        get() = nodeId.unique()
+
+    fun resetAll(): WTWifiDB = WTWifiDB(
+        nodeId = nodeId,
+        state = WTWifiState.Inactive.Disabled)
 }
 

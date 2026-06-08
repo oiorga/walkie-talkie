@@ -64,7 +64,7 @@ class WTWiFiDirectStatic private constructor() {
 
 class WTWifiDirectManager(
     val manager: WifiP2pManager,
-    val nodeId: NodeIdInt,
+    val node: NodeIdInt,
     val scope: CoroutineScope,
     private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
@@ -105,30 +105,30 @@ class WTWifiDirectManager(
     }
 
     val deviceUid: String
-        get() = nodeId.uid()
+        get() = node.uid()
 
     private var mainLoopJob: Job? = null
 
     private val mainLoopInbox = Mailbox<WTWifiEvent>(10)
 
-    private var wtWifi = WTWifiDB(deviceUid,
+    private var wtWifi = WTWifiDB(node,
         if (checkWifiPermission()) {
             WTWifiState.Inactive.Disabled
         } else {
             WTWifiState.Inactive.NoWifiPermissions
         })
 
-    var wifiP2pEnable: Boolean = false
+    val wifiP2pEnable: Boolean
+        get() = wtWifi.isWifiEnabled
 
     val directWifiPeers = mutableMapOf<String, WTWifiDirectPeerInfo>()
     val directWifiServices = mutableMapOf<String, WTWifiDirectServiceInfo>()
 
     var wtWifiP2pInfo: WifiP2pInfo? = null
     var wtWifiGroupInfo: WifiP2pGroup? = null
-    var thisDeviceInfo: WifiP2pDevice? = null
 
     val thisDevice: WifiP2pDevice?
-        get() = thisDeviceInfo
+        get() = wtWifi.thisDevice
 
     var wtLocalServiceRecord: Map<String, String>? = null
 
@@ -169,10 +169,10 @@ class WTWifiDirectManager(
         }
 
     val deviceId: String
-        get() = nodeId.id()
+        get() = node.id()
 
     val deviceUnique: String
-        get() = nodeId.unique()
+        get() = node.unique()
 
     var connectToDevice: WTWifiDirectPeerInfo? = null
 
@@ -342,7 +342,8 @@ class WTWifiDirectManager(
         )
 
         mainLoopJob = null
-        wifiP2pEnable = false
+
+        wtWifi = wtWifi.resetAll()
 
         directWifiPeers.clear()
         directWifiServices.clear()
@@ -631,7 +632,7 @@ class WTWifiDirectManager(
             notifyOfChange(p2pInfo, Triple(wtGroupIp, wtLocalIp, wtGroupServerPort))
             p2pInfo = Triple(wtGroupIp, wtLocalIp, wtGroupServerPort)
 
-            updateInternalState()
+            internalMaintenance()
 
             val event = mainLoopInbox.await(cadence.milliseconds)
 
@@ -664,13 +665,13 @@ class WTWifiDirectManager(
 
         when (event) {
             WTWifiEvent.P2p.WifiDisabled -> {
-                wifiP2pEnable = false
+                wtWifi = wtWifi.transition(event)
             }
             WTWifiEvent.P2p.WifiEnabled -> {
                 logd(tag, "P2P state changed to enabled")
-                wifiP2pEnable = true
-                updateWifiDState(WTWifiState.Enabled.Ready)
-                thisDeviceInfo = requestDeviceInfo()
+                wtWifi = wtWifi.transition(
+                    event,
+                    thisDevice = requestDeviceInfo())
             }
             WTWifiEvent.P2p.PeersChanged -> {
                 logd(tag, "P2P peers changed")
@@ -689,7 +690,9 @@ class WTWifiDirectManager(
             }
             WTWifiEvent.P2p.ThisDeviceChanged -> {
                 logd(tag, "P2P this device changed")
-                thisDeviceInfo = requestDeviceInfo()
+                wtWifi = wtWifi.transition(
+                    event,
+                    thisDevice = requestDeviceInfo())
                 updateGroupInfo(requestGroupInfo())
             }
             is WTWifiEvent.P2p.TxtRecordListener -> {
@@ -707,24 +710,8 @@ class WTWifiDirectManager(
         }
     }
 
-    fun updateWifiDState(newState: WTWifiState) {
-        when (newState) {
-            is WTWifiState.Enabled -> {
-                when (wtWifi.state) {
-                    is WTWifiState.Inactive -> {
-                        wtWifi = wtWifi.copy(
-                            state = WTWifiState.Enabled.Ready
-                        )
-                    }
-                    else -> { }
-                }
-            }
-            else -> { }
-        }
-    }
-
-    fun updateInternalState() {
-        val tag = "processEventTimeout/${randomString(2u)}"
+    fun internalMaintenance() {
+        val tag = "internalMaintenance/${randomString(2u)}"
         logd(
             tag, "\n\tthisDevice: ${thisDevice?.deviceName}" +
                     "\n\tisWifiP2pEnabled: $wifiP2pEnable" +

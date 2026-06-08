@@ -93,7 +93,7 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
         info += if (device.wtService()) "\n${device.uniqueWifiId()} " else " "
     }
 
-    logd(tag, info)
+    /* logd(tag, info) */
 
     return info
 }
