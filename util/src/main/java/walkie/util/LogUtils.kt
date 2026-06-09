@@ -74,7 +74,7 @@ inline fun <reified T> T.log(
     logger: ((String) -> Unit)
 ) {
     val logging = Logging.ONE
-    val classTag = this.getClassSimpleName(enclosingClass)
+    val classTag = this.getClassSimpleNameLog(enclosingClass)
 
     if (!logging.isEnabled(classTag)) return
 
@@ -98,7 +98,7 @@ inline fun <reified T> T.log(
  *
  * @throws IllegalArgumentException if `enclosingClass` is `null` and this function is invoked within an anonymous class
  */
-inline fun <reified T> T.getClassSimpleName(enclosingClass: KClass<*>? = null): String {
+inline fun <reified T> T.getClassSimpleNameLog(enclosingClass: KClass<*>? = null): String {
     val ret: String = (enclosingClass?.simpleName) ?: (T::class.java.simpleName)
     if (ret.isBlank()) {
         Log.d(Logging.TAG,"getClassSimpleName: enclosingClass cannot be null when invoked from an anonymous class")
@@ -108,11 +108,12 @@ inline fun <reified T> T.getClassSimpleName(enclosingClass: KClass<*>? = null): 
     return ret
 }
 
+
 inline fun <reified T> T.logging(enable: Boolean = true,
                                          noinline extraCall: ((String, String) -> Unit)? = null) {
-    if (Logging.ONE.iLog()) Log.d(Logging.TAG, "${this.getClassSimpleName()} calling logging $enable")
+    if (Logging.ONE.iLog()) Log.d(Logging.TAG, "${this.getClassSimpleNameLog()} calling logging $enable")
     Logging.ONE.registerLog(
-        this.getClassSimpleName(),
+        this.getClassSimpleNameLog(),
         enable,
         extraCall)
 }
@@ -128,16 +129,16 @@ class Logging private constructor () {
         const val TAG = "Logging"
         private const val ILOG = false
 
-        private fun getClassSimpleName(enclosingClass: KClass<*>): String? {
+        private fun getClassSimpleNameLog(enclosingClass: KClass<*>): String? {
             val ret: String? = (enclosingClass.simpleName)
-            if (ILOG) Log.d(TAG, "getClassSimpleName: enclosingClass: $enclosingClass simpleName: $ret")
+            if (ILOG) Log.d(TAG, "getClassSimpleNameLog: enclosingClass: $enclosingClass simpleName: $ret")
             return ret
         }
 
         fun enable (enclosingClass: KClass<*>,
                     enable: Boolean = true,
                     extraCall: ((String, String) -> Unit)? = null) {
-            val simpleName = getClassSimpleName(enclosingClass)
+            val simpleName = getClassSimpleNameLog(enclosingClass)
             if (ILOG) Log.d(TAG, "$enclosingClass/$simpleName Calling logging $enable")
             if (null == simpleName) {
                 throw (NotImplementedError("$TAG $enclosingClass/null calling logging $enable for NULL"))

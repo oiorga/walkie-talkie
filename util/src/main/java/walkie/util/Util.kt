@@ -21,6 +21,28 @@ import java.util.Collections
 import java.util.Locale
 import java.util.concurrent.ExecutionException
 import kotlin.random.Random
+import kotlin.reflect.KClass
+
+/**
+ * Utility that returns the name of the class from within it is invoked.
+ * It allows to handle invocations from anonymous classes given that the string returned by `T::class.java.simpleName`
+ * in this case is an empty string.
+ *
+ * From: https://gist.github.com/paolop
+ *       https://gist.github.com/paolop/0bd59e49b33d18d6089fb1bf5488e212
+ *
+ * @throws IllegalArgumentException if `enclosingClass` is `null` and this function is invoked within an anonymous class
+ */
+inline fun <reified T> T.getClassSimpleName(enclosingClass: KClass<*>? = null): String {
+    val ret: String = (enclosingClass?.simpleName) ?: (T::class.java.simpleName)
+    if (ret.isBlank()) {
+        /* Log.d(Logging.TAG,"getClassSimpleName: enclosingClass cannot be null when invoked from an anonymous class") */
+        throw IllegalArgumentException("getClassSimpleName: enclosingClass cannot be null when invoked from an anonymous class")
+    }
+    /* if (Logging.ONE.iLog()) Log.d(Logging.TAG, "getClassSimpleName: enclosingClass: $enclosingClass simpleName: $ret") */
+    return ret
+}
+
 
 fun getInterfaceIpAddress(interfaceName: String, ipV4: Boolean = true): InetAddress? {
     var ipAddress: InetAddress? = null
