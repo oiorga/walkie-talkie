@@ -20,7 +20,6 @@ import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION
 import android.os.Parcelable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
@@ -73,7 +72,7 @@ class WTWifiDirectManager(
     companion object {
         const val TAG = "WTWiFiDirectManager"
         val TAGKClass = WTWifiDirectManager::class
-        const val DiscoveryCountdown = 26
+        const val DiscoveryCountdown = 39
         const val ConnectCountdown = 1
         const val FailCooldown = 1
         const val RestartChannelTimeout = (DiscoveryCountdown * 2)
@@ -643,7 +642,7 @@ class WTWifiDirectManager(
                     processEvents(event.value)
                 }
                 MailboxData.Timeout -> {
-                    processEventTimeout(cadence)
+                    processEventTimeout()
                 }
             }
         }
@@ -737,7 +736,7 @@ class WTWifiDirectManager(
         )
     }
 
-    suspend fun processEventTimeout(cadence: Long) {
+    suspend fun processEventTimeout() {
         val tag = "processEventTimeout/${randomString(2u)}"
 
         if (!checkWifiPermission()) {
@@ -754,7 +753,7 @@ class WTWifiDirectManager(
         if (connectCountdown > 0) connectCountdown--
 
         if (wifiP2PEngineOk()) {
-            updatePeers(cadence)
+            updatePeers()
         }
 
         wifiP2PEngineFailCoolDown()
@@ -792,7 +791,7 @@ class WTWifiDirectManager(
         initServices()
     }
 
-    suspend fun updatePeers(cadence: Long) {
+    suspend fun updatePeers() {
         val divider = 5
         val tag = "updatePeers/${randomString(2u)}"
 
@@ -812,23 +811,17 @@ class WTWifiDirectManager(
             return
         }
 
-        delay(cadence.milliseconds)
         logd(
             tag,
             "discoverPeersJob deviceName = $deviceUid failCoolDown: $failCooldown thisDevice: ${thisDevice?.deviceName}"
         )
         discoverPeersJob()
 
-        /* updateDirectWifiPeersOnGO() */
-
-        delay((cadence / divider).milliseconds)
         logd(
             tag,
             "connectToPeers deviceName = $deviceUid failCoolDown: $failCooldown"
         )
-        connectToPeers(cadence / divider)
-
-        delay((cadence / divider).milliseconds)
+        connectToPeers()
 
         logd(tag, "Exit")
     }
@@ -1092,7 +1085,7 @@ class WTWifiDirectManager(
         wtWifiP2pInfo?.logD(tag)
     }
 
-    suspend fun connectToPeers(delay: Long) {
+    suspend fun connectToPeers() {
         val tag = "connectToPeers/${randomString(2u)}"
         var c = 0
         val divider = 5
@@ -1200,7 +1193,7 @@ class WTWifiDirectManager(
                             "[connectionStatus: ${connectToDevice!!.directWifiConnection}]" +
                             "[wtGroupOwner: ${wtGroupOwner?.p2pInfo?.deviceName}]"
                 ).also { c++ }
-                delay((delay / divider).milliseconds)
+                //delay((delay / divider).milliseconds)
                 connectTo(connectToDevice!!)
             } else {
                 if (wtIsGroupOwner && null != connectToDevice) {

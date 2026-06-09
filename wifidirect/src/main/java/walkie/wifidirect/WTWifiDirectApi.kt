@@ -134,7 +134,7 @@ data class WTWifiDB(
     val isWifiEnabled: Boolean
         get() = (state is WTWifiState.Enabled)
     val isGroupOwner: Boolean
-        get() = ((true == p2pInfo?.groupFormed) && (true == p2pInfo.isGroupOwner))
+        get() = ((true == p2pInfo?.groupFormed) && p2pInfo.isGroupOwner)
     val isGroupFormed: Boolean
         get() = (true == p2pInfo?.groupFormed)
     val groupIpAddress: InetAddress?
