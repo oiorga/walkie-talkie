@@ -10,7 +10,6 @@ import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
 import java.net.InetAddress
-import kotlin.reflect.KClass
 
 interface WTWifiDirectEnv {
     fun checkWifiPermission(): Boolean
@@ -93,6 +92,7 @@ data class WTWifiDB(
         p2pInfo: WifiP2pInfo? = null,
         groupInfo: WifiP2pGroup? = null,
         directPeers: Map<String, WTWifiDirectPeerInfo> = emptyMap(),
+        directServices: Map<String, WTWifiDirectServiceInfo>? = emptyMap()
     ): WTWifiDB {
         val tag = "transition/${randomString(2U)}"
 
@@ -113,7 +113,7 @@ data class WTWifiDB(
                 logd(tag, "ThisDeviceChanged: ${thisDevice?.deviceName}")
                 copy(
                     thisDevice = thisDevice,
-                    groupInfo = groupInfo
+                    groupInfo = groupInfo ?: this.groupInfo
                 )
             }
 
@@ -126,13 +126,21 @@ data class WTWifiDB(
                 logd(tag, "P2pConnection Changed: ${p2pInfo?.isGroupOwner} / Formed: ${p2pInfo?.groupFormed}")
                 copy(
                     p2pInfo = p2pInfo,
-                    groupInfo = groupInfo
+                    groupInfo = groupInfo ?: groupInfo
                 )
             }
 
             WTWifiEvent.P2p.PeersChanged -> {
                 logd(tag, "Peers Changed")
-                copy(directPeers = directPeers)
+                copy(
+                    directPeers = directPeers,
+                    directServices = directServices ?: this.directServices
+                    )
+            }
+
+            is WTWifiEvent.P2p.TxtRecordListener,
+            is WTWifiEvent.P2p.ServiceResponseListener -> {
+                copy(directServices = directServices ?: this.directServices)
             }
 
             else -> {
