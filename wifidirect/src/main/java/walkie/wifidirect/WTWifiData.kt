@@ -50,7 +50,7 @@ data class WTWifiDirectPeerInfo (
 ) {
     companion object {
         /* Connecting in Progress */
-        const val CIP = 10
+        const val CIP = 15
         /* Fail Cool Down */
         const val FCD = 1
         const val MAXAGE = (WTWifiDirectManager.DiscoveryCountdown * 3)

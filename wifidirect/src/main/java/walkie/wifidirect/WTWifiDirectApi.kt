@@ -73,7 +73,7 @@ data class WTWifiDB(
     val groupInfo: WifiP2pGroup? = null,
     val peers: List<WifiP2pDevice> = emptyList(),
     val directPeers: Map<String, WTWifiDirectPeerInfo> = emptyMap(),
-    val directWifiServices: Map<String, WTWifiDirectServiceInfo> = emptyMap()
+    val directServices: Map<String, WTWifiDirectServiceInfo> = emptyMap()
     ) {
 
     companion object {
@@ -92,7 +92,7 @@ data class WTWifiDB(
         thisDevice: WifiP2pDevice? = null,
         p2pInfo: WifiP2pInfo? = null,
         groupInfo: WifiP2pGroup? = null,
-        peers: List<WifiP2pDevice> = emptyList(),
+        directPeers: Map<String, WTWifiDirectPeerInfo> = emptyMap(),
     ): WTWifiDB {
         val tag = "transition/${randomString(2U)}"
 
@@ -110,18 +110,29 @@ data class WTWifiDB(
                 copy(state = WTWifiState.Inactive.Disabled)
 
             WTWifiEvent.P2p.ThisDeviceChanged -> {
-                logd(tag, "${thisDevice?.deviceName}")
-                copy(thisDevice = thisDevice)
+                logd(tag, "ThisDeviceChanged: ${thisDevice?.deviceName}")
+                copy(
+                    thisDevice = thisDevice,
+                    groupInfo = groupInfo
+                )
             }
 
             WTWifiEvent.WTWifi.GroupInfoChanged -> {
-                logd(tag, "${groupInfo?.owner?.deviceName} -> ${this.groupInfo?.owner?.deviceName}")
+                logd(tag, "GroupInfoChanged: ${groupInfo?.owner?.deviceName} -> ${this.groupInfo?.owner?.deviceName}")
                 copy(groupInfo = groupInfo)
             }
 
             WTWifiEvent.P2p.ConnectionChanged -> {
-                logd(tag, "P2pConnection Owner: ${p2pInfo?.isGroupOwner} / Formed: ${p2pInfo?.groupFormed}")
-                copy(p2pInfo = p2pInfo)
+                logd(tag, "P2pConnection Changed: ${p2pInfo?.isGroupOwner} / Formed: ${p2pInfo?.groupFormed}")
+                copy(
+                    p2pInfo = p2pInfo,
+                    groupInfo = groupInfo
+                )
+            }
+
+            WTWifiEvent.P2p.PeersChanged -> {
+                logd(tag, "Peers Changed")
+                copy(directPeers = directPeers)
             }
 
             else -> {
