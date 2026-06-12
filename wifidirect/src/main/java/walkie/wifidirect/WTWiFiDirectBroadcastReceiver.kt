@@ -25,12 +25,11 @@ import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.runBlocking
 import walkie.util.api.ChannelId
 import walkie.util.api.ChannelMessageType
 import walkie.util.generic.ChannelMux
 import walkie.util.generic.ChannelMuxInt
-import walkie.util.getClassSimpleName
+import walkie.util.getDeclaredSimpleName
 import walkie.util.logd
 import walkie.util.logging
 
@@ -47,7 +46,7 @@ class WiFiDirectBroadcastReceiver (
         const val TAG = "WiFiDirectBroadcastReceiver"
     }
 
-    val tag = getClassSimpleName()
+    val tag = getDeclaredSimpleName()
 
     private fun extraLog(tag: String, message: String) {
 

@@ -8,20 +8,13 @@ import kotlinx.coroutines.launch
 import kotlin.time.Duration
 
 interface WithTimerInt {
-    val scope: CoroutineScope
-    val cadence: Duration
-    fun onTimer(cycles: Long, block: () -> Unit) : Job
-    fun onTimer(block: () -> Unit) : Job
-    fun onTimerOnce(block: () -> Unit) : Job
-
+    fun onTimer(scope: CoroutineScope, cycles: Long, cadence: Duration, block: () -> Unit) : Job
+    fun onTimer(scope: CoroutineScope, cadence: Duration, block: () -> Unit = { }) : Job
+    fun onTimerOnce(scope: CoroutineScope, cadence: Duration, block: () -> Unit = { }) : Job
 }
 
-class WithTimer(
-    override val scope: CoroutineScope,
-    override val cadence: Duration,
-) : WithTimerInt {
-
-    override fun onTimer(cycles: Long, block: () -> Unit): Job {
+class WithTimer() : WithTimerInt {
+    override fun onTimer(scope: CoroutineScope, cycles: Long, cadence: Duration, block: () -> Unit): Job {
         return scope.launch {
             var cycleCount = cycles
             while ((cycleCount > 0) && isActive) {
@@ -32,11 +25,11 @@ class WithTimer(
         }
     }
 
-    override fun onTimerOnce(block: () -> Unit) : Job {
-        return onTimer(1, block)
+    override fun onTimerOnce(scope: CoroutineScope, cadence: Duration, block: () -> Unit) : Job {
+        return onTimer(scope = scope, cycles = 1, cadence, block)
     }
 
-    override fun onTimer(block: () -> Unit): Job {
-        return onTimer(Long.MAX_VALUE, block)
+    override fun onTimer(scope: CoroutineScope, cadence: Duration, block: () -> Unit): Job {
+        return onTimer(scope = scope, cycles = Long.MAX_VALUE, cadence, block)
     }
 }

@@ -4,8 +4,9 @@ import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pInfo
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.util.getClassSimpleName
+import walkie.util.getEnclosingClassSimpleName
 import walkie.util.getInterfaceIpAddress
+import walkie.util.getRuntimeSimpleName
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -16,7 +17,8 @@ interface WTWifiDirectEnv {
 }
 
 sealed class WTWifiEvent {
-    override fun toString(): String = getClassSimpleName()
+    val description: String
+        get() = "${getEnclosingClassSimpleName()}.${getRuntimeSimpleName()}"
 
     sealed class WTWifi: WTWifiEvent() {
         object Timeout: WTWifi()
@@ -28,7 +30,9 @@ sealed class WTWifiEvent {
 
     sealed class P2p: WTWifiEvent() {
         object WifiEnabled: P2p()
-        object WifiDisabled: P2p()
+        data class WifiDisabled (
+            val wifiPermissions: Boolean = false
+        ) : P2p()
         object PermissionGranted: P2p()
         object PermissionWithdrawn: P2p()
         object PeersChanged: P2p()
@@ -50,18 +54,17 @@ sealed class WTWifiEvent {
 }
 
 sealed class WTWifiState {
-    override fun toString(): String = getClassSimpleName()
-    sealed class Inactive: WTWifiState() {
-        object NoWifiPermissions: Inactive()
-        object Disabled: Inactive()
-    }
+    fun description(): String = "${getEnclosingClassSimpleName()}.${getRuntimeSimpleName()}"
+    data class Disabled (
+        val wifiPermissions: Boolean = false,
+    ) : WTWifiState()
 
-    sealed class Enabled: WTWifiState() {
-        object Ready: Enabled()
-        object PeersScanning: Enabled()
-        object Connecting: Enabled()
-        object ServiceDiscovery: Enabled()
-    }
+    data class Enabled(
+        val peersScanning: Boolean = false,
+        val connecting: Boolean = false,
+        val serviceDiscovery: Boolean = false,
+        val advertiseLocalService: Boolean = false,
+    ): WTWifiState()
 }
 
 data class WTWifiDB(
@@ -72,9 +75,9 @@ data class WTWifiDB(
     val groupInfo: WifiP2pGroup? = null,
     val peers: List<WifiP2pDevice> = emptyList(),
     val directPeers: Map<String, WTWifiDirectPeerInfo> = emptyMap(),
-    val directServices: Map<String, WTWifiDirectServiceInfo> = emptyMap()
+    val directServices: Map<String, WTWifiDirectServiceInfo> = emptyMap(),
+    var tick: Long = 0
     ) {
-
     companion object {
         const val TAG = "WTWifiDB"
         val TAGKClass = WTWifiDB::class
@@ -91,26 +94,29 @@ data class WTWifiDB(
         thisDevice: WifiP2pDevice? = null,
         p2pInfo: WifiP2pInfo? = null,
         groupInfo: WifiP2pGroup? = null,
+        tick: Long = this.tick,
         directPeers: Map<String, WTWifiDirectPeerInfo> = emptyMap(),
         directServices: Map<String, WTWifiDirectServiceInfo>? = emptyMap()
     ): WTWifiDB {
         val tag = "transition/${randomString(2U)}"
+        var logStr = event.description
 
-        logd(tag, event.toString())
-
-        return when (event) {
-            WTWifiEvent.P2p.WifiEnabled ->
+        val newWifiDB = when (event) {
+            WTWifiEvent.P2p.WifiEnabled -> {
                 if (state is WTWifiState.Enabled) this
                 else copy(
-                    state = WTWifiState.Enabled.Ready,
+                    state = WTWifiState.Enabled(),
                     thisDevice = thisDevice ?: this.thisDevice
                 )
+            }
 
-            WTWifiEvent.P2p.WifiDisabled ->
-                copy(state = WTWifiState.Inactive.Disabled)
+            is WTWifiEvent.P2p.WifiDisabled -> {
+                if (this.state == WTWifiState.Disabled(event.wifiPermissions)) this
+                else copy(state = WTWifiState.Disabled(event.wifiPermissions))
+            }
 
             WTWifiEvent.P2p.ThisDeviceChanged -> {
-                logd(tag, "ThisDeviceChanged: ${thisDevice?.deviceName}")
+                logStr += " -> ${thisDevice?.deviceName}"
                 copy(
                     thisDevice = thisDevice,
                     groupInfo = groupInfo ?: this.groupInfo
@@ -118,12 +124,12 @@ data class WTWifiDB(
             }
 
             WTWifiEvent.WTWifi.GroupInfoChanged -> {
-                logd(tag, "GroupInfoChanged: ${groupInfo?.owner?.deviceName} -> ${this.groupInfo?.owner?.deviceName}")
+                logStr += " -> ${groupInfo?.owner?.deviceName} -> ${this.groupInfo?.owner?.deviceName}"
                 copy(groupInfo = groupInfo)
             }
 
             WTWifiEvent.P2p.ConnectionChanged -> {
-                logd(tag, "P2pConnection Changed: ${p2pInfo?.isGroupOwner} / Formed: ${p2pInfo?.groupFormed}")
+                logStr += " -> ${p2pInfo?.isGroupOwner} / Formed: ${p2pInfo?.groupFormed}"
                 copy(
                     p2pInfo = p2pInfo,
                     groupInfo = groupInfo ?: groupInfo
@@ -131,7 +137,6 @@ data class WTWifiDB(
             }
 
             WTWifiEvent.P2p.PeersChanged -> {
-                logd(tag, "Peers Changed")
                 copy(
                     directPeers = directPeers,
                     directServices = directServices ?: this.directServices
@@ -144,10 +149,14 @@ data class WTWifiDB(
             }
 
             else -> {
-                logd(tag, "Unprocessed transition event: ${event.toString()}")
+                logStr += " -> Unprocessed transition event"
                 this
             }
         }
+
+        logd(tag, logStr)
+
+        return newWifiDB
     }
 
     val isWifiEnabled: Boolean
@@ -173,6 +182,6 @@ data class WTWifiDB(
 
     fun resetAll(): WTWifiDB = WTWifiDB(
         nodeId = nodeId,
-        state = WTWifiState.Inactive.Disabled)
+        state = WTWifiState.Disabled())
 }
 

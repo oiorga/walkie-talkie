@@ -17,7 +17,9 @@ import java.io.File
 import java.net.InetAddress
 import java.net.NetworkInterface
 import java.net.UnknownHostException
+import java.time.Instant
 import java.util.Collections
+import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ExecutionException
 import kotlin.random.Random
@@ -33,16 +35,22 @@ import kotlin.reflect.KClass
  *
  * @throws IllegalArgumentException if `enclosingClass` is `null` and this function is invoked within an anonymous class
  */
-inline fun <reified T> T.getClassSimpleName(enclosingClass: KClass<*>? = null): String {
-    val ret: String = (enclosingClass?.simpleName) ?: (T::class.java.simpleName)
-    if (ret.isBlank()) {
-        /* Log.d(Logging.TAG,"getClassSimpleName: enclosingClass cannot be null when invoked from an anonymous class") */
+inline fun <reified T> T.getDeclaredSimpleName(enclosingClass: KClass<*>? = null): String {
+    val declaredSimpleName: String = (enclosingClass?.simpleName) ?: T::class.java.enclosingClass?.simpleName ?: (T::class.java.simpleName)
+    if (declaredSimpleName.isBlank()) {
         throw IllegalArgumentException("getClassSimpleName: enclosingClass cannot be null when invoked from an anonymous class")
     }
-    /* if (Logging.ONE.iLog()) Log.d(Logging.TAG, "getClassSimpleName: enclosingClass: $enclosingClass simpleName: $ret") */
-    return ret
+    return declaredSimpleName
 }
 
+fun Any.getEnclosingClassSimpleName(): String =
+    this::class.java.enclosingClass?.simpleName ?: "null"
+
+fun Any.getRuntimeSimpleName(): String =
+    this::class.simpleName ?: this::class.java.simpleName ?: "null"
+
+fun Any.getRuntimeQualifiedName(): String =
+    this::class.qualifiedName ?: this::class.java.name ?: "null"
 
 fun getInterfaceIpAddress(interfaceName: String, ipV4: Boolean = true): InetAddress? {
     var ipAddress: InetAddress? = null
@@ -172,9 +180,9 @@ fun randomString(length: UByte = 8u): String {
 
 fun timeNow(divider: Long = 4000000L): Long {
     return ((if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        java.time.Instant.now().toEpochMilli()
+        Instant.now().toEpochMilli()
     } else {
-        java.util.Date().time
+        Date().time
     }) % divider)
 }
 

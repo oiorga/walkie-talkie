@@ -6,6 +6,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import walkie.util.generic.Mailbox
+import kotlin.time.Duration.Companion.milliseconds
 
 /*
 class Gate: Mailbox<Unit>(Channel.RENDEZVOUS) {
@@ -33,7 +34,7 @@ class Gate() {
     private val signal = Channel<Unit>(Channel.CONFLATED)
 
     suspend fun await(timeout: Long) {
-        withTimeoutOrNull(timeout) {
+        withTimeoutOrNull(timeout.milliseconds) {
             signal.receive()
         }
     }

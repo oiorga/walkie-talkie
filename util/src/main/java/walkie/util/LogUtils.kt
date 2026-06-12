@@ -74,7 +74,7 @@ inline fun <reified T> T.log(
     logger: ((String) -> Unit)
 ) {
     val logging = Logging.ONE
-    val classTag = this.getClassSimpleNameLog(enclosingClass)
+    val classTag = this.getDeclaredSimpleNameLog(enclosingClass)
 
     if (!logging.isEnabled(classTag)) return
 
@@ -98,7 +98,7 @@ inline fun <reified T> T.log(
  *
  * @throws IllegalArgumentException if `enclosingClass` is `null` and this function is invoked within an anonymous class
  */
-inline fun <reified T> T.getClassSimpleNameLog(enclosingClass: KClass<*>? = null): String {
+inline fun <reified T> T.getDeclaredSimpleNameLog(enclosingClass: KClass<*>? = null): String {
     val ret: String = (enclosingClass?.simpleName) ?: (T::class.java.simpleName)
     if (ret.isBlank()) {
         Log.d(Logging.TAG,"getClassSimpleName: enclosingClass cannot be null when invoked from an anonymous class")
@@ -111,9 +111,9 @@ inline fun <reified T> T.getClassSimpleNameLog(enclosingClass: KClass<*>? = null
 
 inline fun <reified T> T.logging(enable: Boolean = true,
                                          noinline extraCall: ((String, String) -> Unit)? = null) {
-    if (Logging.ONE.iLog()) Log.d(Logging.TAG, "${this.getClassSimpleNameLog()} calling logging $enable")
+    if (Logging.ONE.iLog()) Log.d(Logging.TAG, "${this.getDeclaredSimpleNameLog()} calling logging $enable")
     Logging.ONE.registerLog(
-        this.getClassSimpleNameLog(),
+        this.getDeclaredSimpleNameLog(),
         enable,
         extraCall)
 }

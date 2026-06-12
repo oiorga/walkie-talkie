@@ -19,7 +19,7 @@ sealed class MailboxData<out T> {
     object Timeout : MailboxData<Nothing>()
 }
 
-open class Mailbox<T>(val capacity: Int) {
+open class Mailbox<T>(capacity: Int) {
     val mbox = Channel<T>(capacity)
 
     suspend fun receive(timeout: Duration): MailboxData<T> {

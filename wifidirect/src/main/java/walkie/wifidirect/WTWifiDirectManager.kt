@@ -108,12 +108,9 @@ class WTWifiDirectManager(
 
     private val mainLoopInbox = Mailbox<WTWifiEvent>(10)
 
-    private var wtWifi = WTWifiDB(node,
-        if (checkWifiPermission()) {
-            WTWifiState.Inactive.Disabled
-        } else {
-            WTWifiState.Inactive.NoWifiPermissions
-        })
+    private var wtWifi = WTWifiDB(
+        nodeId = node,
+        state = WTWifiState.Disabled(checkWifiPermission()))
 
     val wifiP2pEnable: Boolean
         get() = wtWifi.isWifiEnabled
@@ -626,36 +623,30 @@ class WTWifiDirectManager(
 
             internalMaintenance()
 
-            val event = mainLoopInbox.await((cadence + rndDelay).milliseconds)
-
-            if (!checkWifiPermission()) {
-                logd(tag, "Not enough Wifi permissions. Requesting.")
-                requestWifiPermission()
-                continue
+            val event = when (val v =  mainLoopInbox.await((cadence + rndDelay).milliseconds)) {
+                is MailboxData.Message -> { v.value }
+                MailboxData.Timeout -> { WTWifiEvent.WTWifi.Timeout }
             }
+
+            processEvent(event)
+
 
             if (restartChannel()) {
                 logd(tag, "Restart channel")
                 break
-            }
-
-            when (event) {
-                is MailboxData.Message -> {
-                    processEvents(event.value)
-                }
-                MailboxData.Timeout -> {
-                    processEventTimeout()
-                }
             }
         }
 
         stop()
     }
 
-    suspend fun processEvents(event: WTWifiEvent) {
+    suspend fun processEvent(event: WTWifiEvent) {
         val tag = "processEvents/${randomString(2u)}"
 
         when (event) {
+            WTWifiEvent.WTWifi.Timeout -> {
+                processEventTimeout()
+            }
             WTWifiEvent.WTWifi.GroupInfoChanged -> {
                 val newGroup = if (wtWifi.isGroupFormed) {
                     requestGroupInfo()
@@ -669,7 +660,7 @@ class WTWifiDirectManager(
                     event,
                     groupInfo = newGroup)
             }
-            WTWifiEvent.P2p.WifiDisabled -> {
+            is WTWifiEvent.P2p.WifiDisabled -> {
                 wtWifi = wtWifi.transition(event)
             }
             WTWifiEvent.P2p.WifiEnabled -> {
@@ -753,11 +744,7 @@ class WTWifiDirectManager(
         if (!checkWifiPermission()) {
             logd(tag, "Not enough Wifi permissions. Requesting.")
             requestWifiPermission()
-            return
-        }
 
-        if (restartChannel()) {
-            logd(tag, "Restart channel")
             return
         }
 
@@ -1624,7 +1611,7 @@ class WTWifiDirectManager(
                     if (enabled) {
                         WTWifiEvent.P2p.WifiEnabled
                     } else {
-                        WTWifiEvent.P2p.WifiDisabled
+                        WTWifiEvent.P2p.WifiDisabled(checkWifiPermission())
                     }
                 )
             }

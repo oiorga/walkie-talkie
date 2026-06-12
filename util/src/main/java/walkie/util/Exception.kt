@@ -6,17 +6,17 @@ inline fun <reified T> T.`try`(enclosingClass: KClass<*>? = null, tag: String? =
     val inTag = "wtTry/${tag ?: ""}/${randomString(2U)}"
     var exception: Exception? = null
 
-    logd(enclosingClass, inTag, "${getClassSimpleName(enclosingClass)} trying code.")
+    logd(enclosingClass, inTag, "${getDeclaredSimpleName(enclosingClass)} trying code.")
     try {
         tryCode.invoke()
     } catch (e: Exception) {
         if (throwExc) {
-            logd(enclosingClass, inTag, "${getClassSimpleName(enclosingClass)} throwing exception: \n${exceptionToString(e)}")
+            logd(enclosingClass, inTag, "${getDeclaredSimpleName(enclosingClass)} throwing exception: \n${exceptionToString(e)}")
             throw (e)
         }
         exception = e
     }
-    logd(enclosingClass, inTag, "${getClassSimpleName(enclosingClass)} Done." + (if (null == exception) "" else " Exception: \n${exceptionToString(exception)}"))
+    logd(enclosingClass, inTag, "${getDeclaredSimpleName(enclosingClass)} Done." + (if (null == exception) "" else " Exception: \n${exceptionToString(exception)}"))
     return (exception)
 }
 
