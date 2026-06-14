@@ -13,7 +13,7 @@ import walkie.util.randomString
 import java.net.InetAddress
 
 interface WTWifiDirectEnv {
-    fun checkWifiPermission(): Boolean
+    fun checkWifiPermissions(): Boolean
 }
 
 sealed class WTWifiEvent {
@@ -85,6 +85,14 @@ data class WTWifiDB(
 
     val tag = TAG
 
+    private var nextEvent: WTWifiEvent? = null
+
+    fun consumeNextEvent(): WTWifiEvent? {
+        val nextE = nextEvent
+        nextEvent = null
+        return nextE
+    }
+
     init {
         logging(true)
     }
@@ -94,12 +102,12 @@ data class WTWifiDB(
         thisDevice: WifiP2pDevice? = null,
         p2pInfo: WifiP2pInfo? = null,
         groupInfo: WifiP2pGroup? = null,
-        tick: Long = this.tick,
         directPeers: Map<String, WTWifiDirectPeerInfo> = emptyMap(),
         directServices: Map<String, WTWifiDirectServiceInfo>? = emptyMap()
     ): WTWifiDB {
         val tag = "transition/${randomString(2U)}"
         var logStr = event.description
+        nextEvent = null
 
         val newWifiDB = when (event) {
             WTWifiEvent.P2p.WifiEnabled -> {
@@ -148,6 +156,12 @@ data class WTWifiDB(
                 copy(directServices = directServices ?: this.directServices)
             }
 
+            is WTWifiEvent.WTWifi.Timeout -> {
+                if (tick > 0) tick--
+                logStr += " -> $tick"
+                this
+            }
+
             else -> {
                 logStr += " -> Unprocessed transition event"
                 this
@@ -158,6 +172,9 @@ data class WTWifiDB(
 
         return newWifiDB
     }
+
+    val hasWifiPermissions: Boolean
+        get() = (state != WTWifiState.Disabled(false))
 
     val isWifiEnabled: Boolean
         get() = (state is WTWifiState.Enabled)

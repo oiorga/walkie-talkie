@@ -43,13 +43,10 @@ class WTWifiDirect(
         logging(true)
     }
 
-    fun checkWifiPermission(): Boolean {
-        val tag = "checkWifiPermission/${randomString(2u)}"
-
-        val res = env.checkWifiPermission()
-
+    fun checkWifiPermissions(): Boolean {
+        val tag = "checkWifiPermissions/${randomString(2u)}"
+        val res = env.checkWifiPermissions()
         logd(tag, ": $res")
-
         return res
     }
 
@@ -389,7 +386,7 @@ class WTWifiDirect(
             (WifiP2pManager.Channel,
              WifiP2pManager.ActionListener) -> Unit
     ): WTWifiDirectResult<Unit> {
-        if (!checkWifiPermission()) {
+        if (!checkWifiPermissions()) {
             logd(TAGKClass, tag,
                 "Not enough Wi Fi Permissions")
             return WTWifiDirectResult.LocalError.NoWifiPermissions
@@ -448,7 +445,7 @@ class WTWifiDirect(
             (WifiP2pManager.Channel,
              (T) -> Unit) -> Unit
     ): WTWifiDirectResult<T> {
-        if (!checkWifiPermission()) {
+        if (!checkWifiPermissions()) {
             logd(
                 TAGKClass, tag,
                 "Not enough Wi Fi Permissions"

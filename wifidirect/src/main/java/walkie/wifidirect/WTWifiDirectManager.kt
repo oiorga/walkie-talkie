@@ -84,8 +84,8 @@ class WTWifiDirectManager(
     */
     private var wtWifiDirect: WTWifiDirect? = null
     private val wtWifiDirectEnv = object : WTWifiDirectEnv {
-        override fun checkWifiPermission(): Boolean {
-            return this@WTWifiDirectManager.checkWifiPermission()
+        override fun checkWifiPermissions(): Boolean {
+            return this@WTWifiDirectManager.checkWifiPermissions()
         }
     }
 
@@ -93,12 +93,12 @@ class WTWifiDirectManager(
         wtWifiDirect = WTWifiDirect(manager, channel, wtWifiDirectEnv, scope)
     }
 
-    fun checkWifiPermission(): Boolean {
-        return (true == typedCall<Boolean>(RemoteCallId.RCCheckWifiDPermission))
+    fun checkWifiPermissions(): Boolean {
+        return (true == typedCall<Boolean>(RemoteCallId.RCCheckWifiDPermissions))
     }
 
-    fun requestWifiPermission() {
-        remoteCall(RemoteCallId.RCRequestWifiDPermission)
+    fun requestWifiPermissions() {
+        remoteCall(RemoteCallId.RCRequestWifiDPermissions)
     }
 
     val deviceUid: String
@@ -110,7 +110,7 @@ class WTWifiDirectManager(
 
     private var wtWifi = WTWifiDB(
         nodeId = node,
-        state = WTWifiState.Disabled(checkWifiPermission()))
+        state = WTWifiState.Disabled(wifiPermissions = false))
 
     val wifiP2pEnable: Boolean
         get() = wtWifi.isWifiEnabled
@@ -630,7 +630,6 @@ class WTWifiDirectManager(
 
             processEvent(event)
 
-
             if (restartChannel()) {
                 logd(tag, "Restart channel")
                 break
@@ -645,6 +644,7 @@ class WTWifiDirectManager(
 
         when (event) {
             WTWifiEvent.WTWifi.Timeout -> {
+                wtWifi = wtWifi.transition(event)
                 processEventTimeout()
             }
             WTWifiEvent.WTWifi.GroupInfoChanged -> {
@@ -662,6 +662,7 @@ class WTWifiDirectManager(
             }
             is WTWifiEvent.P2p.WifiDisabled -> {
                 wtWifi = wtWifi.transition(event)
+                if (!wtWifi.hasWifiPermissions) requestWifiPermissions()
             }
             WTWifiEvent.P2p.WifiEnabled -> {
                 logd(tag, "P2P state changed to enabled")
@@ -715,6 +716,9 @@ class WTWifiDirectManager(
                     tag, "Unprocessed WifiD Event: ${event.toString()}")
             }
         }
+
+        wtWifi.consumeNextEvent()?.let { nEvent ->
+            mainLoopInbox.send(nEvent) }
     }
 
     fun internalMaintenance() {
@@ -738,13 +742,21 @@ class WTWifiDirectManager(
         )
     }
 
+    suspend fun processWifiPermissions(): Boolean {
+        val currentP2pPermissions = checkWifiPermissions()
+
+        if (currentP2pPermissions != wtWifi.hasWifiPermissions) {
+            mainLoopInbox.send(WTWifiEvent.P2p.WifiDisabled(currentP2pPermissions))
+        }
+
+        return currentP2pPermissions
+    }
+
     suspend fun processEventTimeout() {
         val tag = "processEventTimeout/${randomString(2u)}"
 
-        if (!checkWifiPermission()) {
+        if (!processWifiPermissions()) {
             logd(tag, "Not enough Wifi permissions. Requesting.")
-            requestWifiPermission()
-
             return
         }
 
@@ -1611,7 +1623,7 @@ class WTWifiDirectManager(
                     if (enabled) {
                         WTWifiEvent.P2p.WifiEnabled
                     } else {
-                        WTWifiEvent.P2p.WifiDisabled(checkWifiPermission())
+                        WTWifiEvent.P2p.WifiDisabled(checkWifiPermissions())
                     }
                 )
             }

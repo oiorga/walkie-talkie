@@ -375,8 +375,8 @@ internal fun WTActivity.wtDeviceName() : String{
     return Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME)
 }
 
-internal fun WTActivity.requestWifiDPermission() {
-    logd(tag, "WTActivity.requestWifiDPermission")
+internal fun WTActivity.requestWifiPermissions() {
+    logd(tag, "WTActivity.requestWifiPermissions")
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         ActivityCompat.requestPermissions(
             this,
@@ -392,7 +392,7 @@ internal fun WTActivity.requestWifiDPermission() {
     }
 }
 
-internal fun WTActivity.hasWifiDPermission(): Boolean {
+internal fun WTActivity.hasWifiPermissions(): Boolean {
     val ret = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         (ActivityCompat.checkSelfPermission(
             this,
@@ -419,15 +419,15 @@ internal fun WTActivity.hasWifiDPermission(): Boolean {
 internal fun WTActivity.wtCustomInit(){
     logd(tag,"WTActivity.wtHubInit")
 
-    if (!hasWifiDPermission())
-        requestWifiDPermission()
+    if (!hasWifiPermissions())
+        requestWifiPermissions()
     wifiInitChannel()
     wifiBindReceiver()
 
-    registerRemoteCall(RemoteCallId.RCCheckWifiDPermission) { _ -> hasWifiDPermission() }
-    wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCCheckWifiDPermission, this)
-    registerRemoteCall(RemoteCallId.RCRequestWifiDPermission) { _ -> requestWifiDPermission() }
-    wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermission, this)
+    registerRemoteCall(RemoteCallId.RCCheckWifiDPermissions) { _ -> hasWifiPermissions() }
+    wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCCheckWifiDPermissions, this)
+    registerRemoteCall(RemoteCallId.RCRequestWifiDPermissions) { _ -> requestWifiPermissions() }
+    wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermissions, this)
     this.registerSenders(
         channelId = ChannelId.RCToWTActivity,
         wtScope,
