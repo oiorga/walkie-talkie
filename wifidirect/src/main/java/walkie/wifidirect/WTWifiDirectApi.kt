@@ -16,16 +16,39 @@ interface WTWifiDirectEnv {
     fun checkWifiPermissions(): Boolean
 }
 
+interface WTWifiEnabledInt<T> {
+    val connecting: T
+    val peersDiscovery: T
+    val serviceDiscovery: T
+    val advertiseLocalService: T
+}
+
+typealias WTWifiEnabledState = WTWifiEnabledInt<Boolean>
+typealias WTWifiEnabledCommand = WTWifiEnabledInt<Boolean?>
+
 sealed class WTWifiEvent {
     val description: String
         get() = "${getEnclosingClassSimpleName()}.${getRuntimeSimpleName()}"
 
     sealed class WTWifi: WTWifiEvent() {
         object Timeout: WTWifi()
+        object Default: WTWifi()
         object WifiStop: WTWifi()
         object PeersDiscoveryStart: WTWifi()
         object PeersDiscoveryStop: WTWifi()
         object GroupInfoChanged: WTWifi()
+        data class LocalServerPort(val value: Int? = null): WTWifi()
+
+        data class Enabled(
+            override val connecting: Boolean? = null,
+            override val peersDiscovery: Boolean? = null,
+            override val serviceDiscovery: Boolean? = null,
+            override val advertiseLocalService: Boolean? = null,
+        ): WTWifiEnabledCommand, WTWifi()
+    }
+
+    sealed class WTWifiCommand: WTWifiEvent() {
+
     }
 
     sealed class P2p: WTWifiEvent() {
@@ -54,17 +77,18 @@ sealed class WTWifiEvent {
 }
 
 sealed class WTWifiState {
-    fun description(): String = "${getEnclosingClassSimpleName()}.${getRuntimeSimpleName()}"
+    val description: String
+        get() = "${getEnclosingClassSimpleName()}.${getRuntimeSimpleName()}"
     data class Disabled (
         val wifiPermissions: Boolean = false,
     ) : WTWifiState()
 
     data class Enabled(
-        val peersScanning: Boolean = false,
-        val connecting: Boolean = false,
-        val serviceDiscovery: Boolean = false,
-        val advertiseLocalService: Boolean = false,
-    ): WTWifiState()
+        override val connecting: Boolean = false,
+        override val peersDiscovery: Boolean = false,
+        override val serviceDiscovery: Boolean = false,
+        override val advertiseLocalService: Boolean = false,
+    ): WTWifiEnabledState, WTWifiState()
 }
 
 data class WTWifiDB(
@@ -73,10 +97,11 @@ data class WTWifiDB(
     val thisDevice: WifiP2pDevice? = null,
     val p2pInfo: WifiP2pInfo? = null,
     val groupInfo: WifiP2pGroup? = null,
+    val localServerPort: Int? = null,
     val peers: List<WifiP2pDevice> = emptyList(),
     val directPeers: Map<String, WTWifiDirectPeerInfo> = emptyMap(),
     val directServices: Map<String, WTWifiDirectServiceInfo> = emptyMap(),
-    var tick: Long = 0
+    var tick: Long = 100000000
     ) {
     companion object {
         const val TAG = "WTWifiDB"
@@ -87,11 +112,11 @@ data class WTWifiDB(
 
     private var nextEvent: WTWifiEvent? = null
 
-    fun consumeNextEvent(): WTWifiEvent? {
-        val nextE = nextEvent
-        nextEvent = null
-        return nextE
-    }
+    fun consumeNextEvent(): WTWifiEvent? =
+        nextEvent.also {
+            nextEvent = null
+        }
+
 
     init {
         logging(true)
@@ -106,16 +131,18 @@ data class WTWifiDB(
         directServices: Map<String, WTWifiDirectServiceInfo>? = emptyMap()
     ): WTWifiDB {
         val tag = "transition/${randomString(2U)}"
-        var logStr = event.description
-        nextEvent = null
+        var logStr = "${event.description} -> ${state.description}"
 
         val newWifiDB = when (event) {
             WTWifiEvent.P2p.WifiEnabled -> {
                 if (state is WTWifiState.Enabled) this
-                else copy(
-                    state = WTWifiState.Enabled(),
-                    thisDevice = thisDevice ?: this.thisDevice
-                )
+                else {
+                    nextEvent = WTWifiEvent.WTWifi.Default
+                    copy(
+                        state = WTWifiState.Enabled(),
+                        thisDevice = thisDevice ?: this.thisDevice
+                    )
+                }
             }
 
             is WTWifiEvent.P2p.WifiDisabled -> {
@@ -148,7 +175,7 @@ data class WTWifiDB(
                 copy(
                     directPeers = directPeers,
                     directServices = directServices ?: this.directServices
-                    )
+                )
             }
 
             is WTWifiEvent.P2p.TxtRecordListener,
@@ -156,10 +183,15 @@ data class WTWifiDB(
                 copy(directServices = directServices ?: this.directServices)
             }
 
-            is WTWifiEvent.WTWifi.Timeout -> {
+            is WTWifiEvent.WTWifi.LocalServerPort -> {
+                copy(localServerPort = event.value)
+            }
+
+            WTWifiEvent.WTWifi.Timeout,
+            WTWifiEvent.WTWifi.Default -> {
                 if (tick > 0) tick--
                 logStr += " -> $tick"
-                this
+                processDefault()
             }
 
             else -> {
@@ -168,14 +200,56 @@ data class WTWifiDB(
             }
         }
 
+        newWifiDB.nextEvent = nextEvent
+
+        newWifiDB.nextEvent?.let { eve ->
+            logStr += " -> ${eve.description}"
+        }
+
         logd(tag, logStr)
 
         return newWifiDB
     }
 
+    fun processDefault(): WTWifiDB {
+        val tag = "processDefault"
+        val currentState = state
+
+        logd(tag, state.description)
+
+        when (currentState) {
+            is WTWifiState.Enabled -> {
+                /*
+                if (state.peersDiscovery) {
+
+                }
+
+                if (state.serviceDiscovery) {
+
+                }
+
+                if (state.advertiseLocalService) {
+
+                }
+                */
+            }
+
+            else -> {
+
+            }
+        }
+
+        return this
+    }
+
+    val isReady: Boolean
+        get() = (null != localServerPort &&
+                null != localIp &&
+                null != groupServerPort)
+    val restartCountDownOn: Boolean
+        get() = (!isReady || directPeers.isEmpty())
     val hasWifiPermissions: Boolean
         get() = (state != WTWifiState.Disabled(false))
-
     val isWifiEnabled: Boolean
         get() = (state is WTWifiState.Enabled)
     val isGroupOwner: Boolean
@@ -192,6 +266,18 @@ data class WTWifiDB(
         get() = groupInfo?.`interface`?.let { iFace ->
             getInterfaceIpAddress(iFace)
         }
+    val groupOwner: WTWifiDirectPeerInfo?
+        get() = let { _ ->
+            val p2pOwner = if (isGroupOwner) thisDevice else groupInfo?.owner
+            directPeers[p2pOwner?.uniqueWifiId()]
+                ?: p2pOwner?.let { device -> WTWifiDirectPeerInfo(device) }
+        }
+    val groupServerPort: Int?
+        get() =
+            (if (isGroupOwner) (localServerPort)
+            else if (isGroupFormed) (directPeers[groupOwnerDevice?.uniqueWifiId()]?.wtServiceInfo?.localServerPort?.toInt())
+            else (null))
+
     val deviceId: String
         get() = nodeId.id()
     val deviceUnique: String

@@ -108,7 +108,7 @@ class WTWifiDirectManager(
 
     private val mainLoopInbox = Mailbox<WTWifiEvent>(10)
 
-    private var wtWifi = WTWifiDB(
+    var wtWifi = WTWifiDB(
         nodeId = node,
         state = WTWifiState.Disabled(wifiPermissions = false))
 
@@ -135,13 +135,11 @@ class WTWifiDirectManager(
     val wtLocalIp: InetAddress?
         get() = wtWifi.localIp
 
-    var wtLocalServerPort: Int? = null
+    val wtLocalServerPort: Int?
+        get() = wtWifi.localServerPort
 
     val wtGroupServerPort: Int?
-        get() =
-            (if (wtIsGroupOwner) (wtLocalServerPort)
-            else if (wtIsGroupFormed) (directWifiPeers[wtGroupOwner?.uniqueWifiId()]?.wtServiceInfo?.localServerPort?.toInt())
-            else (null))
+        get() = wtWifi.groupServerPort
 
     val wtIsGroupOwner: Boolean
         get() = wtWifi.isGroupOwner
@@ -156,11 +154,7 @@ class WTWifiDirectManager(
         get() = wtWifi.groupOwnerName
 
     val wtGroupOwner: WTWifiDirectPeerInfo?
-        get() = let { _ ->
-            val p2pOwner = if (wtIsGroupOwner) thisDevice else wtWifiGroupInfo?.owner
-            directWifiPeers[p2pOwner?.uniqueWifiId()]
-                ?: p2pOwner?.let { device -> WTWifiDirectPeerInfo(device) }
-        }
+        get() = wtWifi.groupOwner
 
     val deviceId: String
         get() = node.id()
@@ -243,7 +237,8 @@ class WTWifiDirectManager(
         )
         if (null != yes && yes) {
             restartChannelCountdown = RestartChannelTimeout
-        } else if (restartChannelCountdown > 0 && (null == wtLocalIp || null == wtGroupServerPort)) {
+        /* } else if (restartChannelCountdown > 0 && (null == wtLocalIp || null == wtGroupServerPort || wtWifi.directPeers.isEmpty())) { */
+        } else if (restartChannelCountdown > 0 && (wtWifi.restartCountDownOn)) {
             restartChannelCountdown--
         }
         return restartChannelCountdown
@@ -308,7 +303,8 @@ class WTWifiDirectManager(
                     }
 
                     ChannelMessageType.RCLocalServerPort -> {
-                        wtLocalServerPort = input as Int
+                        //wtLocalServerPort = input as Int
+                        mainLoopInbox.send(WTWifiEvent.WTWifi.LocalServerPort(input as Int))
                     }
 
                     else -> {
@@ -642,7 +638,10 @@ class WTWifiDirectManager(
     suspend fun processEvent(event: WTWifiEvent) {
         val tag = "processEvents/${randomString(2u)}"
 
+        logd(tag, event.description)
+
         when (event) {
+            WTWifiEvent.WTWifi.Default,
             WTWifiEvent.WTWifi.Timeout -> {
                 wtWifi = wtWifi.transition(event)
                 processEventTimeout()
@@ -710,6 +709,9 @@ class WTWifiDirectManager(
                 wtWifi = wtWifi.transition(
                     event,
                     directServices = dnsSdServiceResponseListener(event.instanceName, event.registrationType, event.resourceType))
+            }
+            is WTWifiEvent.WTWifi.LocalServerPort -> {
+                wtWifi = wtWifi.transition(event)
             }
             else -> {
                 logd(
@@ -1262,6 +1264,12 @@ class WTWifiDirectManager(
         val instanceName = WT_SERVICE_WALKIETALKIE /* + "." + deviceUid() */
         /* val serviceType = "_presence._tcp" */
         val serviceType = WT_SERVICE_WALKIETALKIE
+
+        logd(tag, "Entry: $wtLocalServiceRecord wtLocalServerPort: $wtLocalServerPort")
+
+        if (null == wtLocalServerPort)
+            return
+
         val record: Map<String, String> = mapOf(
             WT_SERVICE_WALKIETALKIE to WT_SERVICE_WALKIETALKIE,
             WT_SERVICE_ID to deviceId,
@@ -1270,8 +1278,6 @@ class WTWifiDirectManager(
             WT_SERVICE_RND to randomString(8U),
             WT_SERVICE_LOCAL_SERVER_PORT to wtLocalServerPort!!.toString()
         )
-
-        logd(tag, "Entry: $wtLocalServiceRecord")
 
         if (removeFirst) {
             removeLocalService()
