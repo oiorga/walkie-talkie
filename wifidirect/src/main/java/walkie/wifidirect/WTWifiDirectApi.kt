@@ -16,6 +16,13 @@ interface WTWifiDirectEnv {
     fun checkWifiPermissions(): Boolean
 }
 
+interface WTWifiCommandInt<T> {
+    val removeGroup: T
+    val peersDiscovery: T
+    val serviceDiscovery: T
+    val advertiseLocalService: T
+}
+
 interface WTWifiEnabledInt<T> {
     val connecting: T
     val peersDiscovery: T
@@ -39,15 +46,14 @@ sealed class WTWifiEvent {
         object WifiStop: WTWifi()
         object PeersDiscoveryStart: WTWifi()
         object PeersDiscoveryStop: WTWifi()
-        object GroupInfoChanged: WTWifi()
         data class LocalServerPort(val value: Int? = null): WTWifi()
 
-        data class Enabled(
-            override val connecting: Boolean? = null,
+        data class Command(
+            override val removeGroup: Boolean? = null,
             override val peersDiscovery: Boolean? = null,
             override val serviceDiscovery: Boolean? = null,
             override val advertiseLocalService: Boolean? = null,
-        ): WTWifiEnabledInt<Boolean?>, WTWifi()
+        ): WTWifiCommandInt<Boolean?>, WTWifi()
     }
 
     sealed class P2p: WTWifiEvent() {
@@ -109,7 +115,6 @@ data class WTWifiDB(
         const val TAG = "WTWifiDB"
         val TAGKClass = WTWifiDB::class
         const val DiscoveryCountdown = 17
-        const val ConnectCountdown = 25
         const val FailCooldown = 1
         const val RestartChannelTimeout = (DiscoveryCountdown * 3)
         const val DiscoveryVsAdvertisementRatio = (2F / 3F)
@@ -161,20 +166,19 @@ data class WTWifiDB(
                 logStr += "\n\tdeviceName: ${thisDevice?.deviceName}"
                 copy(
                     thisDevice = thisDevice,
-                    groupInfo = groupInfo ?: this.groupInfo
+                    groupInfo = groupInfo ?: this.groupInfo,
+                    directPeers = if (null == groupInfo) emptyMap() else this.directPeers,
+                    directServices = if (null == groupInfo) emptyMap() else this.directServices
                 )
-            }
-
-            WTWifiEvent.WTWifi.GroupInfoChanged -> {
-                logStr += "\n\tgroupInfo: ${groupInfo?.owner?.deviceName} -> ${this.groupInfo?.owner?.deviceName}"
-                copy(groupInfo = groupInfo)
             }
 
             WTWifiEvent.P2p.ConnectionChanged -> {
                 logStr += "\n\tp2pInfo: ${p2pInfo?.isGroupOwner} / Formed: ${p2pInfo?.groupFormed}"
                 copy(
                     p2pInfo = p2pInfo,
-                    groupInfo = groupInfo ?: groupInfo
+                    groupInfo = groupInfo ?: this.groupInfo,
+                    directPeers = if (null == groupInfo) emptyMap() else this.directPeers,
+                    directServices = if (null == groupInfo) emptyMap() else this.directServices
                 )
             }
 
@@ -231,47 +235,61 @@ data class WTWifiDB(
                 var serviceDiscovery: Boolean? = null
                 var advertiseLocalService: Boolean? = null
                 var connecting: Boolean? = null
+                var removeGroup: Boolean? = null
                 var sendEvent = false
-                if (state.peersDiscovery) {
-                    if (tick == 0) {
-                        if (directServices.isNotEmpty()) {
-                            logd(tag, "directPeers: $directServices")
-                            connecting = true
-                            tick = ConnectCountdown
-                        } else {
-                            tick = DiscoveryCountdown
-                            serviceDiscovery = true
-                            sendEvent = true
-                        }
-                    }
-                } else {
+
+                if (directPeers.isNotEmpty()) {
+                    logd(tag, "directPeers: $directPeers")
+                    connecting = true
+                }
+
+                if (!state.peersDiscovery) {
+                    tick = DiscoveryCountdown
                     peersDiscovery = true
-                    if (!state.serviceDiscovery) {
-                        tick = DiscoveryCountdown
-                        serviceDiscovery = true
+                    serviceDiscovery = true
+                    advertiseLocalService = true
+                    sendEvent = true
+                }
+
+                if (state.serviceDiscovery && tick == 0) {
+                    tick = DiscoveryCountdown
+                    serviceDiscovery = true
+                    if (state.advertiseLocalService && isGroupFormed && !isGroupOwner) {
+                        advertiseLocalService = !(isGroupFormed && !isGroupOwner)
                     }
                     sendEvent = true
                 }
 
-                if (serviceDiscovery == true) {
-                    /*
-                    if (!isGroupFormed || (isGroupFormed && isGroupOwner)) {
-                        advertiseLocalService = true
-                        sendEvent = true
-                    }
-                    */
-                    advertiseLocalService = !(isGroupFormed && !isGroupOwner)
+                if (!state.advertiseLocalService && !isGroupFormed) {
+                    advertiseLocalService = true
                     sendEvent = true
                 }
 
+                /*
                 if (state.connecting) {
                     if (tick == 0) {
-                        peersDiscovery = true
+                        if (isGroupFormed && (groupServerPort == null)) {
+                            removeGroup = true
+                        } else {
+                            peersDiscovery = true
+                        }
                         sendEvent = true
                     }
                 }
+                */
 
-                val newWifiDB = copy(
+
+                if (sendEvent) {
+                    nextEvent = WTWifiEvent.WTWifi.Command(
+                        removeGroup,
+                        peersDiscovery,
+                        serviceDiscovery,
+                        advertiseLocalService
+                    )
+                }
+                logd(tag, "nextEvent: $nextEvent")
+
+                copy(
                     state = WTWifiState.Enabled(
                         connecting ?: state.connecting,
                         peersDiscovery ?: state.peersDiscovery,
@@ -279,17 +297,6 @@ data class WTWifiDB(
                         advertiseLocalService ?: state.advertiseLocalService
                     )
                 )
-
-                if (sendEvent) {
-                    nextEvent = WTWifiEvent.WTWifi.Enabled(
-                        connecting,
-                        peersDiscovery,
-                        serviceDiscovery,
-                        advertiseLocalService
-                    )
-                    logd(tag, "nextEvent: $nextEvent")
-                }
-                newWifiDB
             }
             else -> {
                 this
@@ -302,7 +309,14 @@ data class WTWifiDB(
                 null != localIp &&
                 null != groupServerPort)
     val restartCountDownOn: Boolean
-        get() = (!isReady && directPeers.isEmpty() && directServices.isEmpty())
+        get() = run {
+            val tag = "restartCountDownOn"
+            logd (tag,
+                "!isReady: ${!isReady} " +
+                        "directPeers: ${directPeers.isEmpty()} " +
+                        "directServices: ${directServices.isEmpty()} ")
+            (!isReady || directPeers.isEmpty())
+        }
     val hasWifiPermissions: Boolean
         get() = (state != WTWifiState.Disabled(false))
     val isWifiEnabled: Boolean

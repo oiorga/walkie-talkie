@@ -46,6 +46,7 @@ import walkie.wifidirect.WTWifiDirectServiceInfo.Companion.WT_SERVICE_RND
 import walkie.wifidirect.WTWifiDirectServiceInfo.Companion.WT_SERVICE_UNIQUE
 import walkie.wifidirect.WTWifiDirectServiceInfo.Companion.WT_SERVICE_WALKIETALKIE
 import java.net.InetAddress
+import kotlin.math.max
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -224,9 +225,12 @@ class WTWifiDirectManager(
     }
 
     fun connectingAllowed(): Boolean {
+        /*
         return ((discoveryCountdown <= (DiscoveryCountdown * DiscoveryVsAdvertisementRatio).toInt()) ||
                 (connectToDevice?.directWifiConnection == ConnectionStatus.InProgress ||
                         connectToDevice?.directWifiConnection == ConnectionStatus.Fail))
+        */
+        return ((wtWifi.state is WTWifiState.Enabled) && (wtWifi.state as WTWifiState.Enabled).connecting)
     }
 
     fun restartChannelCountdown(yes: Boolean? = null): Int {
@@ -610,7 +614,7 @@ class WTWifiDirectManager(
     suspend fun mainLoop(cadence: Long) {
         val tag = "mainLoop/${randomString(2u)}"
         var p2pInfo: Triple<InetAddress?, InetAddress?, Int?> = Triple(wtGroupIp, wtLocalIp, wtGroupServerPort)
-        val rndDelay = Random.nextLong(25)
+        var rndDelay = Random.nextLong(50)
 
         while (scope.isActive) {
             notifyOfChange(p2pInfo, Triple(wtGroupIp, wtLocalIp, wtGroupServerPort))
@@ -618,6 +622,7 @@ class WTWifiDirectManager(
 
             internalMaintenance()
 
+            rndDelay = max(Random.nextLong(50 + rndDelay), 75)
             val event = when (val v =  mainLoopInbox.await((cadence + rndDelay).milliseconds)) {
                 is MailboxData.Message -> { v.value }
                 MailboxData.Timeout -> { WTWifiEvent.WTWifi.Timeout }
@@ -646,19 +651,7 @@ class WTWifiDirectManager(
                 wtWifi = wtWifi.transition(event)
                 processEventTimeout()
             }
-            WTWifiEvent.WTWifi.GroupInfoChanged -> {
-                val newGroup = if (wtWifi.isGroupFormed) {
-                    requestGroupInfo()
-                } else {
-                    removeGroup()
-                    connectToDevice = null
-                    null
-                }
-                logStr += "\n\tWTWifi group info changed(1): groupFormed: ${wtWifi.isGroupFormed} transition: ${wtWifiGroupInfo?.owner?.deviceName} -> ${newGroup?.owner?.deviceName}"
-                wtWifi = wtWifi.transition(
-                    event,
-                    groupInfo = newGroup)
-            }
+
             is WTWifiEvent.P2p.WifiDisabled -> {
                 wtWifi = wtWifi.transition(event)
                 if (!wtWifi.hasWifiPermissions) requestWifiPermissions()
@@ -671,7 +664,7 @@ class WTWifiDirectManager(
             }
             WTWifiEvent.P2p.PeersChanged -> {
                 logStr += "\n\tP2P peers changed"
-                val directPeersInfo = updatePeersInfo(requestPeersInfo())
+                val directPeersInfo = mergePeersServicesInfo(requestPeersInfo())
                 wtWifi = wtWifi.transition(
                     event,
                     directPeers = directPeersInfo.first,
@@ -685,7 +678,6 @@ class WTWifiDirectManager(
                     event,
                     p2pInfo = p2pInfo,
                     groupInfo = requestGroupInfo()
-
                 )
                 if (null == p2pInfo) {
                     updateP2pInfo(null)
@@ -703,18 +695,18 @@ class WTWifiDirectManager(
                 logStr += "\n\tP2P Process TxtRecordListener info"
                 wtWifi = wtWifi.transition(
                     event,
-                    directServices = dnsSdTxtRecordListener(event.fullDomain, event.record, event.device))
+                    directServices = updateServicesInfo(dnsSdTxtRecordListener(event.fullDomain, event.record, event.device)))
             }
             is WTWifiEvent.P2p.ServiceResponseListener -> {
                 logStr += "\n\tP2P Process ServiceResponseListener info"
                 wtWifi = wtWifi.transition(
                     event,
-                    directServices = dnsSdServiceResponseListener(event.instanceName, event.registrationType, event.resourceType))
+                    directServices = updateServicesInfo(dnsSdServiceResponseListener(event.instanceName, event.registrationType, event.resourceType)))
             }
             is WTWifiEvent.WTWifi.LocalServerPort -> {
                 wtWifi = wtWifi.transition(event)
             }
-            is WTWifiEvent.WTWifi.Enabled -> {
+            is WTWifiEvent.WTWifi.Command -> {
                 if (null != event.advertiseLocalService) {
                     if (event.advertiseLocalService) addLocalService(removeFirst = true)
                     else removeLocalService()
@@ -724,6 +716,11 @@ class WTWifiDirectManager(
                         addServiceRequest(removeFirst = true)
                         discoverServices()
                     }
+                }
+                if (null != event.removeGroup && event.removeGroup) {
+                    logStr += "\n\tRequest removing group"
+                    removeGroup()
+                    connectToDevice = null
                 }
             }
             else -> {
@@ -902,12 +899,25 @@ class WTWifiDirectManager(
         }
     }
 
-    fun updatePeersInfo(newList: GenericList<WifiP2pDevice>): Pair<Map<String, WTWifiDirectPeerInfo>, Map<String, WTWifiDirectServiceInfo>?> {
+    fun updateServicesInfo(newServices: Map<String, WTWifiDirectServiceInfo>): Map<String, WTWifiDirectServiceInfo>? {
+        val newList = GenericList<WifiP2pDevice>()
+
+        /*
+        directWifiPeers.values.forEach {
+            newList.add(it.p2pInfo)
+        }
+        */
+
+        return mergePeersServicesInfo(newList, newServices).second
+    }
+
+    fun mergePeersServicesInfo(newList: GenericList<WifiP2pDevice> = GenericList<WifiP2pDevice>(), newServices: Map<String, WTWifiDirectServiceInfo>? = null):
+            Pair<Map<String, WTWifiDirectPeerInfo>, Map<String, WTWifiDirectServiceInfo>?> {
         val tag = "updatePeersInfo/${randomString(2u)}"
         var change = false
 
         val newDirectWifiPeers = directWifiPeers.toMutableMap()
-        val newDirectWifiServices = directWifiServices.toMutableMap()
+        val newDirectWifiServices = newServices?.toMutableMap() ?: directWifiServices.toMutableMap()
 
         var str = ""
         newDirectWifiPeers.forEach { (dUid, device) ->

@@ -135,14 +135,14 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     val peersDiscoveryState = (currentState is WTWifiState.Enabled && (currentState as WTWifiState.Enabled).peersDiscovery)
     val serviceDiscoveryActive = (currentState is WTWifiState.Enabled && (currentState as WTWifiState.Enabled).serviceDiscovery)
     val serviceAdvAdd = (currentState is WTWifiState.Enabled && (currentState as WTWifiState.Enabled).advertiseLocalService)
+    val connecting = (currentState is WTWifiState.Enabled && (currentState as WTWifiState.Enabled).connecting)
 
     info += "\nWIFI Peers List "
     info += "\n Tick: ${wtWifi.tick}"
-    info += "\n discoverPeers: ($discoveryCountdown/${serviceDiscoveryActive}) " + if (peersDiscoveryState) "Reset" else if (serviceDiscoveryActive) "Active" else "Paused"
-    info += "\n advertise Service: $serviceAdvAdd"
-    info += "\n connectingAllowed: newWT: ${newWTDevice(newWTDevice())} ($discoveryCountdown) " + if (connectingAllowed()) "Yes" else "No"
+    info += "\n Discovery/Services/LocalService: $peersDiscoveryState/$serviceDiscoveryActive/$serviceAdvAdd"
+    info += "\n connectingAllowed: newWT: ${newWTDevice(newWTDevice())} " + if (connecting) "Yes" else "No"
     info += "\n connectTo: ${connectToDevice?.uniqueWifiId()} ${connectToDevice?.directWifiConnection}"
-    info += "\n failCoolDown: ($failCooldown) " + (if (wifiP2PEngineOk()) "Ok" else "NOT Ok") + " " + wtWifiFailure()
+    /* info += "\n failCoolDown: ($failCooldown) " + (if (wifiP2PEngineOk()) "Ok" else "NOT Ok") + " " + wtWifiFailure() */
     info += "\n restartCountDown: ${channelCountdown()}"
 
     this.directWifiPeers.forEach { (_, device) ->
