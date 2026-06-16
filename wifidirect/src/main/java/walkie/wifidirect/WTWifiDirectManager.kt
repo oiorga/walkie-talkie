@@ -303,7 +303,6 @@ class WTWifiDirectManager(
                     }
 
                     ChannelMessageType.RCLocalServerPort -> {
-                        //wtLocalServerPort = input as Int
                         mainLoopInbox.send(WTWifiEvent.WTWifi.LocalServerPort(input as Int))
                     }
 
@@ -333,7 +332,7 @@ class WTWifiDirectManager(
 
         mainLoopJob = null
 
-        wtWifi = wtWifi.resetAll()
+        wtWifi = wtWifi.reset()
 
         connectToDevice = null
         wtLocalServiceRecord = null
@@ -637,6 +636,7 @@ class WTWifiDirectManager(
 
     suspend fun processEvent(event: WTWifiEvent) {
         val tag = "processEvents/${randomString(2u)}"
+        var logStr = "\n\tevent: ${event.description}"
 
         logd(tag, event.description)
 
@@ -654,7 +654,7 @@ class WTWifiDirectManager(
                     connectToDevice = null
                     null
                 }
-                logd(tag, "WTWifi group info changed(1): groupFormed: ${wtWifi.isGroupFormed} transition: ${wtWifiGroupInfo?.owner?.deviceName} -> ${newGroup?.owner?.deviceName}")
+                logStr += "\n\tWTWifi group info changed(1): groupFormed: ${wtWifi.isGroupFormed} transition: ${wtWifiGroupInfo?.owner?.deviceName} -> ${newGroup?.owner?.deviceName}"
                 wtWifi = wtWifi.transition(
                     event,
                     groupInfo = newGroup)
@@ -664,13 +664,13 @@ class WTWifiDirectManager(
                 if (!wtWifi.hasWifiPermissions) requestWifiPermissions()
             }
             WTWifiEvent.P2p.WifiEnabled -> {
-                logd(tag, "P2P state changed to enabled")
+                logStr += "\n\tP2P state changed to enabled"
                 wtWifi = wtWifi.transition(
                     event,
                     thisDevice = requestDeviceInfo())
             }
             WTWifiEvent.P2p.PeersChanged -> {
-                logd(tag, "P2P peers changed")
+                logStr += "\n\tP2P peers changed"
                 val directPeersInfo = updatePeersInfo(requestPeersInfo())
                 wtWifi = wtWifi.transition(
                     event,
@@ -680,7 +680,7 @@ class WTWifiDirectManager(
             }
             WTWifiEvent.P2p.ConnectionChanged -> {
                 val p2pInfo = requestConnectionInfo()
-                logd(tag, "P2P Connection changed: groupFormed: ${p2pInfo?.groupFormed} isGroupOwner: ${p2pInfo?.isGroupOwner}")
+                logStr += "\n\tP2P Connection changed: groupFormed: ${p2pInfo?.groupFormed} isGroupOwner: ${p2pInfo?.isGroupOwner}"
                 wtWifi = wtWifi.transition(
                     event,
                     p2pInfo = p2pInfo,
@@ -693,19 +693,20 @@ class WTWifiDirectManager(
             }
             WTWifiEvent.P2p.ThisDeviceChanged -> {
                 logd(tag, "P2P this device changed")
+                logStr += "\n\tP2P this device changed"
                 wtWifi = wtWifi.transition(
                     event,
                     thisDevice = requestDeviceInfo(),
                     groupInfo = requestGroupInfo())
             }
             is WTWifiEvent.P2p.TxtRecordListener -> {
-                logd(tag, "P2P Process TxtRecordListener info")
+                logStr += "\n\tP2P Process TxtRecordListener info"
                 wtWifi = wtWifi.transition(
                     event,
                     directServices = dnsSdTxtRecordListener(event.fullDomain, event.record, event.device))
             }
             is WTWifiEvent.P2p.ServiceResponseListener -> {
-                logd(tag, "P2P Process ServiceResponseListener info")
+                logStr += "\n\tP2P Process ServiceResponseListener info"
                 wtWifi = wtWifi.transition(
                     event,
                     directServices = dnsSdServiceResponseListener(event.instanceName, event.registrationType, event.resourceType))
@@ -713,14 +714,29 @@ class WTWifiDirectManager(
             is WTWifiEvent.WTWifi.LocalServerPort -> {
                 wtWifi = wtWifi.transition(event)
             }
+            is WTWifiEvent.WTWifi.Enabled -> {
+                if (null != event.advertiseLocalService) {
+                    if (event.advertiseLocalService) addLocalService(removeFirst = true)
+                    else removeLocalService()
+                }
+                if (null != event.serviceDiscovery) {
+                    if (event.serviceDiscovery) {
+                        addServiceRequest(removeFirst = true)
+                        discoverServices()
+                    }
+                }
+            }
             else -> {
-                logd(
-                    tag, "Unprocessed WifiD Event: ${event.toString()}")
+                logStr += "\n\tUnprocessed WifiD Event: ${event.toString()}"
             }
         }
 
         wtWifi.consumeNextEvent()?.let { nEvent ->
-            mainLoopInbox.send(nEvent) }
+            logStr += "\n\tSend nextEvent: $nEvent"
+            mainLoopInbox.send(nEvent)
+        }
+
+        logd(tag, logStr)
     }
 
     fun internalMaintenance() {
@@ -756,6 +772,9 @@ class WTWifiDirectManager(
 
     suspend fun processEventTimeout() {
         val tag = "processEventTimeout/${randomString(2u)}"
+
+        logd(tag, "Entry")
+
 
         if (!processWifiPermissions()) {
             logd(tag, "Not enough Wifi permissions. Requesting.")
@@ -826,7 +845,7 @@ class WTWifiDirectManager(
             tag,
             "discoverPeersJob deviceName = $deviceUid failCoolDown: $failCooldown thisDevice: ${thisDevice?.deviceName}"
         )
-        discoverPeersJob()
+        //discoverPeersJob()
 
         logd(
             tag,
@@ -1088,7 +1107,7 @@ class WTWifiDirectManager(
             logd(tag, "Lost P2P Connection/Info")
             connectToDevice = null
             removeGroup()
-            wtWifi = wtWifi.resetAll()
+            wtWifi = wtWifi.reset()
             channelSend(
                 ChannelId.RCToComm,
                 scope,
@@ -1227,7 +1246,7 @@ class WTWifiDirectManager(
 
         logd(tag, "Entry: $wtLocalServiceRecord")
 
-        val cacheServiceRecord = wtLocalServiceRecord?: run { return }
+        val cacheServiceRecord = wtLocalServiceRecord ?: run { return }
 
         when (val res = wtWifiDirect?.removeLocalService(
             instanceName,

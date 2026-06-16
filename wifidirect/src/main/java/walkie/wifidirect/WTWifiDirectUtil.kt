@@ -37,6 +37,7 @@ internal fun WifiP2pInfo.logD(tag: String = "WifiP2pInfo") {
     )
 }
 
+/*
 internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     val tag = "wtWifiDirectInfo/${randomString(2u)}"
 
@@ -97,8 +98,8 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
 
     return info
 }
+*/
 
-/*
 internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     val tag = "wtWifiDirectInfo/${randomString(2u)}"
 
@@ -165,7 +166,6 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
 
     return info
 }
-*/
 
 internal suspend inline fun awaitP2pAction(
     crossinline action: (WifiP2pManager.ActionListener) -> Unit
