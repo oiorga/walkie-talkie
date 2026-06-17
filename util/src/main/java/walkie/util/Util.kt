@@ -242,3 +242,11 @@ fun appendTextToFile(file: String, string: String? = null, nl: Boolean = true) {
         throw (e)
     }
 }
+
+fun textSum(str: String): Int {
+    var sum = 0
+    str.forEach { c ->
+        sum += c.code
+    }
+    return sum
+}

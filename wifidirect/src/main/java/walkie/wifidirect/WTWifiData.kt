@@ -41,30 +41,27 @@ data class WTWifiDirectServiceInfo (
 
 data class WTWifiDirectPeerInfo (
     val p2pInfo: WifiP2pDevice,
-    var isGroupOwner: Boolean = p2pInfo.isGroupOwner,
-    val name: String = p2pInfo.deviceName,
-    val address: String = p2pInfo.deviceAddress,
     var directWifiConnection: ConnectionStatus = ConnectionStatus.Null,
     var wtServiceInfo: WTWifiDirectServiceInfo? = null,
-    var age: Long = 0L
 ) {
+    val isGroupOwner: Boolean
+        get() = p2pInfo.isGroupOwner
+    val name: String
+        get() = p2pInfo.deviceName
+    val address: String
+        get() = p2pInfo.deviceAddress
+
     companion object {
         /* Connecting in Progress */
         const val CIP = 15
         /* Fail Cool Down */
         const val FCD = 1
-        const val MAXAGE = (WTWifiDirectManager.DiscoveryCountdown * 3)
     }
     var stateCounter: Int = 0
         private set
 
-    private val wtService: Boolean
+    val wtService: Boolean
         get() = (wtServiceInfo?.isNotNull() == true)
-
-    fun wtService() : Boolean = wtService
-
-    val maxAge: Int
-        get() = MAXAGE
 
     fun cipInit() {
         stateCounter = CIP
