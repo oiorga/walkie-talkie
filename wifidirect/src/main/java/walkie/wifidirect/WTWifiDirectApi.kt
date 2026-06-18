@@ -440,7 +440,7 @@ data class WTWifiDB(
 
     val cachedServiceRecord: Map<String, String>?
         get() =
-            if ((state is WTWifiState.Enabled) and (state as WTWifiState.Enabled).advertiseLocalService)
+            if ((state is WTWifiState.Enabled) && (state as WTWifiState.Enabled).advertiseLocalService)
                 localServiceRecord
             else
                 null

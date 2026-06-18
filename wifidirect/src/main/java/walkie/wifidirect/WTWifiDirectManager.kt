@@ -164,7 +164,7 @@ class WTWifiDirectManager(
         get() = wtWifi.tick
 
     val connectingAllowed: Boolean
-        get() = ((wtWifi.state is WTWifiState.Enabled) && (wtWifi.state as WTWifiState.Enabled).connecting)
+        get() = ((wtWifi.state is WTWifiState.Enabled) && (wtWifi.isWTServicePeerPresent))
 
     fun channelCountdown(): Int {
         return restartChannelCountdown

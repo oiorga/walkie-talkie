@@ -64,7 +64,7 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     val peersDiscoveryState = (currentState is WTWifiState.Enabled && (currentState as WTWifiState.Enabled).peersDiscovery)
     val serviceDiscoveryActive = (currentState is WTWifiState.Enabled && (currentState as WTWifiState.Enabled).serviceDiscovery)
     val serviceAdvAdd = (currentState is WTWifiState.Enabled && (currentState as WTWifiState.Enabled).advertiseLocalService)
-    val connecting = (currentState is WTWifiState.Enabled && (currentState as WTWifiState.Enabled).connecting)
+    val connecting = wtWifi.isWTServicePeerPresent
 
     info += "\nWIFI Peers List "
     info += "\n Tick: ${wtWifi.tick}"
