@@ -42,6 +42,8 @@ class WTComm (
         val TAGKClass = WTComm::class
     }
 
+    val tag = TAG
+
     fun wtPRMComm() : WTPRMComm {
         return wtPRMComm
     }
@@ -70,7 +72,7 @@ class WTComm (
 
     init {
         logging(true)
-        logd("Init Entry")
+        logd(tag, "Init Entry")
 
         this.registerReceiver(ChannelId.RCToPRMComm, wtPRMComm.scope, wtPRMComm)
         wtPRMComm.wtIPComm.registerReceiver(ChannelId.RCToComm, scope, this)
@@ -79,10 +81,10 @@ class WTComm (
             channelSend(ChannelId.RCTOCommonData, scope, ChannelMessageType.RCUpdatePeersUI)
         }
         wtPRMComm.registerToEvent(DispatchEventId.CBServerPort) { serverPort ->
-            logd("$this sending serverPort: $serverPort to RCToWifi")
+            logd(tag, "$this sending serverPort: $serverPort to RCToWifi")
             channelSend(ChannelId.RCToWifi, scope, ChannelMessageType.RCLocalServerPort, serverPort!!)
         }
-        logd("Init Exit")
+        logd(tag, "Init Exit")
     }
 
     fun start() {

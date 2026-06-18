@@ -9,62 +9,102 @@ import android.util.Log
 import kotlin.reflect.KClass
 
 /** Wrapper over [Log.d] */
-inline fun <reified T> T.logd(tag: String, message: String, logF: Boolean = true) =
+inline fun <reified T> T.logd(tag: String, message: String? = null, logF: Boolean = true) =
     if (logF && Logging.ONE.isEnabled()) {
         if (Logging.ONE.iLog()) Log.d(Logging.TAG, "logd calling log: tag: $tag")
         log(null) { classTag ->
             val logging = Logging.ONE
+            val existing = logging.consumeLog(classTag, tag = tag)
             val prefix = logging.prefix(classTag, tag)
-            val nm = "[${prefix}] " + message
-
+            val nm = "[${prefix}] " + existing + (message ?: "")
             Log.d("[${prefix}]", nm)
-
             logging.extraCall(tag)?.invoke(tag, nm)
         }
     }
     else { }
 
+inline fun <reified T> T.logdAppend(tag: String, message: String, logF: Boolean = true) =
+    if (logF && Logging.ONE.isEnabled()) {
+        if (Logging.ONE.iLog()) Log.d(Logging.TAG, "logdAppend calling log: tag: $tag")
+        log(null) { classTag ->
+            val logging = Logging.ONE
+            logging.appendLog(classTag, tag, message)
+        }
+    }
+    else { }
+
+/*
 /** Wrapper over [Log.d] */
 inline fun <reified T> T.logd(message: String, logF: Boolean = true) =
     if (logF && Logging.ONE.isEnabled()) {
         if (Logging.ONE.iLog()) Log.d(Logging.TAG, "logd calling log with defaults")
         log(null) { classTag ->
             val logging = Logging.ONE
-            val nm = "[${logging.prefix(classTag)}] " + message
-
+            val existing = logging.consumeLog(classTag, tag = null)
+            val nm = "[${logging.prefix(classTag)}] " + existing + message
             Log.d("[${logging.prefix(classTag)}]", nm)
-
             logging.extraCall(classTag)?.invoke(classTag, nm)
         }
     }
     else { }
 
+
+inline fun <reified T> T.logdAppend(message: String, logF: Boolean = true) =
+    if (logF && Logging.ONE.isEnabled()) {
+        if (Logging.ONE.iLog()) Log.d(Logging.TAG, "logdAppend calling with defaults")
+        log(null) { classTag ->
+            val logging = Logging.ONE
+            logging.appendLog(classTag, null, message)
+        }
+    }
+    else { }
+*/
+
 /** Wrapper over [Log.d] */
-inline fun <reified T> T.logd(enclosingClass: KClass<*>? = null, message: String, logF: Boolean = true) =
+inline fun <reified T> T.logd(enclosingClass: KClass<*>? = null, message: String? = null, logF: Boolean = true) =
     if (logF && Logging.ONE.isEnabled()) {
         if (Logging.ONE.iLog()) Log.d(Logging.TAG, "logd calling log: enclosingClass: $enclosingClass")
         log(enclosingClass) { classTag ->
             val logging = Logging.ONE
-            val nm = "[${logging.prefix(classTag)}] " + message
-
+            val existing = logging.consumeLog(classTag, tag = null)
+            val nm = "[${logging.prefix(classTag)}] " + existing + (message ?: "")
             Log.d("[${logging.prefix(classTag)}]", nm)
-
             logging.extraCall(classTag)?.invoke(classTag, nm)
         }
     }
     else { }
 
+inline fun <reified T> T.logdAppend(enclosingClass: KClass<*>? = null, message: String, logF: Boolean = true) =
+    if (logF && Logging.ONE.isEnabled()) {
+        if (Logging.ONE.iLog()) Log.d(Logging.TAG, "logdAppend calling log: enclosingClass: $enclosingClass")
+        log(enclosingClass) { classTag ->
+            val logging = Logging.ONE
+            logging.appendLog(classTag, tag = null, message)
+        }
+    }
+    else { }
+
+
 /** Wrapper over [Log.d] */
-inline fun <reified T> T.logd(enclosingClass: KClass<*>? = null, tag: String, message: String, logF: Boolean = true) =
+inline fun <reified T> T.logd(enclosingClass: KClass<*>? = null, tag: String, message: String? = null, logF: Boolean = true) =
     if (logF && Logging.ONE.isEnabled()) {
         if (Logging.ONE.iLog()) Log.d(Logging.TAG, "logd calling log: enclosingClass: $enclosingClass tag: $tag")
         log(enclosingClass) { classTag ->
             val logging = Logging.ONE
-            val nm = "[${logging.prefix(classTag, tag)}] " + message
-
+            val existing = logging.consumeLog(classTag, tag)
+            val nm = "[${logging.prefix(classTag, tag)}] " + existing + (message ?: "")
             Log.d("[${logging.prefix(classTag, tag)}]", nm)
-
             logging.extraCall(tag)?.invoke(tag, nm)
+        }
+    }
+    else { }
+
+inline fun <reified T> T.logdAppend(enclosingClass: KClass<*>? = null, tag: String, message: String, logF: Boolean = true) =
+    if (logF && Logging.ONE.isEnabled()) {
+        if (Logging.ONE.iLog()) Log.d(Logging.TAG, "logdAppend calling log: enclosingClass: $enclosingClass tag: $tag")
+        log(enclosingClass) { classTag ->
+            val logging = Logging.ONE
+            logging.appendLog(classTag, tag, message)
         }
     }
     else { }
@@ -75,18 +115,16 @@ inline fun <reified T> T.log(
 ) {
     val logging = Logging.ONE
     val classTag = this.getDeclaredSimpleNameLog(enclosingClass)
-
     if (!logging.isEnabled(classTag)) return
-
     if (Logging.ONE.iLog()) {
         Log.d(
             Logging.TAG, "log calling logger: " +
                 "\nenclosingClass: $enclosingClass " +
                 "\nclassTag: [$classTag] - [${(T::class.java.simpleName)}/${(T::class.simpleName)}]")
     }
-
     logger(classTag)
 }
+
 
 /**
  * Utility that returns the name of the class from within it is invoked.
@@ -123,6 +161,7 @@ class Logging private constructor () {
     private val enableMap: MutableMap<String, Boolean> by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { mutableMapOf() }
     private val callCountMap: MutableMap<String, Long> by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { mutableMapOf() }
     private val extraCallMap: MutableMap<String, ((String, String) -> Unit)?> by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { mutableMapOf() }
+    private val tagToTextMap: MutableMap<String, String> by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { mutableMapOf() }
 
     companion object {
         val ONE: Logging by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { Logging() }
@@ -174,8 +213,7 @@ class Logging private constructor () {
 
     fun prefix (classTag: String, tag: String? = null): String {
         val count = callCount(classTag)
-        if (tag == null) return "$count/$classTag"
-        return "$count/$classTag/$tag"
+        return (if (tag == null) "$count/$classTag" else "$count/$classTag/$tag")
     }
 
     private fun callCount(classTag: String) : Long {
@@ -196,5 +234,22 @@ class Logging private constructor () {
         if (enable != globalEnable) {
             globalEnable = enable
         }
+    }
+
+    fun staticPrefix(classTag: String, tag: String? = null): String {
+        return (if (tag == null) classTag else "$classTag/$tag")
+    }
+
+    fun appendLog(classTag: String, tag: String? = null, text: String) {
+        val prefix = staticPrefix(classTag, tag)
+        val existing : String = tagToTextMap[prefix] ?: ""
+        tagToTextMap[prefix] = existing + text
+    }
+
+    fun consumeLog(classTag: String, tag: String? = null): String {
+        val prefix: String = staticPrefix(classTag, tag)
+        val storedLog: String = tagToTextMap[prefix] ?: ""
+        tagToTextMap.remove(prefix)
+        return storedLog
     }
 }

@@ -9,6 +9,7 @@ import walkie.util.getEnclosingClassSimpleName
 import walkie.util.getInterfaceIpAddress
 import walkie.util.getRuntimeSimpleName
 import walkie.util.logd
+import walkie.util.logdAppend
 import walkie.util.logging
 import walkie.util.randomString
 import java.net.InetAddress
@@ -122,7 +123,14 @@ data class WTWifiDB(
         const val ServiceDiscoveryCycle = (2 * cycle)
         const val AdvLocalServiceCycle = (3 * cycle)
         const val RestartChannelTimeout = (EnabledCycleCountdown * 3)
+         const val WT_SERVICE_WALKIETALKIE = "WalkieTalkie"
+        const val WT_SERVICE_WALKIETALKIE_GO = "WalkieTalkieGO"
+        const val WT_SERVICE_ID = "PeerId"
+        const val WT_SERVICE_UNIQUE = "PeerUnique"
+        const val WT_SERVICE_RND = "Rnd"
+        const val WT_SERVICE_LOCAL_SERVER_PORT = "LocalServerPort"
     }
+
 
     val tag = TAG
 
@@ -148,6 +156,8 @@ data class WTWifiDB(
         val tag = "transition/${randomString(2U)}"
         var logStr = "\n\tevent: ${event.description} state: ${state.toString()}"
 
+        logdAppend(tag, "\n\tevent: ${event.description} state: ${state.toString()}")
+
         val newWifiDB = when (event) {
             WTWifiEvent.P2p.WifiEnabled -> {
                 if (state is WTWifiState.Enabled) this
@@ -167,6 +177,7 @@ data class WTWifiDB(
 
             WTWifiEvent.P2p.ThisDeviceChanged -> {
                 logStr += "\n\tdeviceName: ${thisDevice?.deviceName}"
+                logdAppend(tag, "\n\tdeviceName: ${thisDevice?.deviceName}")
                 copy(
                     thisDevice = thisDevice,
                     groupInfo = groupInfo ?: this.groupInfo,
@@ -176,6 +187,7 @@ data class WTWifiDB(
             }
 
             WTWifiEvent.P2p.ConnectionChanged -> {
+                logdAppend(tag, "\n\tp2pInfo: ${p2pInfo?.isGroupOwner} / Formed: ${p2pInfo?.groupFormed}")
                 logStr += "\n\tp2pInfo: ${p2pInfo?.isGroupOwner} / Formed: ${p2pInfo?.groupFormed}"
                 copy(
                     p2pInfo = p2pInfo,
@@ -191,7 +203,14 @@ data class WTWifiDB(
                         "${device.deviceName} "
                     }
                 }"
-                nextEvent = WTWifiEvent.WTWifi.MergePeersServicesInfo
+
+                logdAppend(tag,"\n\tPeersChanged: ${
+                    p2pPeers.joinToString(" ") { device ->
+                        "${device.deviceName} " 
+                    }
+                }")
+
+                    nextEvent = WTWifiEvent.WTWifi.MergePeersServicesInfo
                 copy(p2pPeers = p2pPeers)
             }
 
@@ -202,6 +221,13 @@ data class WTWifiDB(
                         "${serviceInfo.id} ${serviceInfo.unique} ${serviceInfo.localServerPort}"
                     }
                 }"
+
+                logdAppend(tag, "\n\tPeersChanged: ${
+                    directServices?.values?.joinToString(" ") { serviceInfo ->
+                        "${serviceInfo.id} ${serviceInfo.unique} ${serviceInfo.localServerPort}"
+                    }
+                }")
+
                 nextEvent = WTWifiEvent.WTWifi.MergePeersServicesInfo
                 copy(directServices = directServices ?: this.directServices)
             }
@@ -218,6 +244,7 @@ data class WTWifiDB(
                     tick = RestartChannelTimeout
                 }
                 logStr += "\n\ttick: $tick"
+                logdAppend(tag, "\n\ttick: $tick")
                 processDefault()
             }
 
@@ -228,6 +255,7 @@ data class WTWifiDB(
 
             else -> {
                 logStr += "\n\tUnprocessed transition event"
+                logdAppend(tag, "\n\tUnprocessed transition event")
                 this
             }
         }
@@ -236,9 +264,10 @@ data class WTWifiDB(
 
         newWifiDB.nextEvent?.let { eve ->
             logStr += "\n\tnextEvent: ${eve.toString()}"
+            logdAppend(tag, "\n\tnextEvent: ${eve.toString()}")
         }
 
-        logd(tag, logStr)
+        logd(tag)
 
         return newWifiDB
     }
@@ -262,7 +291,7 @@ data class WTWifiDB(
                     serviceDiscovery = false
                     advertiseLocalService = true
                     tick = RestartChannelTimeout
-                } else {
+                } else if (!isReady) {
                     if (isWTServicePeerPresent && !isGroupFormed && !state.connecting) {
                         logd(tag, "directWTPeers: $directWTPeers")
                         connecting = true
@@ -293,9 +322,7 @@ data class WTWifiDB(
                     if (state.advertiseLocalService && ((tick % AdvLocalServiceCycle) == 0)) {
                         advertiseLocalService = true
                     }
-                }
-                /*
-                else {
+                } else {
                     if (isGroupOwner && state.advertiseLocalService && ((tick % AdvLocalServiceCycle) == 0)) {
                         advertiseLocalService = true
                     }
@@ -308,7 +335,6 @@ data class WTWifiDB(
                         serviceDiscovery = false
                     }
                 }
-                */
 
                 if ((removeGroup != null) || (peersDiscovery != null) || (serviceDiscovery != null) || (advertiseLocalService != null)) {
                     nextEvent = WTWifiEvent.WTWifi.Command(
@@ -397,8 +423,27 @@ data class WTWifiDB(
             else (null))
 
     val isWTServicePeerPresent: Boolean
+        get() = directWTPeers.values.any { it.wtService }
+
+    val localServiceRecord: Map<String, String>?
         get() =
-            directWTPeers.values.any { it.wtService }
+            if (localServerPort == null)
+                null
+            else
+                mapOf(
+                    WT_SERVICE_WALKIETALKIE to WT_SERVICE_WALKIETALKIE,
+                    WT_SERVICE_ID to deviceId,
+                    WT_SERVICE_UNIQUE to deviceUnique,
+                    WT_SERVICE_RND to randomString(8U),
+                    WT_SERVICE_LOCAL_SERVER_PORT to localServerPort.toString()
+                )
+
+    val cachedServiceRecord: Map<String, String>?
+        get() =
+            if ((state is WTWifiState.Enabled) and (state as WTWifiState.Enabled).advertiseLocalService)
+                localServiceRecord
+            else
+                null
 
     val deviceId: String
         get() = nodeId.id()

@@ -69,7 +69,7 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     info += "\nWIFI Peers List "
     info += "\n Tick: ${wtWifi.tick}"
     info += "\n Discovery/Services/LocalService: $peersDiscoveryState/$serviceDiscoveryActive/$serviceAdvAdd"
-    info += "\n connectingAllowed: newWT: ${newWTDevice(newWTDevice())} " + if (connecting) "Yes" else "No"
+    info += "\n connectingAllowed: " + if (connecting) "Yes" else "No"
     info += "\n connectTo: ${connectToDevice?.uniqueWifiId()} ${connectToDevice?.directWifiConnection}"
     /* info += "\n failCoolDown: ($failCooldown) " + (if (wifiP2PEngineOk()) "Ok" else "NOT Ok") + " " + wtWifiFailure() */
     info += "\n restartCountDown: ${channelCountdown()}"
@@ -87,7 +87,7 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
 
     info += "\nWIFI WalkieTalkie Peers List "
     this.directWTPeers.forEach { (_, device) ->
-        info += if (device.wtService) "\n${device.uniqueWifiId()} " else " "
+        info += "\n${device.uniqueWifiId()} ${device.wtService}"
     }
 
     /* logd(tag, info) */

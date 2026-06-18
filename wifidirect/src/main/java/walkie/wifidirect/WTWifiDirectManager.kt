@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.NetworkInfo
 import android.net.wifi.WpsInfo
 import android.net.wifi.p2p.WifiP2pConfig
-import android.net.wifi.p2p.WifiP2pConfig.GROUP_OWNER_INTENT_MAX
 import android.net.wifi.p2p.WifiP2pConfig.GROUP_OWNER_INTENT_MIN
 import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pGroup
@@ -37,15 +36,15 @@ import walkie.util.generic.MailboxData
 import walkie.util.generic.RemoteCallMux
 import walkie.util.generic.typedCall
 import walkie.util.logd
+import walkie.util.logdAppend
 import walkie.util.logging
 import walkie.util.randomString
-import walkie.util.textSum
+import walkie.wifidirect.WTWifiDB.Companion.WT_SERVICE_ID
+import walkie.wifidirect.WTWifiDB.Companion.WT_SERVICE_LOCAL_SERVER_PORT
+import walkie.wifidirect.WTWifiDB.Companion.WT_SERVICE_RND
+import walkie.wifidirect.WTWifiDB.Companion.WT_SERVICE_UNIQUE
+import walkie.wifidirect.WTWifiDB.Companion.WT_SERVICE_WALKIETALKIE
 import walkie.wifidirect.WTWifiDirectResult.LocalError.ChannelNotInitialized.dataOrNull
-import walkie.wifidirect.WTWifiDirectServiceInfo.Companion.WT_SERVICE_ID
-import walkie.wifidirect.WTWifiDirectServiceInfo.Companion.WT_SERVICE_LOCAL_SERVER_PORT
-import walkie.wifidirect.WTWifiDirectServiceInfo.Companion.WT_SERVICE_RND
-import walkie.wifidirect.WTWifiDirectServiceInfo.Companion.WT_SERVICE_UNIQUE
-import walkie.wifidirect.WTWifiDirectServiceInfo.Companion.WT_SERVICE_WALKIETALKIE
 import java.net.InetAddress
 import kotlin.math.max
 import kotlin.random.Random
@@ -57,7 +56,6 @@ class WTWiFiDirectStatic private constructor() {
         val INSTANCE: WTWiFiDirectStatic by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { WTWiFiDirectStatic() }
         val ONE = INSTANCE
     }
-
     var scanPeersS: Boolean = false
 }
 
@@ -74,11 +72,6 @@ class WTWifiDirectManager(
     companion object {
         const val TAG = "WTWiFiDirectManager"
         val TAGKClass = WTWifiDirectManager::class
-        const val DiscoveryCountdown = 25
-        const val ConnectCountdown = 1
-        const val FailCooldown = 1
-        const val RestartChannelTimeout = (DiscoveryCountdown * 3)
-        const val DiscoveryVsAdvertisementRatio = (2F / 3F)
     }
 
     /*
@@ -132,7 +125,11 @@ class WTWifiDirectManager(
     val thisDevice: WifiP2pDevice?
         get() = wtWifi.thisDevice
 
-    var wtLocalServiceRecord: Map<String, String>? = null
+    val wtLocalServiceRecord: Map<String, String>?
+        get() = wtWifi.localServiceRecord
+
+    val wtCachedServiceRecord: Map<String, String>?
+        get() = wtWifi.cachedServiceRecord
 
     val wtLocalIp: InetAddress?
         get() = wtWifi.localIp
@@ -161,124 +158,23 @@ class WTWifiDirectManager(
     val deviceId: String
         get() = node.id()
 
-    val deviceUnique: String
-        get() = node.unique()
-
     var connectToDevice: WTWifiDirectPeerInfo? = null
 
-    var connectCountdown: Int = ConnectCountdown
-    private var wtWifiDFailure: String? = null
-    fun wtWifiFailure(str: String? = null): String {
-        if (null != str) {
-            wtWifiDFailure = str
-        }
-        return (wtWifiDFailure ?: "")
-    }
-
-    var failCooldown: Int = 0
-        private set
     val restartChannelCountdown
         get() = wtWifi.tick
 
-    /* Indicate whether the discovery process is active */
-    private var _newWTDevice: Boolean = false
-    fun newWTDevice(new: Boolean? = null): Boolean {
-        _newWTDevice = new ?: _newWTDevice
-        return _newWTDevice
-    }
-
-    var discoveryCountdown: Int = 0
-    fun peersDiscoveryState(enabled: Boolean? = null): Boolean {
-        if (null != enabled) {
-            discoveryCountdown = if (enabled) 0 else DiscoveryCountdown
-        }
-        return (0 == discoveryCountdown)
-    }
-
-    fun serviceAdvAdd(): Boolean {
-        return (0 == (discoveryCountdown % 5) && !connectingAllowed())
-    }
-
-    fun serviceDiscoveryActive(enable: Boolean? = null): Boolean {
-        val tag = "serviceDiscoveryActive/${randomString(2U)}"
-        if (null != enable) {
-            discoveryCountdown =
-                (if (enable) DiscoveryCountdown else (DiscoveryCountdown * DiscoveryVsAdvertisementRatio).toInt())
-            return enable
-        }
-        if (newWTDevice()) {
-            logd(TAGKClass, tag, "NEWWTDevice")
-            discoveryCountdown = (DiscoveryCountdown * DiscoveryVsAdvertisementRatio).toInt()
-            newWTDevice(false)
-        }
-        val ret = ((true || !connectingAllowed()) &&
-                !serviceAdvAdd() &&
-                (0 == (discoveryCountdown.toInt() % 5)))
-        logd(
-            TAGKClass,
-            tag, "discoveryCountdown: $discoveryCountdown " +
-                    "wtIsGroupFormed: ${wtIsGroupFormed} " + ret
-        )
-        return (ret)
-    }
-
-    fun serviceDiscoveryCountdown() {
-        if (discoveryCountdown > 0) discoveryCountdown -= 1
-    }
-
-    fun connectingAllowed(): Boolean {
-        /*
-        return ((discoveryCountdown <= (DiscoveryCountdown * DiscoveryVsAdvertisementRatio).toInt()) ||
-                (connectToDevice?.directWifiConnection == ConnectionStatus.InProgress ||
-                        connectToDevice?.directWifiConnection == ConnectionStatus.Fail))
-        */
-        return ((wtWifi.state is WTWifiState.Enabled) && (wtWifi.state as WTWifiState.Enabled).connecting)
-    }
-
-    fun restartChannelCountdown(): Int {
-        wtWifi.resetChannelCountdown()
-        return restartChannelCountdown
-    }
+    val connectingAllowed: Boolean
+        get() = ((wtWifi.state is WTWifiState.Enabled) && (wtWifi.state as WTWifiState.Enabled).connecting)
 
     fun channelCountdown(): Int {
         return restartChannelCountdown
     }
 
     fun restartChannel(yes: Boolean? = null): Boolean {
-        /*
-        if (yes == true) {
-            restartChannelCountdown = 0
-        }
-        return (0 >= restartChannelCountdown)
-        */
         if (yes == true) {
             wtWifi.restartChannel()
         }
         return wtWifi.restartChannel
-    }
-
-    fun wifiP2PEngineFailCoolDown(yes: Boolean? = null): Boolean {
-        val tag = "wifiP2PEngineFailCoolDown/${randomString(2U)}"
-        logd(tag, "failCoolDown: $failCooldown yes: $yes")
-        failCooldown = when (yes) {
-            true -> {
-                FailCooldown
-            }
-
-            false -> {
-                0
-            }
-
-            else -> {
-                (if (failCooldown > 0) (failCooldown - 1) else 0)
-            }
-        }
-        if (0 == failCooldown) wtWifiFailure("")
-        return (0 == failCooldown)
-    }
-
-    fun wifiP2PEngineOk(): Boolean {
-        return (0 == failCooldown)
     }
 
     init {
@@ -303,11 +199,9 @@ class WTWifiDirectManager(
                             /***************************/
                         }
                     }
-
                     ChannelMessageType.RCLocalServerPort -> {
                         mainLoopInbox.send(WTWifiEvent.WTWifi.LocalServerPort(input as Int))
                     }
-
                     else -> {
                         throw (NotImplementedError("$tag: channelOnReceive: channelId: $channelId: inputType: $type Not Implemented "))
                     }
@@ -331,21 +225,10 @@ class WTWifiDirectManager(
             ChannelMessageType.RCGroupInfo,
             Triple(null, null, null)
         )
-
+        mainLoopJob?.cancel()
         mainLoopJob = null
-
         wtWifi = wtWifi.reset()
-
         connectToDevice = null
-        wtLocalServiceRecord = null
-
-        newWTDevice(false)
-
-        /* indicate whether the discovery process is active */
-        peersDiscoveryState(true)
-        connectCountdown = ConnectCountdown
-
-        wifiP2PEngineFailCoolDown(false)
     }
 
     /*
@@ -354,10 +237,9 @@ class WTWifiDirectManager(
     suspend fun requestPeersInfo(): GenericList<WifiP2pDevice> {
         val tag = "requestPeersInfo/${randomString(2u)}"
 
-        logd("Entry")
+        logd(tag, "Entry")
 
         val newPeersList = GenericList<WifiP2pDevice>()
-
         wtWifiDirect?.requestPeersInfo()?.dataOrNull()?.deviceList?.let { newPeersList.addAll(it) }
 
         return newPeersList
@@ -365,8 +247,6 @@ class WTWifiDirectManager(
 
     suspend fun requestDeviceInfo(): WifiP2pDevice? {
         val tag = "requestDeviceInfo/${randomString(2u)}"
-
-        logd("Entry")
 
         val device = wtWifiDirect?.requestDeviceInfo()?.dataOrNull()
 
@@ -388,10 +268,9 @@ class WTWifiDirectManager(
 
     suspend fun removeGroup() {
         val tag = "removeGroup/${randomString(2u)}"
+        val success = wtWifiDirect?.removeGroup() == WTWifiDirectResult.Success
 
-        logd(tag, "Entry")
-
-        logd(tag, if (wtWifiDirect?.removeGroup() == WTWifiDirectResult.Success) "\t-> Success" else "\t-> Failed")
+        logd(tag, if (success) "\t-> Success" else "\t-> Failed")
     }
 
     private fun isConnectedToGroup(): Boolean {
@@ -413,15 +292,12 @@ class WTWifiDirectManager(
 
         val ret = when (val res = wtWifiDirect?.connect(device, config)) {
             is WTWifiDirectResult.Success -> {
-                wtWifiFailure("$tag/Success")
                 ConnectionStatus.InProgress
             }
             is WTWifiDirectResult.WifiP2pError -> {
-                wtWifiFailure("$tag/${res.errStr}")
                 ConnectionStatus.Fail
             }
             else -> {
-                wtWifiFailure("$tag/Unknown Error")
                 ConnectionStatus.Fail
             }
         }
@@ -431,19 +307,21 @@ class WTWifiDirectManager(
     suspend fun cancelConnect() {
         val tag = "cancelConnect/${randomString(2u)}"
 
-        logd(tag, "Entry")
+        logdAppend(tag, "-> ")
 
         when (val res = wtWifiDirect?.cancelConnect()) {
             is WTWifiDirectResult.Success -> {
-                wtWifiFailure("$tag/Success")
+                logdAppend(tag, "Success")
             }
             is WTWifiDirectResult.WifiP2pError -> {
-                wtWifiFailure("$tag/${res.errStr}")
+                logdAppend(tag, res.errStr)
             }
             else -> {
-                wtWifiFailure("$tag/Unknown Error")
+                logdAppend(tag, "Unknown Error")
             }
         }
+
+        logd(tag)
     }
 
     suspend fun connectTo(device: WTWifiDirectPeerInfo): ConnectionStatus {
@@ -493,7 +371,7 @@ class WTWifiDirectManager(
                 }
                 if (!device.wtService) device.directWifiConnection = ConnectionStatus.NoWTService
 
-                if (device.wtService && wifiP2PEngineOk()) {
+                if (device.wtService) {
                     device.directWifiConnection = connect(device.p2pInfo, config)
                     when (device.directWifiConnection) {
                         ConnectionStatus.InProgress -> {
@@ -512,7 +390,6 @@ class WTWifiDirectManager(
                                 "($c)Connect to: ${device.name} ${device.address} GO = ${device.isGroupOwner} Failed"
                             ).also { c++ }
                             device.fcdInit()
-                            wifiP2PEngineFailCoolDown(true)
                         }
 
                         else -> {
@@ -731,8 +608,6 @@ class WTWifiDirectManager(
             tag, "\n\tthisDevice: ${thisDevice?.deviceName}" +
                     "\n\tisWifiP2pEnabled: $wifiP2pEnable" +
                     "\n\twtIsGroupFormed: $wtIsGroupFormed" +
-                    "\n\tdiscoveryCountdown: $discoveryCountdown" +
-                    "\n\tconnectCountdown: $connectCountdown" +
                     "\n\tchannelCountdown: ${channelCountdown()}" +
                     "\n\tdeviceName = ${deviceId}/${deviceUid}" +
                     "\n\tlocalIp = ${this.wtLocalIp}"
@@ -766,14 +641,7 @@ class WTWifiDirectManager(
             logd(tag, "Not enough Wifi permissions. Requesting.")
             return
         }
-
-        if (connectCountdown > 0) connectCountdown--
-
-        if (wifiP2PEngineOk()) {
-            updatePeers()
-        }
-
-        wifiP2PEngineFailCoolDown()
+        updatePeers()
     }
 
     suspend fun mainLoopInit() {
@@ -812,7 +680,7 @@ class WTWifiDirectManager(
         logd(tag, "Entry")
         logd(
             tag,
-            "deviceName = $deviceUid localIp = $wtLocalIp failCoolDown: $failCooldown wifiP2pEnable: $wifiP2pEnable"
+            "deviceName = $deviceUid localIp = $wtLocalIp wifiP2pEnable: $wifiP2pEnable"
         )
 
         if (null == thisDevice) {
@@ -827,7 +695,7 @@ class WTWifiDirectManager(
 
         logd(
             tag,
-            "connectToPeers deviceName = $deviceUid failCoolDown: $failCooldown"
+            "connectToPeers deviceName = $deviceUid"
         )
         connectToPeers()
 
@@ -898,8 +766,6 @@ class WTWifiDirectManager(
                     wtLocalIp
                 )
                 localIpAlreadyChanged = true
-                //restartChannelCountdown()
-                peersDiscoveryState(true)
             }
 
             if (localIpAlreadyChanged) {
@@ -916,10 +782,6 @@ class WTWifiDirectManager(
                     ChannelMessageType.RCLocalIp,
                     wtLocalIp
                 )
-                if (null != wtLocalIp) {
-                    //restartChannelCountdown()
-                    peersDiscoveryState(true)
-                }
             }
         }
     }
@@ -963,15 +825,11 @@ class WTWifiDirectManager(
                     "\n\t\twtIsGroupOwner: $wtIsGroupOwner" +
                     "\n\t\twtIsGroupFormed: $wtIsGroupFormed" +
                     "\n\t\tisWifiP2pEnabled: $wifiP2pEnable" +
-                    "\n\t\tconnectCountdown: $connectCountdown" +
-                    "\n\t\tconnectingAllowed: ${connectingAllowed()}" +
-                    "\n\t\tdirectWifiPeers: ${directWTPeers.keys}" +
-                    "\n\t\tdiscoverPeersProcessActive: ${serviceDiscoveryActive()}"
+                    "\n\t\tconnectingAllowed: $connectingAllowed" +
+                    "\n\t\tdirectWifiPeers: ${directWTPeers.keys}"
         ).also { c++ }
 
-        if (wifiP2pEnable &&
-            connectingAllowed()
-        ) {
+        if (wifiP2pEnable && connectingAllowed) {
             val tmpPeers: MutableMap<String, WTWifiDirectPeerInfo> = directWTPeers.toMutableMap()
             val groupOwner = wtGroupOwner
             val peersList = tmpPeers.filter { (_, device) -> device != groupOwner }.toList()
@@ -1075,18 +933,17 @@ class WTWifiDirectManager(
         /* val serviceType = "_presence._tcp" */
         val serviceType = WT_SERVICE_WALKIETALKIE
 
-        logd(tag, "Entry: $wtLocalServiceRecord")
+        logd(tag, "Entry: $wtLocalServiceRecord $wtCachedServiceRecord")
 
-        val cacheServiceRecord = wtLocalServiceRecord ?: run { return }
+        val cachedServiceRecord = wtCachedServiceRecord ?: run { return }
 
         when (val res = wtWifiDirect?.removeLocalService(
             instanceName,
             serviceType,
-            cacheServiceRecord
+            cachedServiceRecord
         )) {
             is WTWifiDirectResult.Success -> {
                 logd(TAGKClass, tag, "Success removing local service")
-                wtLocalServiceRecord = null
             }
 
             is WTWifiDirectResult.WifiP2pError -> {
@@ -1095,7 +952,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed removing local service: ${res.errStr}"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
 
             else -> {
@@ -1104,7 +960,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed removing local service: Unknown Error"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
         }
     }
@@ -1117,24 +972,8 @@ class WTWifiDirectManager(
 
         logd(tag, "Entry: $wtLocalServiceRecord wtLocalServerPort: $wtLocalServerPort")
 
-        if (null == wtLocalServerPort)
-            return
-
-        val record: Map<String, String> = mapOf(
-            WT_SERVICE_WALKIETALKIE to WT_SERVICE_WALKIETALKIE,
-            WT_SERVICE_ID to deviceId,
-            WT_SERVICE_UNIQUE to deviceUnique,
-            /* WT_SERVICE_RND to deviceUid(), */
-            WT_SERVICE_RND to randomString(8U),
-            WT_SERVICE_LOCAL_SERVER_PORT to wtLocalServerPort!!.toString()
-        )
-
         if (removeFirst) {
             removeLocalService()
-        }
-
-        if (null == wtLocalServiceRecord) {
-            wtLocalServiceRecord = record
         }
 
         when (val res =
@@ -1154,7 +993,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed adding local service: ${res.errStr}"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
             else -> {
                 logd(
@@ -1162,7 +1000,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed adding local service: Unknown Error"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
         }
     }
@@ -1188,7 +1025,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed removing service request: ${res.errStr}"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
             else -> {
                 logd(
@@ -1196,7 +1032,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed removing service request: Unknown Error"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
         }
     }
@@ -1226,7 +1061,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed adding service request: ${res.errStr}"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
             else -> {
                 logd(
@@ -1234,7 +1068,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed adding service request: Unknown Error"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
         }
     }
@@ -1338,7 +1171,6 @@ class WTWifiDirectManager(
 
         registerServiceListeners()
         clearAllServices()
-        peersDiscoveryState(true)
     }
 
     @SuppressLint("NewApi")
@@ -1357,7 +1189,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed stopping peers discovery: ${res.errStr}"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
             else -> {
                 logd(
@@ -1365,7 +1196,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed stopping peers discovery: Unknown Error"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
         }
     }
@@ -1385,7 +1215,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed starting discovering services: ${res.errStr}"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
             else -> {
                 logd(
@@ -1393,7 +1222,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed starting discovering services: Unknown Error"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
         }
     }
@@ -1413,7 +1241,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed clearing service requests: ${res.errStr}"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
             else -> {
                 logd(
@@ -1421,7 +1248,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed clearing service requests: Unknown Error"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
         }
 
@@ -1435,7 +1261,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed clearing local service: ${res.errStr}"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
             else -> {
                 logd(
@@ -1443,7 +1268,6 @@ class WTWifiDirectManager(
                     tag,
                     "Failed clearing local service: Unknown Error"
                 )
-                wifiP2PEngineFailCoolDown(true)
             }
         }
     }
@@ -1512,7 +1336,7 @@ class WTWifiDirectManager(
     fun main(cadence: Long = 1000L) {
         val tag = "wtWifiDirectMain/${randomString(2u)}"
 
-        logd("Entry")
+        logd(tag, "Entry")
 
         resetData()
 
@@ -1527,7 +1351,7 @@ class WTWifiDirectManager(
         val tag = "wtWifiDirectStop/${randomString(2u)}"
         val s = WTWiFiDirectStatic.INSTANCE
 
-        logd("Entry")
+        logd(tag, "Entry")
 
         cancelConnect()
         clearAllServices()

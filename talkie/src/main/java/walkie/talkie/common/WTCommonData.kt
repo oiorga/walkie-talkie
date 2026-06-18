@@ -43,11 +43,13 @@ class WTCommonData private constructor (
         const val TAG = "WTCommonData"
     }
 
+    val tag = TAG
+
     val initStage = arrayOf(false, false, false, false)
 
     init {
         logging(true)
-        logd("init")
+        logd(tag, "init")
         /* registerRemoteCall(RemoteCallId.RCUpdateUI) { run { updateUiLiveData.update() } } */
     }
 

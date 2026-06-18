@@ -21,15 +21,6 @@ data class WTWifiDirectServiceInfo (
     var rnd: String? = null,
     var localServerPort: String? = null
 ) {
-    companion object {
-        const val WT_SERVICE_WALKIETALKIE = "WalkieTalkie"
-        const val WT_SERVICE_WALKIETALKIE_GO = "WalkieTalkieGO"
-        const val WT_SERVICE_ID = "PeerId"
-        const val WT_SERVICE_UNIQUE = "PeerUnique"
-        const val WT_SERVICE_RND = "Rnd"
-        const val WT_SERVICE_LOCAL_SERVER_PORT = "LocalServerPort"
-    }
-
     private fun isNull(): Boolean {
         return ((null == id) || (null == unique) || (null == rnd) || (null == localServerPort))
     }

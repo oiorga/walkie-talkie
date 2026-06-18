@@ -66,9 +66,11 @@ class WTIPComm (
         val TAGKClass = WTIPComm::class
     }
 
+    val tag = TAG
+
     init {
         logging(true)
-        logd("init")
+        logd(tag, "init")
     }
 
     suspend fun stop() {

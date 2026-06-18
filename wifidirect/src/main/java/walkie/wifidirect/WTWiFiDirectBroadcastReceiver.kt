@@ -61,7 +61,7 @@ class WiFiDirectBroadcastReceiver (
     override fun onReceive(cntxt: Context, intent: Intent) {
         val action = intent.action
 
-        logd("$tag: onReceive: intent.action: ${action.toString()}")
+        logd(tag, "onReceive: intent.action: ${action.toString()}")
         when (action) {
             WIFI_P2P_DISCOVERY_CHANGED_ACTION,
             WIFI_P2P_STATE_CHANGED_ACTION,
@@ -108,7 +108,7 @@ class WiFiDirectBroadcastReceiver (
             }
             */
             else -> {
-                logd("$tag: P2P changed to Not Addressed ${action.toString()}")
+                logd(tag, "P2P changed to Not Addressed ${action.toString()}")
                 throw (NotImplementedError("$tag: $tag: P2P changed to Not Addressed ${action.toString()}"))
             }
         }
