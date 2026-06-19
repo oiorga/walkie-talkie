@@ -45,7 +45,7 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
             "\n\tGroup Address: " + this.wtWifiP2pInfo?.groupOwnerAddress +
             "\n\tLocal IPAddress: " + this.wtWifiGroupInfo?.`interface`?.let { getInterfaceIpAddress(it) }
 
-    info += "\nGroup Info: " + "${this.wtWifiGroupInfo?.owner?.uniqueWifiId()}/${wtGroupOwnerName}" + " " + wtGroupOwner?.p2pInfo?.uniqueWifiId()
+    info += "\nGroup Info: " + "${this.wtWifiGroupInfo?.owner?.uniqueWifiId()}/${wtGroupOwnerName}" + " " + wtGroupOwner?.device?.uniqueWifiId()
 
     info += "\n\tCurrent Device: ${thisDevice?.uniqueWifiId()} $deviceUid" +
             "\n\tGroup Owner: " + this.wtWifiGroupInfo?.owner?.deviceName +
@@ -70,24 +70,24 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     info += "\n Tick: ${wtWifi.tick}"
     info += "\n Discovery/Services/LocalService: $peersDiscoveryState/$serviceDiscoveryActive/$serviceAdvAdd"
     info += "\n connectingAllowed: " + if (connecting) "Yes" else "No"
-    info += "\n connectTo: ${connectToDevice?.uniqueWifiId()} ${connectToDevice?.directWifiConnection}"
+    info += "\n connectTo: ${connectToDevice?.uniqueWifiId} ${connectToDevice?.p2pConnection} ${connectToDevice?.cip?.value}"
     /* info += "\n failCoolDown: ($failCooldown) " + (if (wifiP2PEngineOk()) "Ok" else "NOT Ok") + " " + wtWifiFailure() */
-    info += "\n restartCountDown: ${channelCountdown()}"
+    info += "\n restartCountDown: $channelCountdown"
 
     this.directWTPeers.forEach { (_, device) ->
-        val sInfo = directWTPeers[device.uniqueWifiId()]?.wtServiceInfo
+        val sInfo = directWTPeers[device.uniqueWifiId]?.serviceInfo
         val serviceInfo = if (null != sInfo) ("${sInfo.id} ${sInfo.unique} ${sInfo.rnd} ${sInfo.localServerPort}") else ("null")
 
-        info += "\n " + device.name + " [${device.uniqueWifiId()}]" +
+        info += "\n " + device.name + " [${device.uniqueWifiId}]" +
                 "\n\t" + "walkieTalkie service: $serviceInfo" + " ${device.wtService} " +
                 "\n\t" + "isGroupOwner: " + device.isGroupOwner +
                 //"\n\t" + "maAddress: " + device.address +
-                "\n\t" + "connection status: ${device.directWifiConnection} ${device.stateCounter}"
+                "\n\t" + "connection status: ${device.p2pConnection} ${device.cip.value}"
     }
 
     info += "\nWIFI WalkieTalkie Peers List "
     this.directWTPeers.forEach { (_, device) ->
-        info += "\n${device.uniqueWifiId()} ${device.wtService}"
+        info += "\n${device.uniqueWifiId} ${device.wtService}"
     }
 
     /* logd(tag, info) */
