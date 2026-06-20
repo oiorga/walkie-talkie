@@ -43,20 +43,20 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
             "\n\tis Owner: " + this.wtWifiP2pInfo?.isGroupOwner +
             "\n\tis Formed: " + this.wtWifiP2pInfo?.groupFormed +
             "\n\tGroup Address: " + this.wtWifiP2pInfo?.groupOwnerAddress +
-            "\n\tLocal IPAddress: " + this.wtWifiGroupInfo?.`interface`?.let { getInterfaceIpAddress(it) }
+            "\n\tLocal IPAddress: " + this.wtLocalIp
 
-    info += "\nGroup Info: " + "${this.wtWifiGroupInfo?.owner?.uniqueWifiId()}/${wtGroupOwnerName}" + " " + wtGroupOwner?.device?.uniqueWifiId()
+    info += "\nGroup Info: " + wtGroupOwner?.device?.uniqueWifiId()
 
     info += "\n\tCurrent Device: ${thisDevice?.uniqueWifiId()} $deviceUid" +
-            "\n\tGroup Owner: " + this.wtWifiGroupInfo?.owner?.deviceName +
+            "\n\tGroup Owner: " + wtGroupOwnerName +
             "\n\tGroup IP Address: " + this.wtGroupIp + " $wtGroupServerPort" +
             //"\n\tOwner device address: " + wtWifiGroupInfo?.owner?.deviceAddress +
-            "\n\tis Owner: " + this.wtWifiGroupInfo?.isGroupOwner + " " + wtIsGroupOwner + " " + this.wtWifiGroupInfo?.owner?.isGroupOwner +
+            "\n\tis Owner: " + wtIsGroupOwner +
             "\n\tis Formed: " + wtIsGroupFormed +
             //"\n\tPassphrase: " + wtWifiGroupInfo?.passphrase +
-            "\n\tnetworkName: " + this.wtWifiGroupInfo?.networkName +
-            "\n\tClient List: " + this.wtWifiGroupInfo?.clientList?.joinToString(" ") { "\t[${it.deviceName}]" } +
-            "\n\tInterface: " + this.wtWifiGroupInfo?.`interface` + " " + this.wtWifiGroupInfo?.`interface`?.let { getInterfaceIpAddress(it) }
+            "\n\tnetworkName: " + wtWifi.networkName +
+            "\n\tClient List: " + wtWifi.clientList?.joinToString(" ") { "\t[${it.deviceName}]" } +
+            "\n\tInterface: " + wtWifi.groupInterface + " " + wtWifi.groupInterfaceIpAddress
     //"\n\tnetworkId: " + wtWifiGroupInfo?.networkId +
     //"\n\tIPAddress: " + this.wtWifiGroupInfo?.`interface`?.let { getInterfaceIpAddress(it) }
 
@@ -72,7 +72,7 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     info += "\n connectingAllowed: " + if (connecting) "Yes" else "No"
     info += "\n connectTo: ${connectToDevice?.uniqueWifiId} ${connectToDevice?.p2pConnection} ${connectToDevice?.cip?.value}"
     /* info += "\n failCoolDown: ($failCooldown) " + (if (wifiP2PEngineOk()) "Ok" else "NOT Ok") + " " + wtWifiFailure() */
-    info += "\n restartCountDown: $channelCountdown"
+    info += "\n restartCountDown: ${if (wtWifi.isReady) "Off" else channelCountdown}"
 
     this.directWTPeers.forEach { (_, device) ->
         val sInfo = directWTPeers[device.uniqueWifiId]?.serviceInfo
@@ -86,8 +86,8 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     }
 
     info += "\nWIFI WalkieTalkie Peers List "
-    this.directWTPeers.forEach { (_, device) ->
-        info += "\n${device.uniqueWifiId} ${device.wtService}"
+    this.directWTPeers.forEach { (key, device) ->
+        info += "\n$key -> ${device.uniqueWifiId} ${device.wtService}"
     }
 
     /* logd(tag, info) */

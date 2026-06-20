@@ -119,8 +119,8 @@ class WTWifiDirectManager(
     val wtWifiP2pInfo: WifiP2pInfo?
         get() = wtWifi.p2pInfo
 
-    val wtWifiGroupInfo: WifiP2pGroup?
-        get() = wtWifi.groupInfo
+    val wtGroupOwner: WTWifiDirectPeerInfo?
+        get() = wtWifi.groupOwner
 
     val thisDevice: WifiP2pDevice?
         get() = wtWifi.thisDevice
@@ -151,9 +151,6 @@ class WTWifiDirectManager(
 
     val wtGroupOwnerName: String?
         get() = wtWifi.groupOwnerName
-
-    val wtGroupOwner: WTWifiDirectPeerInfo?
-        get() = wtWifi.groupOwner
 
     val deviceId: String
         get() = node.id()
@@ -505,6 +502,7 @@ class WTWifiDirectManager(
                 wtWifi = wtWifi.transition(
                     event,
                     p2pInfo = p2pInfo,
+                    thisDevice = requestDeviceInfo(),
                     groupInfo = requestGroupInfo()
                 )
                 if (null == p2pInfo) {
@@ -712,13 +710,14 @@ class WTWifiDirectManager(
                     tag,
                     "Group info changed(Group): wtGroupIp: $oldGroupIp -> $wtGroupIp wtGroupServerPort: $oldGroupServerPort -> $wtGroupServerPort wtLocalIp: $oldLocalIp -> $wtLocalIp"
                 )
-                /*
-            channelSend(
-                WTChannelId.RCToComm,
-                WTChannelMessageType.RCGroupInfo,
-                Triple(null, null, null)
-            )
-            */
+
+                channelSend(
+                    ChannelId.RCToComm,
+                    scope,
+                    ChannelMessageType.RCGroupInfo,
+                    Triple(null, null, null)
+                )
+
                 channelSend(
                     ChannelId.RCToComm,
                     scope,

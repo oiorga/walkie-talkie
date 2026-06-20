@@ -195,7 +195,6 @@ data class WTWifiDB(
 
     init {
         logging(true)
-        tick = restartChannelTimeout
     }
 
     fun transition(
@@ -231,7 +230,7 @@ data class WTWifiDB(
                 logdAppend(tag, "\n\tdeviceName: ${thisDevice?.deviceName}")
                 copy(
                     thisDevice = thisDevice,
-                    groupInfo = groupInfo ?: this.groupInfo,
+                    groupInfo = groupInfo,
                     directWTPeers = if (null == groupInfo) emptyMap() else this.directWTPeers,
                     directServices = if (null == groupInfo) emptyMap() else this.directServices
                 )
@@ -239,9 +238,26 @@ data class WTWifiDB(
 
             WTWifiEvent.P2p.ConnectionChanged -> {
                 logdAppend(tag, "\n\tp2pInfo: ${p2pInfo?.isGroupOwner} / Formed: ${p2pInfo?.groupFormed}")
+                if ((true == p2pInfo?.groupFormed) && p2pInfo.isGroupOwner) {
+                    /*
+                    nextEvent = WTWifiEvent.WTWifi.Command(
+                        advertiseLocalService = false
+                    )
+                    */
+                    tick = advLocalServiceCycle * (1 + tick / advLocalServiceCycle) + 1
+                }
+                if ((true == p2pInfo?.groupFormed) && !p2pInfo.isGroupOwner) {
+                    /*
+                    nextEvent = WTWifiEvent.WTWifi.Command(
+                        serviceDiscovery = false
+                    )
+                    */
+                    tick = serviceDiscoveryCycle * (1 + tick / serviceDiscoveryCycle) + 4
+                }
                 copy(
                     p2pInfo = p2pInfo,
-                    groupInfo = groupInfo ?: this.groupInfo,
+                    groupInfo = groupInfo,
+                    thisDevice = thisDevice ?: this.thisDevice,
                     directWTPeers = if (null == groupInfo) emptyMap() else this.directWTPeers,
                     directServices = if (null == groupInfo) emptyMap() else this.directServices
                 )
@@ -253,8 +269,7 @@ data class WTWifiDB(
                         "${device.deviceName} " 
                     }
                 }")
-
-                    nextEvent = WTWifiEvent.WTWifi.MergePeersServicesInfo
+                nextEvent = WTWifiEvent.WTWifi.MergePeersServicesInfo
                 copy(p2pPeers = p2pPeers)
             }
 
@@ -278,7 +293,7 @@ data class WTWifiDB(
             WTWifiEvent.WTWifi.Timeout,
             WTWifiEvent.WTWifi.Default -> {
                 if (tick > 0) tick--
-                if ((tick == 0) && isGroupFormed && isConnected) {
+                if ((tick == 0) && isReady) {
                     tick = restartChannelTimeout
                 }
                 logdAppend(tag, "\n\ttick: $tick")
@@ -332,7 +347,7 @@ data class WTWifiDB(
                     serviceDiscovery = false
                     advertiseLocalService = true
                     tick = restartChannelTimeout
-                } else if (!isConnected) {
+                } else if (!isReady) {
                     if (isWTServicePeerPresent && !isGroupFormed && !state.connecting) {
                         logd(tag, "directWTPeers: $directWTPeers")
                         connecting = true
@@ -411,14 +426,24 @@ data class WTWifiDB(
     fun resetChannelCountdown() {
         tick = restartChannelTimeout
     }
+
     val restartChannel: Boolean
         get() = (0 == tick)
     val isConnected: Boolean
-        get() =  (null != localServerPort &&
+        get() = (
+                isGroupFormed &&
+                null != localServerPort &&
+                null != localIp
+                )
+
+    val isReady: Boolean
+        get() = (
+                isGroupFormed &&
+                null != localServerPort &&
                 null != localIp &&
-                null != groupServerPort &&
-                isGroupFormed)
-    
+                null != groupServerPort
+                )
+
     val restartCountDownOn: Boolean
         get() = run {
             val tag = "restartCountDownOn"
@@ -440,10 +465,19 @@ data class WTWifiDB(
         get() = (true == p2pInfo?.groupFormed)
     val groupIpAddress: InetAddress?
         get() = p2pInfo?.groupOwnerAddress
+    val networkName: String?
+        get() = groupInfo?.networkName
+    val clientList: List<WifiP2pDevice>?
+        get() = groupInfo?.clientList?.toList()
+    val groupInterface: String?
+        get() = groupInfo?.`interface`
+    val groupInterfaceIpAddress: InetAddress?
+        get() = groupInterface?.let { getInterfaceIpAddress(it) }
+
     val groupOwnerName: String?
         get() = (if (isGroupOwner) thisDevice?.deviceName else groupInfo?.owner?.deviceName)
     val groupOwnerDevice: WifiP2pDevice?
-        get() = groupInfo?.owner
+        get() = if (isGroupOwner) thisDevice else groupInfo?.owner
     val localIp: InetAddress?
         get() = groupInfo?.`interface`?.let { iFace ->
             getInterfaceIpAddress(iFace)
@@ -486,6 +520,12 @@ data class WTWifiDB(
 
     val connectToDevice: WTWifiDirectPeerInfo?
         get() = run {
+            connectToDeviceCached?.let { cached ->
+                if (cached !in directWTPeers.values) {
+                    connectToDeviceCached = null
+                }
+            }
+
             if (connectToDeviceCached?.p2pConnection == P2pConnection.InProgress) {
                 return@run connectToDeviceCached
             }
@@ -494,7 +534,7 @@ data class WTWifiDB(
         }
 
     private fun selectNextConnectToDevice():  WTWifiDirectPeerInfo? {
-        if (isConnected)
+        if (isReady)
             return null
         
         if (groupOwner?.wtService != null && !isGroupOwner) {
