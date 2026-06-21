@@ -378,7 +378,7 @@ internal fun WTActivity.requestWifiPermissions() {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         ActivityCompat.requestPermissions(
             this,
-            arrayOf(ACCESS_FINE_LOCATION, NEARBY_WIFI_DEVICES /* ACCESS_BACKGROUND_LOCATION */),
+            arrayOf(ACCESS_FINE_LOCATION, NEARBY_WIFI_DEVICES /*, ACCESS_BACKGROUND_LOCATION */),
             WTActivity.PERMISSION_REQUEST_CODE
         )
     } else {
@@ -394,12 +394,11 @@ internal fun WTActivity.hasWifiPermissions(): Boolean {
     val ret = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
         (ActivityCompat.checkSelfPermission(
             this,
-            ACCESS_FINE_LOCATION
+            NEARBY_WIFI_DEVICES
         ) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
             this,
-            NEARBY_WIFI_DEVICES
-        ) == PackageManager.PERMISSION_GRANTED
-                )
+            ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED)
     } else {
         (ActivityCompat.checkSelfPermission(
             this,
@@ -407,8 +406,8 @@ internal fun WTActivity.hasWifiPermissions(): Boolean {
         ) == PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(
             this,
             ACCESS_COARSE_LOCATION
-        ) == PackageManager.PERMISSION_GRANTED
-                )    }
+        ) == PackageManager.PERMISSION_GRANTED)
+    }
 
     logd(tag, "WTActivity.wifiDPermission: $ret")
     return ret

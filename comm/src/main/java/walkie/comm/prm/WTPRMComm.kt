@@ -243,10 +243,9 @@ class WTPRMComm (
 }
 
 internal fun WTPRMComm.peersUpdateSendDebugInfo() {
-    var str = ""
-    str += "Peers List: ${directNodes()}"
+    var str = "Peers List: ${directNodes()}"
     directNodes().forEach { k ->
-        str += "\n\tDest: " + directUnderlay(k)?.uid  + " IP Address: " + directUnderlay(k)?.umCI
+        str += "\n\tDest: ${directUnderlay(k)?.uid} ${directUnderlay(k)?.umCI}"
     }
     pipeSend(
         PipeId.RCToWTActivity,

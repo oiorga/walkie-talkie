@@ -16,7 +16,6 @@ import java.net.InetAddress
 import kotlin.random.Random
 import kotlin.random.nextInt
 
-
 enum class P2pConnection {
     Null,
     NoWTService,
@@ -26,6 +25,12 @@ enum class P2pConnection {
     Connected,
     Retry,
     Fail
+}
+
+class P2PError(val op: String, val errMsg: String) {
+    private var age: Int = 0
+    val description: String
+        get() = "$op / $errMsg ($age)".also { age++ }
 }
 
 data class WTWifiDirectServiceInfo (
@@ -162,7 +167,8 @@ data class WTWifiDB(
     val directServices: Map<String, WTWifiDirectServiceInfo> = emptyMap(),
     private var connectToDeviceCached: WTWifiDirectPeerInfo? = null,
     var tick: Int = 0,
-    private var cycle: Int  = CYCLE + Random.nextInt(CYCLE / 2)
+    private var cycle: Int  = CYCLE + Random.nextInt(CYCLE / 2),
+    private var lastP2pError: P2PError? = null
     ) {
     companion object {
         const val TAG = "WTWifiDB"
@@ -192,6 +198,14 @@ data class WTWifiDB(
         nextEvent.also {
             nextEvent = null
         }
+
+    fun p2pError(op: String, errMsg: String) {
+        lastP2pError = P2PError(op, errMsg)
+    }
+    fun p2pError(): Boolean = (lastP2pError != null)
+    val p2pError: P2PError?
+        get() = lastP2pError
+    fun eraseP2pError() = run { lastP2pError = null }
 
     init {
         logging(true)
@@ -238,7 +252,7 @@ data class WTWifiDB(
 
             WTWifiEvent.P2p.ConnectionChanged -> {
                 logdAppend(tag, "\n\tp2pInfo: ${p2pInfo?.isGroupOwner} / Formed: ${p2pInfo?.groupFormed}")
-                /* Force an advLocalServiceCycle bounce */
+                /* Force an advLocalService bounce */
                 if ((true == p2pInfo?.groupFormed) && p2pInfo.isGroupOwner) {
 
                     tick = advLocalServiceCycle * (1 + tick / advLocalServiceCycle) + 1

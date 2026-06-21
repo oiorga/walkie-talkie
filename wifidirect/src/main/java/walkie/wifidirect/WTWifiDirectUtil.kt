@@ -39,26 +39,20 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     var info = ""
 
     info += "P2P Info: " + if (null == this.wtWifiP2pInfo) "null" else ""
-    info += "\n\tWifiD is: " + (if (this.wifiP2pEnable) "Enabled" else "Disabled") +
-            "\n\tis Owner: " + this.wtWifiP2pInfo?.isGroupOwner +
-            "\n\tis Formed: " + this.wtWifiP2pInfo?.groupFormed +
+    info += "\n\tWifi Permissions / State: ${(if (wifiP2pEnable) "Enabled" else "Disabled")} / ${(if (checkWifiPermissions()) "Yes" else "No")}" +
+            "\n\tis Formed/Owner: ${wtWifi.isGroupFormed}/${wtWifi.isGroupOwner}" +
             "\n\tGroup Address: " + this.wtWifiP2pInfo?.groupOwnerAddress +
             "\n\tLocal IPAddress: " + this.wtLocalIp
 
     info += "\nGroup Info: " + wtGroupOwner?.device?.uniqueWifiId()
 
     info += "\n\tCurrent Device: ${thisDevice?.uniqueWifiId()} $deviceUid" +
-            "\n\tGroup Owner: " + wtGroupOwnerName +
-            "\n\tGroup IP Address: " + this.wtGroupIp + " $wtGroupServerPort" +
-            //"\n\tOwner device address: " + wtWifiGroupInfo?.owner?.deviceAddress +
-            "\n\tis Owner: " + wtIsGroupOwner +
-            "\n\tis Formed: " + wtIsGroupFormed +
-            //"\n\tPassphrase: " + wtWifiGroupInfo?.passphrase +
+            "\n\tGroup Owner: $wtGroupOwnerName" +
+            "\n\tInterface: ${wtWifi.groupInterface} ${wtWifi.groupInterfaceIpAddress}" +
+            "\n\tGroup IP Address: $wtGroupIp $wtGroupServerPort" +
+            "\n\tis Formed/Owner: $wtIsGroupFormed/$wtIsGroupOwner "+
             "\n\tnetworkName: " + wtWifi.networkName +
-            "\n\tClient List: " + wtWifi.clientList?.joinToString(" ") { "\t[${it.deviceName}]" } +
-            "\n\tInterface: " + wtWifi.groupInterface + " " + wtWifi.groupInterfaceIpAddress
-    //"\n\tnetworkId: " + wtWifiGroupInfo?.networkId +
-    //"\n\tIPAddress: " + this.wtWifiGroupInfo?.`interface`?.let { getInterfaceIpAddress(it) }
+            "\n\tClient List: " + wtWifi.clientList?.joinToString(" ") { "\t[${it.deviceName}]" }
 
     val currentState = wtWifi.state
     val peersDiscoveryState = (currentState is WTWifiState.Enabled && (currentState as WTWifiState.Enabled).peersDiscovery)
@@ -66,13 +60,13 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     val serviceAdvAdd = (currentState is WTWifiState.Enabled && (currentState as WTWifiState.Enabled).advertiseLocalService)
     val connecting = wtWifi.isWTServicePeerPresent
 
+    info += "\nTick / Reset Countdown: ${wtWifi.tick} / ${if (wtWifi.isReady) "Off" else channelCountdown}"
+    info += if (wtWifi.p2pError()) "\nLast P2p Error: ${wtWifi.p2pError?.description}" else ""
+
     info += "\nWIFI Peers List "
-    info += "\n Tick: ${wtWifi.tick}"
     info += "\n Discovery/Services/LocalService: $peersDiscoveryState/$serviceDiscoveryActive/$serviceAdvAdd"
     info += "\n connectingAllowed: " + if (connecting) "Yes" else "No"
     info += "\n connectTo: ${connectToDevice?.uniqueWifiId} ${connectToDevice?.p2pConnection} ${connectToDevice?.cip?.value}"
-    /* info += "\n failCoolDown: ($failCooldown) " + (if (wifiP2PEngineOk()) "Ok" else "NOT Ok") + " " + wtWifiFailure() */
-    info += "\n restartCountDown: ${if (wtWifi.isReady) "Off" else channelCountdown}"
 
     this.directWTPeers.forEach { (_, device) ->
         val sInfo = directWTPeers[device.uniqueWifiId]?.serviceInfo
@@ -87,29 +81,10 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
 
     info += "\nWIFI WalkieTalkie Peers List "
     this.directWTPeers.forEach { (key, device) ->
-        info += "\n$key -> ${device.uniqueWifiId} ${device.wtService}"
+        info += "\n$key -> ${if (key != device.uniqueWifiId) "${device.uniqueWifiId} ???" else "" } ${device.wtService}"
     }
 
     /* logd(tag, info) */
 
     return info
 }
-
-internal suspend inline fun awaitP2pAction(
-    crossinline action: (WifiP2pManager.ActionListener) -> Unit
-): CallbackResult<Unit, Int> = awaitResult<Unit, Int> { listener ->
-    action(object : WifiP2pManager.ActionListener {
-        override fun onSuccess() {
-            listener.onSuccess(Unit)
-        }
-
-        override fun onFailure(reason: Int) {
-            listener.onFailure(reason)
-        }
-    })
-}
-
-internal suspend inline fun <T>awaitP2pRequest(
-    crossinline action: ((T) -> Unit) -> Unit
-): T = awaitValue (action)
-

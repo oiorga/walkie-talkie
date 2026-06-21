@@ -15,6 +15,8 @@ import kotlinx.coroutines.CoroutineScope
 import walkie.util.CallbackResult
 import walkie.util.api.PipeMessageType
 import walkie.util.api.RemoteCallMuxInt
+import walkie.util.awaitResult
+import walkie.util.awaitValue
 import walkie.util.generic.PipeMux
 import walkie.util.generic.PipeMuxInt
 import walkie.util.generic.RemoteCallMux
@@ -59,14 +61,12 @@ class WTWifiDirect(
 
         logd(tag, "Enter")
 
-        val res: WTWifiDirectResult<WifiP2pDeviceList> = p2pRequest(
-            tag,
-            "No peers info available"
-        ) { ch, callback ->
-            manager.requestPeers(ch) { peers ->
-                callback(peers)
+        val res: WTWifiDirectResult<WifiP2pDeviceList> =
+            p2pRequest(tag) { ch, callback ->
+                manager.requestPeers(ch) { peers ->
+                    callback(peers)
+                }
             }
-        }
 
         (res as? WTWifiDirectResult.Data<WifiP2pDeviceList>)?.let {
             logd(
@@ -74,7 +74,8 @@ class WTWifiDirect(
                 tag,
                 "NEW Peers: " +
                         it.data.deviceList.joinToString(" ") { device ->
-                            "${device.deviceName}/${device.deviceAddress}" }
+                            "${device.deviceName}/${device.deviceAddress}"
+                        }
             )
         }
 
@@ -87,14 +88,12 @@ class WTWifiDirect(
 
         logd(tag, "Enter")
 
-        val res: WTWifiDirectResult<WifiP2pDevice?> = p2pRequest(
-            tag,
-            "No device info available"
-        ) { ch, callback ->
-            manager.requestDeviceInfo(ch) { device ->
-                callback(device)
+        val res: WTWifiDirectResult<WifiP2pDevice?> =
+            p2pRequest(tag) { ch, callback ->
+                manager.requestDeviceInfo(ch) { device ->
+                    callback(device)
+                }
             }
-        }
 
         (res as? WTWifiDirectResult.Data<WifiP2pDevice?>)?.let {
             logd(
@@ -113,14 +112,12 @@ class WTWifiDirect(
 
         logd(tag, "Enter")
 
-        val res: WTWifiDirectResult<WifiP2pGroup?> = p2pRequest(
-            tag,
-            "No group info available"
-        ) { ch, callback ->
-            manager.requestGroupInfo(ch) { info ->
-                callback(info)
+        val res: WTWifiDirectResult<WifiP2pGroup?> =
+            p2pRequest(tag) { ch, callback ->
+                manager.requestGroupInfo(ch) { info ->
+                    callback(info)
+                }
             }
-        }
 
         (res as? WTWifiDirectResult.Data<WifiP2pGroup?>)?.let {
             logd(
@@ -245,8 +242,6 @@ class WTWifiDirect(
     suspend fun discoverServices(): WTWifiDirectResult<Unit> {
         val tag = "discoverServices/${randomString(2u)}"
 
-        logd(tag, "Entry")
-
         return p2pAction(tag,
             "Success starting discovering services.",
             "Failed starting discovering services:",
@@ -263,14 +258,12 @@ class WTWifiDirect(
 
         logd(tag, "Enter")
 
-        val res: WTWifiDirectResult<WifiP2pInfo?> = p2pRequest<WifiP2pInfo>(
-            tag,
-            "No connection info available"
-            ) { ch, callback ->
-            manager.requestConnectionInfo(ch) { info ->
-                callback(info)
+        val res: WTWifiDirectResult<WifiP2pInfo?> =
+            p2pRequest<WifiP2pInfo>(tag) { ch, callback ->
+                manager.requestConnectionInfo(ch) { info ->
+                    callback(info)
+                }
             }
-        }
 
         (res as? WTWifiDirectResult.Data)?.let {
             logd(
@@ -447,7 +440,7 @@ class WTWifiDirect(
         if (!checkWifiPermissions()) {
             logd(
                 TAGKClass, tag,
-                "Not enough Wi Fi Permissions"
+                "No Wi Fi Permissions"
             )
             return WTWifiDirectResult.LocalError.NoWifiPermissions
         }
@@ -481,3 +474,22 @@ class WTWifiDirect(
     }
 
 }
+
+internal suspend inline fun awaitP2pAction(
+    crossinline action: (WifiP2pManager.ActionListener) -> Unit
+): CallbackResult<Unit, Int> = awaitResult<Unit, Int> { listener ->
+    action(object : WifiP2pManager.ActionListener {
+        override fun onSuccess() {
+            listener.onSuccess(Unit)
+        }
+
+        override fun onFailure(reason: Int) {
+            listener.onFailure(reason)
+        }
+    })
+}
+
+internal suspend inline fun <T>awaitP2pRequest(
+    crossinline action: ((T) -> Unit) -> Unit
+): T = awaitValue (action)
+
