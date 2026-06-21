@@ -20,11 +20,8 @@ import walkie.talkie.node.NodeId
 import walkie.talkie.playground.commSquirrelWheel
 import walkie.util.CoroutineRuntime
 import walkie.util.Logging
-import walkie.util.api.ChannelId
-import walkie.util.api.ChannelMessageType
+import walkie.util.api.PipeId
 import walkie.util.generateBinaryRec
-import walkie.util.generic.ChannelMux
-import walkie.util.generic.ChannelMuxInt
 import walkie.util.generic.genericListOf
 import walkie.util.generic.registerAsReceiver
 import walkie.util.generic.registerSenders
@@ -127,27 +124,27 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
             wtHub.wtComm = WTComm(wtHub.wtSystemNodeId, wtHub.wtScope)
 
             wtHub.wtGlobalDiscussionMap.registerSenders(
-                channelId = ChannelId.RCCommToChat,
+                pipeId = PipeId.RCCommToChat,
                 wtHub.wtGlobalDiscussionMap.scope,
                 wtHub.wtComm
             )
 
             wtHub.wtComm.registerSenders(
-                ChannelId.RCToComm,
+                PipeId.RCToComm,
                 wtHub.wtComm.scope,
                 wtHub.wtGlobalDiscussionMap,
                 wtHub.wtWifiD
             )
 
             wtHub.registerAsReceiver(
-                ChannelId.RCTOCommonData,
+                PipeId.RCTOCommonData,
                 wtHub.wtScope,
                 wtHub.wtGlobalDiscussionMap,
                 wtHub.wtComm
             )
 
             wtHub.wtWifiD.registerSenders(
-                ChannelId.RCToWifi,
+                PipeId.RCToWifi,
                 wtHub.wtWifiD.scope,
                 wtHub.wtBcastReceiver,
                 wtHub.wtComm,

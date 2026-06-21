@@ -47,18 +47,16 @@ import walkie.comm.WTComm
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtmisc.InfoMap
 import walkie.talkie.api.wtmisc.WTNavigation
-import walkie.util.generic.ChannelMux
-import walkie.util.generic.ChannelMuxInt
+import walkie.util.generic.PipeMux
+import walkie.util.generic.PipeMuxInt
 import walkie.util.generic.registerSenders
 import walkie.talkie.ui.nav.WTNavInit
-import walkie.talkie.ui.screens.WTHelp
-import walkie.talkie.ui.screens.WTInfo
 import walkie.talkie.ui.screens.customComposablesInit
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.viewmodel.WTViewModelFactory
-import walkie.util.api.ChannelId
-import walkie.util.api.ChannelIdInt
-import walkie.util.api.ChannelMessageType
+import walkie.util.api.PipeId
+import walkie.util.api.PipeIdInt
+import walkie.util.api.PipeMessageType
 import walkie.util.api.RemoteCallId
 import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.RemoteCallMux
@@ -69,11 +67,11 @@ import kotlin.getValue
 import kotlin.system.exitProcess
 
 class WTActivity(
-    private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
+    private val _channelMux: PipeMuxInt<Any, PipeMessageType> = PipeMux<Any, PipeMessageType>(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
     ) :
     ComponentActivity(),
-    ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
+    PipeMuxInt<Any, PipeMessageType> by _channelMux,
     RemoteCallMuxInt by _remoteCallMux {
 
         companion object {
@@ -246,15 +244,15 @@ class WTActivity(
 
     private val groupIdWDI = "WIFI Direct Info"
     private val info1 = InfoMap(groupIdWDI)
-    override suspend fun channelOnReceive(
-        channelId: ChannelIdInt,
-        type: ChannelMessageType?,
+    override suspend fun pipeOnReceive(
+        pipeId: PipeIdInt,
+        type: PipeMessageType?,
         input: Any?
     ) {
-        when (channelId) {
-            ChannelId.RCToWTActivity -> {
+        when (pipeId) {
+            PipeId.RCToWTActivity -> {
                 when (type) {
-                    ChannelMessageType.RCWifiDebugInfoMessage -> {
+                    PipeMessageType.RCWifiDebugInfoMessage -> {
                         val groupId = groupIdWDI
                         if (info1["b"] != input as String) {
                             info1["b"] = input
@@ -280,7 +278,7 @@ class WTActivity(
                             wtHub.sendChatMessage(message)
                         }
                     }
-                    ChannelMessageType.RCWTMeshDebugInfoMessage -> {
+                    PipeMessageType.RCWTMeshDebugInfoMessage -> {
                         val groupId = groupIdWDI
                         if (info1["a"] != input as String) {
                             info1["a"] = input
@@ -306,20 +304,20 @@ class WTActivity(
                             wtHub.sendChatMessage(message)
                         }
                     }
-                    ChannelMessageType.RCWifiRestartChannel -> {
+                    PipeMessageType.RCWifiRestartChannel -> {
                         logd(tag, "RCWifiRestartChannel")
                         wifiRestartChannel()
                         wtHub.wtComm.wtPRMComm().wtIPComm.stop()
                     }
                     else -> {
-                        logd(tag, "channelOnReceive channelMessageType $channelId/$type. Not implemented.")
-                        throw (NotImplementedError("$tag: channelOnReceive channelMessageType $channelId/$type. Not implemented."))
+                        logd(tag, "channelOnReceive channelMessageType $pipeId/$type. Not implemented.")
+                        throw (NotImplementedError("$tag: channelOnReceive channelMessageType $pipeId/$type. Not implemented."))
                     }
                 }
             }
             else -> {
-                logd(tag, "channelOnReceive channelId $channelId not implemented.")
-                throw (NotImplementedError("$tag: channelId channelMessageType: $channelId not implemented."))
+                logd(tag, "channelOnReceive channelId $pipeId not implemented.")
+                throw (NotImplementedError("$tag: channelId channelMessageType: $pipeId not implemented."))
             }
         }
     }
@@ -429,7 +427,7 @@ internal fun WTActivity.wtCustomInit(){
     registerRemoteCall(RemoteCallId.RCRequestWifiDPermissions) { _ -> requestWifiPermissions() }
     wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermissions, this)
     this.registerSenders(
-        channelId = ChannelId.RCToWTActivity,
+        pipeId = PipeId.RCToWTActivity,
         wtScope,
         wtHub.wtWifiD,
         wtHub.wtComm.wtPRMComm()

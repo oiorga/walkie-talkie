@@ -13,11 +13,10 @@ import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest
 import kotlinx.coroutines.CoroutineScope
 import walkie.util.CallbackResult
-import walkie.util.api.ChannelMessageType
+import walkie.util.api.PipeMessageType
 import walkie.util.api.RemoteCallMuxInt
-import walkie.util.awaitValue
-import walkie.util.generic.ChannelMux
-import walkie.util.generic.ChannelMuxInt
+import walkie.util.generic.PipeMux
+import walkie.util.generic.PipeMuxInt
 import walkie.util.generic.RemoteCallMux
 import walkie.util.logd
 import walkie.util.logging
@@ -28,10 +27,10 @@ class WTWifiDirect(
     private var channel: WifiP2pManager.Channel,
     private var env: WTWifiDirectEnv,
     scope: CoroutineScope,
-    private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux(),
+    private val _channelMux: PipeMuxInt<Any, PipeMessageType> = PipeMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
 ) :
-    ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
+    PipeMuxInt<Any, PipeMessageType> by _channelMux,
     RemoteCallMuxInt by _remoteCallMux {
     companion object {
         const val TAG = "WTWifiDirect"

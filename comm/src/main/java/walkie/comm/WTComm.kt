@@ -1,11 +1,10 @@
 package walkie.comm
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import walkie.comm.ip.wtIPCommMain
 import walkie.comm.prm.WTPRMComm
-import walkie.util.generic.ChannelMux
-import walkie.util.generic.ChannelMuxInt
+import walkie.util.generic.PipeMux
+import walkie.util.generic.PipeMuxInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.CommPacketInt
@@ -15,9 +14,9 @@ import walkie.talkie.api.wtcomm.WTCommPacketIn
 import walkie.talkie.api.wtcomm.WTCommPacketOut
 import walkie.talkie.api.wtsystem.NodeIdInt
 
-import walkie.util.api.ChannelId
-import walkie.util.api.ChannelIdInt
-import walkie.util.api.ChannelMessageType
+import walkie.util.api.PipeId
+import walkie.util.api.PipeIdInt
+import walkie.util.api.PipeMessageType
 import walkie.util.api.DispatchEventId
 import walkie.util.logd
 import walkie.util.logging
@@ -26,9 +25,9 @@ import walkie.util.randomString
 class WTComm (
     private val nodeId: NodeIdInt,
     val scope: CoroutineScope,
-    private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
+    private val _channelMux: PipeMuxInt<Any, PipeMessageType> = PipeMux<Any, PipeMessageType>(),
     /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>(), */
-) : ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
+) : PipeMuxInt<Any, PipeMessageType> by _channelMux,
     /* WTRemoteCallMuxInt<Any, Any> by _remoteCallMux, */
     WTCommChatMessageIn,
     WTCommChatMessageOut,
@@ -74,15 +73,15 @@ class WTComm (
         logging(true)
         logd(tag, "Init Entry")
 
-        this.registerReceiver(ChannelId.RCToPRMComm, wtPRMComm.scope, wtPRMComm)
-        wtPRMComm.wtIPComm.registerReceiver(ChannelId.RCToComm, scope, this)
+        this.registerReceiver(PipeId.RCToPRMComm, wtPRMComm.scope, wtPRMComm)
+        wtPRMComm.wtIPComm.registerReceiver(PipeId.RCToComm, scope, this)
 
         wtPRMComm.registerToEvent(DispatchEventId.CBMeshNewPeer) { _ ->
-            channelSend(ChannelId.RCTOCommonData, scope, ChannelMessageType.RCUpdatePeersUI)
+            pipeSend(PipeId.RCTOCommonData, scope, PipeMessageType.RCUpdatePeersUI)
         }
         wtPRMComm.registerToEvent(DispatchEventId.CBServerPort) { serverPort ->
             logd(tag, "$this sending serverPort: $serverPort to RCToWifi")
-            channelSend(ChannelId.RCToWifi, scope, ChannelMessageType.RCLocalServerPort, serverPort!!)
+            pipeSend(PipeId.RCToWifi, scope, PipeMessageType.RCLocalServerPort, serverPort!!)
         }
         logd(tag, "Init Exit")
     }
@@ -100,7 +99,7 @@ class WTComm (
     }
 
     override suspend fun chatMessageOut(commPacket: CommPacketInt) {
-        channelSend(ChannelId.RCCommToChat, scope, null, commPacket)
+        pipeSend(PipeId.RCCommToChat, scope, null, commPacket)
     }
 
     override suspend fun commPacketOut(commPacket: CommPacketInt) {
@@ -114,42 +113,42 @@ class WTComm (
         }
     }
 
-    override suspend fun channelOnReceive(channelId: ChannelIdInt, inputType: ChannelMessageType?, input: Any?) {
+    override suspend fun pipeOnReceive(pipeId: PipeIdInt, inputType: PipeMessageType?, input: Any?) {
         val tag = "channelOnReceive/${randomString(2U)}"
-        val logF = (inputType == ChannelMessageType.RCChatMessage || inputType == ChannelMessageType.RCChatMessageLoopback)
-        logd(tag, "channelOnReceive: channelId: $channelId inputType: $inputType")
+        val logF = (inputType == PipeMessageType.RCChatMessage || inputType == PipeMessageType.RCChatMessageLoopback)
+        logd(tag, "channelOnReceive: channelId: $pipeId inputType: $inputType")
 
-        when (channelId) {
-            ChannelId.RCChatToComm -> {
+        when (pipeId) {
+            PipeId.RCChatToComm -> {
                 chatMessageIn(input as CommPacketInt)
             }
-            ChannelId.RCWifiToComm -> {
+            PipeId.RCWifiToComm -> {
                 commPacketIn(input as CommPacketInt)
             }
-            ChannelId.RCToComm -> {
+            PipeId.RCToComm -> {
                 when (inputType) {
-                    ChannelMessageType.RCWifiMessage -> {
+                    PipeMessageType.RCWifiMessage -> {
                         commPacketIn(input as CommPacketInt)
                     }
-                    ChannelMessageType.RCChatMessage -> {
+                    PipeMessageType.RCChatMessage -> {
                         commPacketOut(input as CommPacketInt)
                     }
-                    ChannelMessageType.RCChatMessageLoopback -> {
+                    PipeMessageType.RCChatMessageLoopback -> {
                         chatMessageLoopback(input as CommPacketInt)
                     }
-                    ChannelMessageType.RCLocalIp -> {
-                        channelSend(ChannelId.RCToPRMComm, scope, ChannelMessageType.RCLocalIp, input)
+                    PipeMessageType.RCLocalIp -> {
+                        pipeSend(PipeId.RCToPRMComm, scope, PipeMessageType.RCLocalIp, input)
                     }
-                    ChannelMessageType.RCGroupInfo -> {
-                        channelSend(ChannelId.RCToPRMComm, scope, ChannelMessageType.RCGroupInfo, input)
+                    PipeMessageType.RCGroupInfo -> {
+                        pipeSend(PipeId.RCToPRMComm, scope, PipeMessageType.RCGroupInfo, input)
                     }
                     else -> {
-                        throw (NotImplementedError("$TAG: channelOnReceive: channelId: $channelId: inputType: $inputType Not Implemented "))
+                        throw (NotImplementedError("$TAG: channelOnReceive: channelId: $pipeId: inputType: $inputType Not Implemented "))
                     }
                 }
             }
             else -> {
-                throw (NotImplementedError("$TAG: channelOnReceive: channelId: $channelId: inputType: $inputType Not Implemented "))
+                throw (NotImplementedError("$TAG: channelOnReceive: channelId: $pipeId: inputType: $inputType Not Implemented "))
             }
         }
     }

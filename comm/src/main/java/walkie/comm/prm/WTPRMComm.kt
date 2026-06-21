@@ -5,15 +5,15 @@ import walkie.comm.WTCommPeerInfo
 import walkie.comm.WTIPMesh
 import walkie.comm.ip.WTIPComm
 import walkie.comm.ip.WTIPCommPacketType
-import walkie.util.generic.ChannelMux
-import walkie.util.generic.ChannelMuxInt
+import walkie.util.generic.PipeMux
+import walkie.util.generic.PipeMuxInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.WTMedium
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.util.api.ChannelId
-import walkie.util.api.ChannelIdInt
-import walkie.util.api.ChannelMessageType
+import walkie.util.api.PipeId
+import walkie.util.api.PipeIdInt
+import walkie.util.api.PipeMessageType
 import walkie.util.api.DispatchEventId
 import walkie.util.generic.EventDispatcher
 import walkie.util.generic.EventDispatcherInt
@@ -27,13 +27,13 @@ import java.net.InetAddress
 class WTPRMComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
+    private val _channelMux: PipeMuxInt<Any, PipeMessageType> = PipeMux<Any, PipeMessageType>(),
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher()
     /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>() */
     /* private val _callBackList: WTCallBackInt<Any, Any> = WTCallBack() */
 ) :
     /* WTRemoteCallMuxInt<Any, Any> by _remoteCallMux, */
-    ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
+    PipeMuxInt<Any, PipeMessageType> by _channelMux,
     EventDispatcherInt<Any> by _callBackList
 /* WTCallBackInt<Any, Any> by _callBackList */
 {
@@ -54,8 +54,8 @@ class WTPRMComm (
     init {
         logging(true)
 
-        this.registerReceiver(ChannelId.RCToIpComm, wtIPComm.scope,wtIPComm)
-        wtIPComm.registerReceiver(ChannelId.RCToPRMComm, scope,this)
+        this.registerReceiver(PipeId.RCToIpComm, wtIPComm.scope,wtIPComm)
+        wtIPComm.registerReceiver(PipeId.RCToPRMComm, scope,this)
         wtMesh.registerSend { destPeer, jSon ->
             val tag = "wtMeshPRMSend/${randomString(2U)}"
             val dest = destPeer.umCI
@@ -135,9 +135,9 @@ class WTPRMComm (
         return success
     }
 
-    override suspend fun channelOnReceive(
-        channelId: ChannelIdInt,
-        inputType: ChannelMessageType?,
+    override suspend fun pipeOnReceive(
+        pipeId: PipeIdInt,
+        inputType: PipeMessageType?,
         input: Any?
     ) {
         val tag = "channelOnReceive/${randomString(2u)}"
@@ -145,24 +145,24 @@ class WTPRMComm (
         logd(
             TAGKClass,
             tag,
-            "channelId: $channelId inputType: $inputType"
+            "channelId: $pipeId inputType: $inputType"
         )
 
-        when (channelId) {
-            ChannelId.RCToPRMComm -> {
+        when (pipeId) {
+            PipeId.RCToPRMComm -> {
                 when (inputType) {
-                    ChannelMessageType.RCControlMesh -> {
+                    PipeMessageType.RCControlMesh -> {
                         wtMesh.addPeersJson(input as String)
                     }
-                    ChannelMessageType.RCLocalIp -> {
+                    PipeMessageType.RCLocalIp -> {
                         val localIpAddress = (if (null != input) input as InetAddress else null)
                         logd(TAGKClass,
                             tag,
                             "$inputType localIpAddress: $localIpAddress")
-                        channelSend(
-                            ChannelId.RCToIpComm,
+                        pipeSend(
+                            PipeId.RCToIpComm,
                             scope,
-                            ChannelMessageType.RCLocalIp,
+                            PipeMessageType.RCLocalIp,
                             localIpAddress
                         )
                         if (null != localIpAddress) {
@@ -184,10 +184,10 @@ class WTPRMComm (
                             */
                         }
                     }
-                    ChannelMessageType.RCGroupServerPort -> {
+                    PipeMessageType.RCGroupServerPort -> {
 
                     }
-                    ChannelMessageType.RCGroupInfo -> {
+                    PipeMessageType.RCGroupInfo -> {
                         val (name, ipAddress, serverPort) = input as Triple<*, *, *>
                         val groupOwnerName = (if (null != name ) name as String else null)
                         val groupIpAddress = (if (null != ipAddress ) ipAddress as InetAddress else null)
@@ -228,7 +228,7 @@ class WTPRMComm (
                             "Unprocessed input type $inputType")
                         throw (NotImplementedError(
                             "Not Implemented: " +
-                                    "\nchannelId: $channelId " +
+                                    "\nchannelId: $pipeId " +
                                     "\ninputType: $inputType " +
                                     "\ninput: $input "
                         ))
@@ -236,7 +236,7 @@ class WTPRMComm (
                 }
             }
             else -> {
-                throw (NotImplementedError("$tag channelId: $channelId: inputType: $inputType Not Implemented "))
+                throw (NotImplementedError("$tag channelId: $pipeId: inputType: $inputType Not Implemented "))
             }
         }
     }
@@ -248,9 +248,9 @@ internal fun WTPRMComm.peersUpdateSendDebugInfo() {
     directNodes().forEach { k ->
         str += "\n\tDest: " + directUnderlay(k)?.uid  + " IP Address: " + directUnderlay(k)?.umCI
     }
-    channelSend(
-        ChannelId.RCToWTActivity,
+    pipeSend(
+        PipeId.RCToWTActivity,
         scope,
-        ChannelMessageType.RCWTMeshDebugInfoMessage,
+        PipeMessageType.RCWTMeshDebugInfoMessage,
         str)
 }

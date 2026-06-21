@@ -1,60 +1,52 @@
 package walkie.util.generic
 
-import android.util.Log
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.channels.BufferOverflow
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import walkie.util.api.ChannelIdInt
+import walkie.util.api.PipeIdInt
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
-import java.util.concurrent.locks.ReentrantLock
 
-interface ChannelMuxInt<T, K> {
-    val channelMap: MutableMap<ChannelIdInt, MutableSharedFlow<ChannelMessage<T, K>>>
-    val receiverMap: MutableMap<ChannelIdInt, ChannelMuxInt<T, K>>
-    fun registerReceiver (channelId: ChannelIdInt, scope: CoroutineScope, receiverObj: ChannelMuxInt<T, K>)
-    suspend fun channelOnReceive (channelId: ChannelIdInt, type: K?, input: T?)
-    fun channelSend (channelId: ChannelIdInt, scope: CoroutineScope, type: K? = null, input: T? = null)
-    fun channel(channelId: ChannelIdInt) : MutableSharedFlow<ChannelMessage<T, K>>?
-    fun channelCreate(channelId: ChannelIdInt) : MutableSharedFlow<ChannelMessage<T, K>>?
+interface PipeMuxInt<T, K> {
+    val pipeMap: MutableMap<PipeIdInt, MutableSharedFlow<PipeMessage<T, K>>>
+    val receiverMap: MutableMap<PipeIdInt, PipeMuxInt<T, K>>
+    fun registerReceiver (pipeId: PipeIdInt, scope: CoroutineScope, receiverObj: PipeMuxInt<T, K>)
+    suspend fun pipeOnReceive (pipeId: PipeIdInt, type: K?, input: T?)
+    fun pipeSend (pipeId: PipeIdInt, scope: CoroutineScope, type: K? = null, input: T? = null)
+    fun pipe(pipeId: PipeIdInt) : MutableSharedFlow<PipeMessage<T, K>>?
+    fun pipeCreate(pipeId: PipeIdInt) : MutableSharedFlow<PipeMessage<T, K>>?
 }
 
-data class ChannelMessage<T, K>(
+data class PipeMessage<T, K>(
     val input: T?,
     val type: K?
 )
 
-fun <T, K> ChannelMuxInt<T, K>.registerAsReceiver (channelId: ChannelIdInt, scope: CoroutineScope, vararg senderObjList: ChannelMuxInt<T, K>) {
+fun <T, K> PipeMuxInt<T, K>.registerAsReceiver (pipeId: PipeIdInt, scope: CoroutineScope, vararg senderObjList: PipeMuxInt<T, K>) {
     senderObjList.forEach { senderObj ->
-        senderObj.registerReceiver(channelId, scope, this)
+        senderObj.registerReceiver(pipeId, scope, this)
     }
 }
 
-fun <T, K> ChannelMuxInt<T, K>.registerSenders (channelId: ChannelIdInt, scope: CoroutineScope,  vararg senderObjList: ChannelMuxInt<T, K>) {
+fun <T, K> PipeMuxInt<T, K>.registerSenders (pipeId: PipeIdInt, scope: CoroutineScope, vararg senderObjList: PipeMuxInt<T, K>) {
     senderObjList.forEach { senderObj ->
-        senderObj.registerReceiver(channelId, scope,  this)
+        senderObj.registerReceiver(pipeId, scope,  this)
     }
 }
 
-class ChannelMux<T, K>() : ChannelMuxInt<T, K> {
-    override val channelMap: MutableMap<ChannelIdInt, MutableSharedFlow<ChannelMessage<T, K>>> = mutableMapOf()
-    override val receiverMap: MutableMap<ChannelIdInt, ChannelMuxInt<T, K>> = mutableMapOf()
+class PipeMux<T, K>() : PipeMuxInt<T, K> {
+    override val pipeMap: MutableMap<PipeIdInt, MutableSharedFlow<PipeMessage<T, K>>> = mutableMapOf()
+    override val receiverMap: MutableMap<PipeIdInt, PipeMuxInt<T, K>> = mutableMapOf()
 
     private val lock = Any()
 
     companion object {
-        private const val TAG = "ChannelMux"
-        val TAGKClass = ChannelMux::class
+        private const val TAG = "PipeMux"
+        val TAGKClass = PipeMux::class
     }
 
     init {
@@ -62,41 +54,41 @@ class ChannelMux<T, K>() : ChannelMuxInt<T, K> {
         logd (TAG, "init")
     }
 
-    override fun channel(channelId: ChannelIdInt) : MutableSharedFlow<ChannelMessage<T, K>>? {
-        return channelMap[channelId]
+    override fun pipe(pipeId: PipeIdInt) : MutableSharedFlow<PipeMessage<T, K>>? {
+        return pipeMap[pipeId]
     }
 
-    override fun channelCreate(channelId: ChannelIdInt) : MutableSharedFlow<ChannelMessage<T, K>>? {
+    override fun pipeCreate(pipeId: PipeIdInt) : MutableSharedFlow<PipeMessage<T, K>>? {
         synchronized(lock) {
-            if (null == channelMap[channelId]) {
-                channelMap[channelId] =
-                    MutableSharedFlow<ChannelMessage<T, K>>(
+            if (null == pipeMap[pipeId]) {
+                pipeMap[pipeId] =
+                    MutableSharedFlow<PipeMessage<T, K>>(
                         replay = 10,
                         extraBufferCapacity = 100,
                         onBufferOverflow = BufferOverflow.SUSPEND
                     )
             }
         }
-        return channelMap[channelId]
+        return pipeMap[pipeId]
     }
 
-    override fun registerReceiver (channelId: ChannelIdInt, scope: CoroutineScope, receiverObj: ChannelMuxInt<T, K>) {
+    override fun registerReceiver (pipeId: PipeIdInt, scope: CoroutineScope, receiverObj: PipeMuxInt<T, K>) {
         val tag = "registerReceiver/${randomString(2u)}"
 
-        logd(tag, "registerReceiver: channelId ${channelId.toString()} ${receiverObj.toString()}")
+        logd(tag, "registerReceiver: pipeId ${pipeId.toString()} ${receiverObj.toString()}")
 
         synchronized(lock) {
-            receiverMap.putIfAbsent(channelId, receiverObj)
+            receiverMap.putIfAbsent(pipeId, receiverObj)
 
-            if (null != receiverObj.channel(channelId)) {
-                logd(tag, "registerReceiver: channelId ${channelId.toString()} already exists")
+            if (null != receiverObj.pipe(pipeId)) {
+                logd(tag, "registerReceiver: pipeId ${pipeId.toString()} already exists")
             } else {
-                receiverObj.channelCreate(channelId)
+                receiverObj.pipeCreate(pipeId)
                 scope.launch {
-                    receiverObj.channel(channelId)
+                    receiverObj.pipe(pipeId)
                         ?.onEach { msg ->
-                            receiverObj.channelOnReceive(
-                                channelId = channelId,
+                            receiverObj.pipeOnReceive(
+                                pipeId = pipeId,
                                 input = msg.input,
                                 type = msg.type
                             )
@@ -107,30 +99,30 @@ class ChannelMux<T, K>() : ChannelMuxInt<T, K> {
         }
     }
 
-    override fun channelSend (channelId: ChannelIdInt, scope: CoroutineScope, type: K?, input: T?) {
-        val tag = "channelSend/${randomString(2u)}"
+    override fun pipeSend (pipeId: PipeIdInt, scope: CoroutineScope, type: K?, input: T?) {
+        val tag = "pipeSend/${randomString(2u)}"
 
-        logd(tag, "channelSend: channelId ${channelId.toString()} input: ${if (null != input) input::class else null}  type: $type")
+        logd(tag, "pipeSend: pipeId ${pipeId.toString()} input: ${if (null != input) input::class else null}  type: $type")
 
-        if (null == receiverMap[channelId]) {
-            logd(tag, "channelSend: receiver object for channel $channelId / $type is not registered")
-            throw (NoSuchElementException("TAG: channelSend: receiver object for channel $channelId / $type is not registered"))
+        if (null == receiverMap[pipeId]) {
+            logd(tag, "pipeSend: receiver object for pipe $pipeId / $type is not registered")
+            throw (NoSuchElementException("TAG: pipeSend: receiver object for pipe $pipeId / $type is not registered"))
         }
 
-        val channel  = receiverMap[channelId]?.channel(channelId) ?: run {
-            logd(tag, "channelSend: channel for ${receiverMap[channelId]}[$channelId] does not exist")
-            throw (NoSuchElementException("${this}: channelSend: channel for ${receiverMap[channelId]}[$channelId] does not exist"))
+        val pipe  = receiverMap[pipeId]?.pipe(pipeId) ?: run {
+            logd(tag, "pipeSend: pipe for ${receiverMap[pipeId]}[$pipeId] does not exist")
+            throw (NoSuchElementException("${this}: pipeSend: pipe for ${receiverMap[pipeId]}[$pipeId] does not exist"))
         }
 
         scope.launch {
-            channel.emit(value = ChannelMessage(input, type))
+            pipe.emit(value = PipeMessage(input, type))
         }
     }
 
-    override suspend fun channelOnReceive(channelId: ChannelIdInt, type: K?, input: T?) {
-        val tag = "channelOnReceive/${randomString(2u)}"
+    override suspend fun pipeOnReceive(pipeId: PipeIdInt, type: K?, input: T?) {
+        val tag = "pipeOnReceive/${randomString(2u)}"
 
-        logd(tag, "channelOnReceive channelId: $channelId. Not implemented.")
-        throw (NotImplementedError("$tag: channelOnReceive(channelId: $channelId. Not implemented."))
+        logd(tag, "pipeOnReceive pipeId: $pipeId. Not implemented.")
+        throw (NotImplementedError("$tag: pipeOnReceive(pipeId: $pipeId. Not implemented."))
     }
 }

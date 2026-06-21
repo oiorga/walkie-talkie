@@ -7,8 +7,8 @@ import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.CoroutineScope
 import walkie.chat.ChatGroupMap
 import walkie.comm.WTComm
-import walkie.util.generic.ChannelMux
-import walkie.util.generic.ChannelMuxInt
+import walkie.util.generic.PipeMux
+import walkie.util.generic.PipeMuxInt
 import walkie.talkie.api.wtchat.ChatGroupIdInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
@@ -20,9 +20,9 @@ import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.BuildConfig
 import walkie.talkie.api.wtdebug.WTDebugInt
 import walkie.util.CoroutineRuntime
-import walkie.util.api.ChannelId
-import walkie.util.api.ChannelIdInt
-import walkie.util.api.ChannelMessageType
+import walkie.util.api.PipeId
+import walkie.util.api.PipeIdInt
+import walkie.util.api.PipeMessageType
 import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.RemoteCallMux
 import walkie.util.logd
@@ -33,9 +33,9 @@ import walkie.wifidirect.WiFiDirectBroadcastReceiver
 
 class WTCommonData private constructor (
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
-    private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux<Any, ChannelMessageType>(),
+    private val _channelMux: PipeMuxInt<Any, PipeMessageType> = PipeMux<Any, PipeMessageType>(),
 ) : RemoteCallMuxInt by _remoteCallMux,
-    ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
+    PipeMuxInt<Any, PipeMessageType> by _channelMux,
     WTDebugInt
 {
     companion object {
@@ -82,22 +82,22 @@ class WTCommonData private constructor (
         return (true == wtDebug)
     }
 
-    override suspend fun channelOnReceive(
-        channelId: ChannelIdInt,
-        type: ChannelMessageType?,
+    override suspend fun pipeOnReceive(
+        pipeId: PipeIdInt,
+        type: PipeMessageType?,
         input: Any?
         ) {
         val tag = "channelOnReceive/${randomString(2U)}"
 
-        logd(tag, "channelId: $channelId inputType: $type input: $input")
-        when (channelId) {
-            ChannelId.RCTOCommonData -> {
+        logd(tag, "channelId: $pipeId inputType: $type input: $input")
+        when (pipeId) {
+            PipeId.RCTOCommonData -> {
                 if (updateUI(type!!, input))
                     updateUiLiveData.update()
             }
             else -> {
-                logd(tag, "channelId: $channelId no service available")
-                throw (NoSuchElementException("${this}: channelId: $channelId no service available"))
+                logd(tag, "channelId: $pipeId no service available")
+                throw (NoSuchElementException("${this}: channelId: $pipeId no service available"))
             }
         }
     }
@@ -109,12 +109,12 @@ class WTCommonData private constructor (
 }
 
 internal fun WTCommonData.updateUI(
-    uiScreenMajor: ChannelMessageType,
+    uiScreenMajor: PipeMessageType,
     uiScreenMinor: Any?
 ): Boolean {
     val tag = "updateUI/${randomString(2U)}"
     val updateUI: Boolean = when (uiScreenMajor) {
-        ChannelMessageType.RCUpdateChatUI -> {
+        PipeMessageType.RCUpdateChatUI -> {
             wtChatUpdateUI(uiScreenMinor as ChatGroupType, wtVModel?.currentScreen())
         }
         else -> {

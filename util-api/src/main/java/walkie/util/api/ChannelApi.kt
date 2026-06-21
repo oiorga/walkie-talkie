@@ -1,9 +1,9 @@
 package walkie.util.api
 
-interface ChannelIdInt
-interface ChannelMessageInt
+interface PipeIdInt
+interface PipeMessageInt
 
-enum class ChannelMessageType : ChannelMessageInt {
+enum class PipeMessageType : PipeMessageInt {
     RCDummy0, RCDummy1, RCDummy2, RCDummy3, RCDummy4, RCDummy5, RCDummy6, RCDummy7, RCDummy8, RCDummy9,
     RCNA,
     RCPrimitiveType,
@@ -28,7 +28,7 @@ enum class ChannelMessageType : ChannelMessageInt {
     RCUpdatePeersUI
 }
 
-enum class ChannelId : ChannelIdInt {
+enum class PipeId : PipeIdInt {
     RCDummy0, RCDummy1, RCDummy2, RCDummy3, RCDummy4, RCDummy5, RCDummy6, RCDummy7, RCDummy8, RCDummy9,
     RCNA,
     RCToComm,

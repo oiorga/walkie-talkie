@@ -23,13 +23,13 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.util.api.ChannelId
-import walkie.util.api.ChannelIdInt
-import walkie.util.api.ChannelMessageType
+import walkie.util.api.PipeId
+import walkie.util.api.PipeIdInt
+import walkie.util.api.PipeMessageType
 import walkie.util.api.RemoteCallId
 import walkie.util.api.RemoteCallMuxInt
-import walkie.util.generic.ChannelMux
-import walkie.util.generic.ChannelMuxInt
+import walkie.util.generic.PipeMux
+import walkie.util.generic.PipeMuxInt
 import walkie.util.generic.GenericList
 import walkie.util.generic.Mailbox
 import walkie.util.generic.MailboxData
@@ -63,10 +63,10 @@ class WTWifiDirectManager(
     val manager: WifiP2pManager,
     val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _channelMux: ChannelMuxInt<Any, ChannelMessageType> = ChannelMux(),
+    private val _channelMux: PipeMuxInt<Any, PipeMessageType> = PipeMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
 ) :
-    ChannelMuxInt<Any, ChannelMessageType> by _channelMux,
+    PipeMuxInt<Any, PipeMessageType> by _channelMux,
     RemoteCallMuxInt by _remoteCallMux {
 
     companion object {
@@ -178,35 +178,35 @@ class WTWifiDirectManager(
         logging(true)
     }
 
-    override suspend fun channelOnReceive(
-        channelId: ChannelIdInt,
-        type: ChannelMessageType?,
+    override suspend fun pipeOnReceive(
+        pipeId: PipeIdInt,
+        type: PipeMessageType?,
         input: Any?
     ) {
         val tag = "channelOnReceive/${randomString(2U)}"
 
-        logd(tag, "channelId: $channelId inputType: $type")
-        when (channelId) {
-            ChannelId.RCToWifi -> {
+        logd(tag, "channelId: $pipeId inputType: $type")
+        when (pipeId) {
+            PipeId.RCToWifi -> {
                 when (type) {
-                    ChannelMessageType.RCWifiBroadcastReceiver -> {
+                    PipeMessageType.RCWifiBroadcastReceiver -> {
                         if (null != input) {
                             processBcastReceiverMessage(input as Intent)
                         } else {
                             /***************************/
                         }
                     }
-                    ChannelMessageType.RCLocalServerPort -> {
+                    PipeMessageType.RCLocalServerPort -> {
                         mainLoopInbox.send(WTWifiEvent.WTWifi.LocalServerPort(input as Int))
                     }
                     else -> {
-                        throw (NotImplementedError("$tag: channelOnReceive: channelId: $channelId: inputType: $type Not Implemented "))
+                        throw (NotImplementedError("$tag: channelOnReceive: channelId: $pipeId: inputType: $type Not Implemented "))
                     }
                 }
             }
 
             else -> {
-                throw (NotImplementedError("$tag: channelOnReceive: channelId: $channelId: inputType: $type Not Implemented "))
+                throw (NotImplementedError("$tag: channelOnReceive: channelId: $pipeId: inputType: $type Not Implemented "))
             }
         }
     }
@@ -216,10 +216,10 @@ class WTWifiDirectManager(
 
         logd(TAGKClass, tag, "Entry")
 
-        channelSend(
-            ChannelId.RCToComm,
+        pipeSend(
+            PipeId.RCToComm,
             scope,
-            ChannelMessageType.RCGroupInfo,
+            PipeMessageType.RCGroupInfo,
             Triple(null, null, null)
         )
         mainLoopJob?.cancel()
@@ -577,10 +577,10 @@ class WTWifiDirectManager(
                     "\n\tlocalIp = ${this.wtLocalIp}"
         )
 
-        channelSend(
-            ChannelId.RCToWTActivity,
+        pipeSend(
+            PipeId.RCToWTActivity,
             scope,
-            ChannelMessageType.RCWifiDebugInfoMessage,
+            PipeMessageType.RCWifiDebugInfoMessage,
             wtWifiDirectInfo()
         )
     }
@@ -617,10 +617,10 @@ class WTWifiDirectManager(
         if (s.scanPeersS) return
         s.scanPeersS = true
 
-        channelSend(
-            ChannelId.RCToWTActivity,
+        pipeSend(
+            PipeId.RCToWTActivity,
             scope,
-            ChannelMessageType.RCWifiDebugInfoMessage,
+            PipeMessageType.RCWifiDebugInfoMessage,
             wtWifiDirectInfo()
         )
 
@@ -628,10 +628,10 @@ class WTWifiDirectManager(
         removeGroup()
         clearAllServices()
 
-        channelSend(
-            ChannelId.RCToComm,
+        pipeSend(
+            PipeId.RCToComm,
             scope,
-            ChannelMessageType.RCGroupInfo,
+            PipeMessageType.RCGroupInfo,
             Triple(null, null, null)
         )
 
@@ -693,10 +693,10 @@ class WTWifiDirectManager(
                     tag,
                     "Group info changed(Null): wtGroupIp: $oldGroupIp -> $wtGroupIp wtLocalIp: $oldLocalIp -> $wtLocalIp"
                 )
-                channelSend(
-                    ChannelId.RCToComm,
+                pipeSend(
+                    PipeId.RCToComm,
                     scope,
-                    ChannelMessageType.RCGroupInfo,
+                    PipeMessageType.RCGroupInfo,
                     Triple(null, null, null)
                 )
             }
@@ -711,23 +711,23 @@ class WTWifiDirectManager(
                     "Group info changed(Group): wtGroupIp: $oldGroupIp -> $wtGroupIp wtGroupServerPort: $oldGroupServerPort -> $wtGroupServerPort wtLocalIp: $oldLocalIp -> $wtLocalIp"
                 )
 
-                channelSend(
-                    ChannelId.RCToComm,
+                pipeSend(
+                    PipeId.RCToComm,
                     scope,
-                    ChannelMessageType.RCGroupInfo,
+                    PipeMessageType.RCGroupInfo,
                     Triple(null, null, null)
                 )
 
-                channelSend(
-                    ChannelId.RCToComm,
+                pipeSend(
+                    PipeId.RCToComm,
                     scope,
-                    ChannelMessageType.RCGroupInfo,
+                    PipeMessageType.RCGroupInfo,
                     Triple(wtGroupOwnerName, wtGroupIp, wtGroupServerPort)
                 )
-                channelSend(
-                    ChannelId.RCToComm,
+                pipeSend(
+                    PipeId.RCToComm,
                     scope,
-                    ChannelMessageType.RCLocalIp,
+                    PipeMessageType.RCLocalIp,
                     wtLocalIp
                 )
                 localIpAlreadyChanged = true
@@ -741,10 +741,10 @@ class WTWifiDirectManager(
             }
             if (wtLocalIp != oldLocalIp && !localIpAlreadyChanged) {
                 logd(tag, "Local IP info changed(IP): wtLocalIp: $oldLocalIp -> $wtLocalIp")
-                channelSend(
-                    ChannelId.RCToComm,
+                pipeSend(
+                    PipeId.RCToComm,
                     scope,
-                    ChannelMessageType.RCLocalIp,
+                    PipeMessageType.RCLocalIp,
                     wtLocalIp
                 )
             }
@@ -765,10 +765,10 @@ class WTWifiDirectManager(
             logd(tag, "Lost P2P Connection/Info")
             removeGroup()
             wtWifi = wtWifi.reset()
-            channelSend(
-                ChannelId.RCToComm,
+            pipeSend(
+                PipeId.RCToComm,
                 scope,
-                ChannelMessageType.RCGroupInfo,
+                PipeMessageType.RCGroupInfo,
                 Triple(null, null, null)
             )
             restartChannel(true)
@@ -1242,18 +1242,18 @@ class WTWifiDirectManager(
         wtWifiDirect?.channelClose()
 
         resetData()
-        channelSend(
-            ChannelId.RCToWTActivity,
+        pipeSend(
+            PipeId.RCToWTActivity,
             scope,
-            ChannelMessageType.RCWifiDebugInfoMessage,
+            PipeMessageType.RCWifiDebugInfoMessage,
             wtWifiDirectInfo()
         )
 
         s.scanPeersS = false
-        channelSend(
-            ChannelId.RCToWTActivity,
+        pipeSend(
+            PipeId.RCToWTActivity,
             scope,
-            ChannelMessageType.RCWifiRestartChannel
+            PipeMessageType.RCWifiRestartChannel
         )
         resetData()
     }

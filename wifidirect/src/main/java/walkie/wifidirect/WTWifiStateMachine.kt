@@ -238,21 +238,14 @@ data class WTWifiDB(
 
             WTWifiEvent.P2p.ConnectionChanged -> {
                 logdAppend(tag, "\n\tp2pInfo: ${p2pInfo?.isGroupOwner} / Formed: ${p2pInfo?.groupFormed}")
+                /* Force an advLocalServiceCycle bounce */
                 if ((true == p2pInfo?.groupFormed) && p2pInfo.isGroupOwner) {
-                    /*
-                    nextEvent = WTWifiEvent.WTWifi.Command(
-                        advertiseLocalService = false
-                    )
-                    */
+
                     tick = advLocalServiceCycle * (1 + tick / advLocalServiceCycle) + 1
                 }
+                /* Force a service discovery initiation */
                 if ((true == p2pInfo?.groupFormed) && !p2pInfo.isGroupOwner) {
-                    /*
-                    nextEvent = WTWifiEvent.WTWifi.Command(
-                        serviceDiscovery = false
-                    )
-                    */
-                    tick = serviceDiscoveryCycle * (1 + tick / serviceDiscoveryCycle) + 4
+                    tick = serviceDiscoveryCycle * (1 + tick / serviceDiscoveryCycle) + 7
                 }
                 copy(
                     p2pInfo = p2pInfo,
