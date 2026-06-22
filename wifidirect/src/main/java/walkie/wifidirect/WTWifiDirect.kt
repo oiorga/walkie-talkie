@@ -384,15 +384,9 @@ class WTWifiDirect(
             return WTWifiDirectResult.LocalError.NoWifiPermissions
         }
 
-        val ch = channel ?: run {
-            logd(TAGKClass, tag,
-                "Channel not initialized")
-            return WTWifiDirectResult.LocalError.ChannelNotInitialized
-        }
-
         return when (
             val res = awaitP2pAction { listener ->
-                action(ch, listener)
+                action(channel, listener)
             }
         ) {
             is CallbackResult.Success -> {
@@ -416,23 +410,11 @@ class WTWifiDirect(
                 )
                 error
             }
-            /*
-            is CallbackResult.Exception -> {
-                val error = WTWifiDirectResult.Exception(res.exception)
-                if (null != exceptionMsg) logd(
-                    TAGKClass,
-                    tag,
-                    "$exceptionMsg: ${error.errStr}"
-                )
-                error
-            }
-            */
         }
     }
 
     internal suspend inline fun <T>p2pRequest(
         tag: String,
-        successMsg: String? = null,
         crossinline action:
             (WifiP2pManager.Channel,
              (T) -> Unit) -> Unit
@@ -445,34 +427,15 @@ class WTWifiDirect(
             return WTWifiDirectResult.LocalError.NoWifiPermissions
         }
 
-        val ch = channel ?: run {
-            logd(
-                TAGKClass, tag,
-                "Channel not initialized"
-            )
-            return WTWifiDirectResult.LocalError.ChannelNotInitialized
-        }
-
         val data: T = awaitP2pRequest { callback ->
-            action(ch, callback)
+            action(channel, callback)
         }
-        /*
-            ?: run {
-            if (null != failureMsg) logd(
-                TAGKClass,
-                tag,
-                failureMsg)
-            return WTWifiDirectResult.LocalError.NoData
-        }
-        */
 
-        if (null != successMsg) logd(
-            TAGKClass,
+        logd(TAGKClass,
             tag,
-            successMsg)
+            data.toString())
         return WTWifiDirectResult.Data(data)
     }
-
 }
 
 internal suspend inline fun awaitP2pAction(

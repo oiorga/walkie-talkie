@@ -380,6 +380,7 @@ data class WTWifiDB(
                         advertiseLocalService = false
                     }
                 } else {
+                    /*
                     if (isGroupOwner && state.advertiseLocalService && ((tick % advLocalServiceCycle) == 0)) {
                         advertiseLocalService = false
                     }
@@ -390,6 +391,15 @@ data class WTWifiDB(
 
                     if (!isGroupOwner && state.advertiseLocalService) {
                         advertiseLocalService = false
+                    }
+                    */
+
+                    if (state.advertiseLocalService && ((tick % advLocalServiceCycle) == 0)) {
+                        advertiseLocalService = false
+                    }
+
+                    if (!state.advertiseLocalService) {
+                        advertiseLocalService = true
                     }
 
                     if (state.serviceDiscovery) {

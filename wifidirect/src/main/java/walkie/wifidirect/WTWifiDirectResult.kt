@@ -66,6 +66,11 @@ sealed class WTWifiDirectResult<out T> {
         object NoWifiPermissions : LocalError() {
             override val errStr = "Not enough Wi Fi Permissions"
         }
+
+        object InvalidState : LocalError() {
+            override val errStr = "Invalid State"
+        }
+
         /*
         object NoData : LocalError() {
             override val errStr = "No Data Available"

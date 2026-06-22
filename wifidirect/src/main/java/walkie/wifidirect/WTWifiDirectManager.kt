@@ -106,7 +106,8 @@ class WTWifiDirectManager(
 
     var wtWifi = WTWifiDB(
         nodeId = node,
-        state = WTWifiState.Disabled(wifiPermissions = false))
+        state = WTWifiState.Disabled(wifiPermissions = false)
+    )
 
     val wifiP2pEnable: Boolean
         get() = wtWifi.isWifiEnabled
@@ -197,9 +198,11 @@ class WTWifiDirectManager(
                             /***************************/
                         }
                     }
+
                     PipeMessageType.RCLocalServerPort -> {
                         mainLoopInbox.send(WTWifiEvent.WTWifi.LocalServerPort(input as Int))
                     }
+
                     else -> {
                         throw (NotImplementedError("$tag: channelOnReceive: channelId: $pipeId: inputType: $type Not Implemented "))
                     }
@@ -270,23 +273,12 @@ class WTWifiDirectManager(
             return
         }
 
-        val success = when (val res = wifiDirect.removeGroup()) {
-            WTWifiDirectResult.Success -> {
-                wtWifi.eraseP2pError()
-                true
-            }
-            is WTWifiDirectResult.LocalError,
-            is WTWifiDirectResult.WifiP2pError -> {
-                wtWifi.p2pError(tag, res.errStr)
-                false
-            }
-            is WTWifiDirectResult.Data<*> -> {
-                wtError("$tag: Invalid state")
-                false
-            }
+        wifiDirectP2pAction(tag,
+            "Success removing group",
+            "Failed removing group}"
+        ) {
+            wifiDirect.removeGroup()
         }
-
-        logd(tag, if (success) "\t-> Success" else "\t-> Failed")
     }
 
     suspend fun connect(
@@ -302,18 +294,16 @@ class WTWifiDirectManager(
             return P2pConnection.Fail
         }
 
-        return when (val res = wifiDirect.connect(device, config)) {
-            is WTWifiDirectResult.Success -> {
-                wtWifi.eraseP2pError()
+        return when (wifiDirectP2pAction(tag,
+            "Success connecting to ${device.uniqueWifiId()}",
+            "Failed connecting to ${device.uniqueWifiId()}"
+        ) {
+            wifiDirect.connect(device, config)
+        }) {
+            WTWifiDirectResult.Success -> {
                 P2pConnection.InProgress
             }
-            is WTWifiDirectResult.LocalError,
-            is WTWifiDirectResult.WifiP2pError -> {
-                wtWifi.p2pError(tag, res.errStr)
-                P2pConnection.Fail
-            }
-            is WTWifiDirectResult.Data<*> -> {
-                wtError("$tag: Invalid state")
+            else -> {
                 P2pConnection.Fail
             }
         }
@@ -327,24 +317,12 @@ class WTWifiDirectManager(
             return
         }
 
-        logdAppend(tag, "-> ")
-
-        when (val res = wifiDirect.cancelConnect()) {
-            is WTWifiDirectResult.Success -> {
-                wtWifi.eraseP2pError()
-                logdAppend(tag, "Success")
-            }
-            is WTWifiDirectResult.LocalError,
-            is WTWifiDirectResult.WifiP2pError -> {
-                wtWifi.p2pError(tag, res.errStr )
-                logdAppend(tag, res.errStr)
-            }
-            is WTWifiDirectResult.Data<*> -> {
-                wtError("$tag: Invalid state")
-            }
+        wifiDirectP2pAction(tag,
+            "Success canceling connect",
+            "Failed canceling connect"
+        ) {
+            wifiDirect.cancelConnect()
         }
-
-        logd(tag)
     }
 
     suspend fun connectTo(device: WTWifiDirectPeerInfo): P2pConnection {
@@ -353,7 +331,7 @@ class WTWifiDirectManager(
         logd(tag, "connect to ${device.uniqueWifiId} ${device.wtService} ${device.p2pConnection}")
 
         if (device.name == deviceUid) {
-            logd(tag,"Connecting to self: ${device.name}/${device.address} == $deviceUid")
+            logd(tag, "Connecting to self: ${device.name}/${device.address} == $deviceUid")
             throw (Exception("$tag Connecting to self: ${device.name}/${device.address} == $deviceUid"))
         }
 
@@ -477,7 +455,8 @@ class WTWifiDirectManager(
 
     suspend fun mainLoop(cadence: Long) {
         val tag = "mainLoop/${randomString(2u)}"
-        var p2pInfo: Triple<InetAddress?, InetAddress?, Int?> = Triple(wtGroupIp, wtLocalIp, wtGroupServerPort)
+        var p2pInfo: Triple<InetAddress?, InetAddress?, Int?> =
+            Triple(wtGroupIp, wtLocalIp, wtGroupServerPort)
         var rndDelay = Random.nextLong(50)
 
         while (scope.isActive) {
@@ -487,9 +466,14 @@ class WTWifiDirectManager(
             internalMaintenance()
 
             rndDelay = max(Random.nextLong(50 + rndDelay), 75)
-            val event = when (val v =  mainLoopInbox.await((cadence + rndDelay).milliseconds)) {
-                is MailboxData.Message -> { v.value }
-                MailboxData.Timeout -> { WTWifiEvent.WTWifi.Timeout }
+            val event = when (val v = mainLoopInbox.await((cadence + rndDelay).milliseconds)) {
+                is MailboxData.Message -> {
+                    v.value
+                }
+
+                MailboxData.Timeout -> {
+                    WTWifiEvent.WTWifi.Timeout
+                }
             }
 
             processEvent(event)
@@ -520,12 +504,15 @@ class WTWifiDirectManager(
                 wtWifi = wtWifi.transition(event)
                 if (!wtWifi.hasWifiPermissions) requestWifiPermissions()
             }
+
             WTWifiEvent.P2p.WifiEnabled -> {
                 logStr += "\n\tP2P state changed to enabled"
                 wtWifi = wtWifi.transition(
                     event,
-                    thisDevice = requestDeviceInfo())
+                    thisDevice = requestDeviceInfo()
+                )
             }
+
             WTWifiEvent.P2p.PeersChanged -> {
                 logStr += "\n\tP2P peers changed"
                 wtWifi = wtWifi.transition(
@@ -533,6 +520,7 @@ class WTWifiDirectManager(
                     p2pPeers = requestPeersInfo()
                 )
             }
+
             WTWifiEvent.P2p.ConnectionChanged -> {
                 val p2pInfo = requestConnectionInfo()
                 logStr += "\n\tP2P Connection changed: groupFormed: ${p2pInfo?.groupFormed} isGroupOwner: ${p2pInfo?.isGroupOwner}"
@@ -546,20 +534,29 @@ class WTWifiDirectManager(
                     updateP2pInfo(null)
                 }
             }
+
             WTWifiEvent.P2p.ThisDeviceChanged -> {
                 logd(tag, "P2P this device changed")
                 logStr += "\n\tP2P this device changed"
                 wtWifi = wtWifi.transition(
                     event,
                     thisDevice = requestDeviceInfo(),
-                    groupInfo = requestGroupInfo())
+                    groupInfo = requestGroupInfo()
+                )
             }
+
             is WTWifiEvent.P2p.TxtRecordListener -> {
                 logStr += "\n\tP2P Process TxtRecordListener info"
                 wtWifi = wtWifi.transition(
                     event,
-                    directServices = dnsSdTxtRecordListener(event.fullDomain, event.record, event.device))
+                    directServices = dnsSdTxtRecordListener(
+                        event.fullDomain,
+                        event.record,
+                        event.device
+                    )
+                )
             }
+
             is WTWifiEvent.P2p.ServiceResponseListener -> {
                 logStr += "\n\tP2P Process ServiceResponseListener info"
                 /*
@@ -568,12 +565,15 @@ class WTWifiDirectManager(
                     directServices = dnsSdServiceResponseListener(event.instanceName, event.registrationType, event.resourceType))
                 */
             }
+
             is WTWifiEvent.WTWifi.LocalServerPort -> {
                 wtWifi = wtWifi.transition(event)
             }
+
             WTWifiEvent.WTWifi.MergePeersServicesInfo -> {
                 wtWifi = wtWifi.transition(event)
             }
+
             is WTWifiEvent.WTWifi.Command -> {
                 if (null != event.advertiseLocalService) {
                     if (event.advertiseLocalService) addLocalService(removeFirst = true)
@@ -590,6 +590,7 @@ class WTWifiDirectManager(
                     removeGroup()
                 }
             }
+
             else -> {
                 logStr += "\n\tUnprocessed WifiD Event: ${event.toString()}"
             }
@@ -637,12 +638,12 @@ class WTWifiDirectManager(
 
         logd(tag, "Entry")
 
-
         if (!processWifiPermissions()) {
-            logd(tag, "Not enough Wifi permissions. Requesting.")
+            logd(tag, "Not enough Wifi permissions.")
             return
         }
-        updatePeers()
+
+        connectToPeers()
     }
 
     suspend fun mainLoopInit() {
@@ -673,34 +674,6 @@ class WTWifiDirectManager(
         )
 
         initServices()
-    }
-
-    suspend fun updatePeers() {
-        val tag = "updatePeers/${randomString(2u)}"
-
-        logd(tag, "Entry")
-        logd(
-            tag,
-            "deviceName = $deviceUid localIp = $wtLocalIp wifiP2pEnable: $wifiP2pEnable"
-        )
-
-        if (null == thisDevice) {
-            logd(tag, "Exit: Device info not available: $wifiP2pEnable")
-            return
-        }
-
-        if (!wifiP2pEnable) {
-            logd(tag, "Exit: wifiP2pEnable: $wifiP2pEnable")
-            return
-        }
-
-        logd(
-            tag,
-            "connectToPeers deviceName = $deviceUid"
-        )
-        connectToPeers()
-
-        logd(tag, "Exit")
     }
 
     fun notifyOfChange(
@@ -849,29 +822,15 @@ class WTWifiDirectManager(
             return
         }
 
-        when (val res = wifiDirect.removeLocalService(
-            instanceName,
-            serviceType,
-            cachedServiceRecord
-        )) {
-            is WTWifiDirectResult.Success -> {
-                wtWifi.eraseP2pError()
-                logd(TAGKClass, tag, "Success removing local service")
-            }
-
-            is WTWifiDirectResult.LocalError,
-            is WTWifiDirectResult.WifiP2pError -> {
-                wtWifi.p2pError(tag, res.errStr)
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Failed removing local service: ${res.errStr}"
-                )
-            }
-
-            is WTWifiDirectResult.Data<*> -> {
-                wtError(tag, "Invalid state")
-            }
+        wifiDirectP2pAction(tag,
+            "Success removing local service",
+            "Failed removing local service"
+        ) {
+            wifiDirect.removeLocalService(
+                instanceName,
+                serviceType,
+                cachedServiceRecord
+            )
         }
     }
 
@@ -892,31 +851,15 @@ class WTWifiDirectManager(
             removeLocalService()
         }
 
-        when (val res =
+        wifiDirectP2pAction(tag,
+            "Success adding local service",
+            "Failed adding local service"
+        ) {
             wifiDirect.addLocalService(
                 instanceName,
                 serviceType,
                 wtLocalServiceRecord!!
             )
-        ) {
-            is WTWifiDirectResult.Success -> {
-                wtWifi.eraseP2pError()
-                logd(TAGKClass, tag, "Success adding local service")
-            }
-
-            is WTWifiDirectResult.LocalError,
-            is WTWifiDirectResult.WifiP2pError -> {
-                wtWifi.p2pError(tag, res.errStr)
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Failed adding local service: ${res.errStr}"
-                )
-            }
-
-            is WTWifiDirectResult.Data<*> -> {
-                wtError(tag, "Invalid state")
-            }
         }
     }
 
@@ -931,28 +874,14 @@ class WTWifiDirectManager(
             return
         }
 
-        when (val res = wifiDirect.removeServiceRequest(
-            instanceName,
-            serviceType
-        )) {
-            is WTWifiDirectResult.Success -> {
-                wtWifi.eraseP2pError()
-                logd(TAGKClass, tag, "Success removing service request")
-            }
-
-            is WTWifiDirectResult.LocalError,
-            is WTWifiDirectResult.WifiP2pError -> {
-                wtWifi.p2pError(tag, res.errStr)
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Failed removing service request: ${res.errStr}"
-                )
-            }
-
-            is WTWifiDirectResult.Data<*> -> {
-                wtError(tag, "Invalid state")
-            }
+        wifiDirectP2pAction(tag,
+            "Success removing service request",
+            "Failed removing service request"
+        ) {
+            wifiDirect.removeServiceRequest(
+                instanceName,
+                serviceType
+            )
         }
     }
 
@@ -971,37 +900,26 @@ class WTWifiDirectManager(
             removeServiceRequest()
         }
 
-        when (val res = wifiDirect.addServiceRequest(
-            instanceName,
-            serviceType
-        )) {
-            is WTWifiDirectResult.Success -> {
-                wtWifi.eraseP2pError()
-                logd(TAGKClass, tag, "Success adding service request")
-            }
-
-            is WTWifiDirectResult.LocalError,
-            is WTWifiDirectResult.WifiP2pError -> {
-                wtWifi.p2pError(tag, res.errStr)
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Failed adding service request: ${res.errStr}"
-                )
-            }
-
-            is WTWifiDirectResult.Data<*> -> {
-                wtError(tag, "Invalid state")
-            }
+        wifiDirectP2pAction(tag,
+            "Success adding service request",
+            "Failed adding service request"
+        ) {
+            wifiDirect.addServiceRequest(
+                instanceName,
+                serviceType
+            )
         }
     }
 
-    fun dnsSdTxtRecordListener (fullDomain: String,
-                                record: Map<String, String>,
-                                device: WifiP2pDevice): Map<String, WTWifiDirectServiceInfo> {
+    fun dnsSdTxtRecordListener(
+        fullDomain: String,
+        record: Map<String, String>,
+        device: WifiP2pDevice
+    ): Map<String, WTWifiDirectServiceInfo> {
         val tag = "dnsSdTxtRecordListener/${randomString(2u)}"
 
-        logd(tag,
+        logd(
+            tag,
             "DnsSdTxtRecord available: [$fullDomain] [$record] [${device.deviceName}]"
         )
 
@@ -1011,7 +929,8 @@ class WTWifiDirectManager(
         val id = record[WT_SERVICE_ID] ?: run { return newDirectWifiServices }
         val unique = record[WT_SERVICE_UNIQUE] ?: run { return newDirectWifiServices }
         val rnd = record[WT_SERVICE_RND] ?: run { return newDirectWifiServices }
-        val localServerPort = record[WT_SERVICE_LOCAL_SERVER_PORT] ?: run { return newDirectWifiServices }
+        val localServerPort =
+            record[WT_SERVICE_LOCAL_SERVER_PORT] ?: run { return newDirectWifiServices }
 
         if (wtService == WT_SERVICE_WALKIETALKIE) {
             if (null == newDirectWifiServices[device.uniqueWifiId()]) {
@@ -1081,24 +1000,25 @@ class WTWifiDirectManager(
             }
         }
 
-        val servListener = WifiP2pManager.DnsSdServiceResponseListener { instanceName, registrationType, resourceType ->
-            scope.launch {
-                mainLoopInbox.send(
-                    WTWifiEvent.P2p.ServiceResponseListener(
-                        instanceName,
-                        registrationType,
-                        resourceType
+        val servListener =
+            WifiP2pManager.DnsSdServiceResponseListener { instanceName, registrationType, resourceType ->
+                scope.launch {
+                    mainLoopInbox.send(
+                        WTWifiEvent.P2p.ServiceResponseListener(
+                            instanceName,
+                            registrationType,
+                            resourceType
+                        )
                     )
-                )
+                }
             }
-        }
 
         logd(tag, "Registering listeners...")
-        wtWifiDirect?.registerServiceListeners( txtListener, servListener)
+        wtWifiDirect?.registerServiceListeners(txtListener, servListener)
     }
 
     suspend fun initServices() {
-        val tag = "discoverServicesInit/${randomString(2u)}"
+        val tag = "initServices/${randomString(2u)}"
         val sem = Semaphore(1, 1)
 
         logd(tag, "Entry")
@@ -1116,25 +1036,11 @@ class WTWifiDirectManager(
             return
         }
 
-        when (val res = wifiDirect.stopPeersDiscovery()) {
-            is WTWifiDirectResult.Success -> {
-                wtWifi.eraseP2pError()
-                logd(TAGKClass, tag, "Success stopping peers discovery")
-            }
-
-            is WTWifiDirectResult.LocalError,
-            is WTWifiDirectResult.WifiP2pError -> {
-                wtWifi.p2pError(tag, res.errStr)
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Failed stopping peers discovery: ${res.errStr}"
-                )
-            }
-
-            is WTWifiDirectResult.Data<*> -> {
-                wtError(tag, "Invalid state")
-            }
+        wifiDirectP2pAction(tag,
+            "Success stopping peers discovery",
+            "Failed stopping peers discovery"
+        ) {
+            wifiDirect.stopPeersDiscovery()
         }
     }
 
@@ -1145,25 +1051,12 @@ class WTWifiDirectManager(
             wtError(tag, "wtWifiDirect is null")
             return
         }
-        when (val res = wifiDirect.discoverServices()) {
-            is WTWifiDirectResult.Success -> {
-                wtWifi.eraseP2pError()
-                logd(TAGKClass, tag, "Success starting discovering services")
-            }
 
-            is WTWifiDirectResult.LocalError,
-            is WTWifiDirectResult.WifiP2pError -> {
-                wtWifi.p2pError(tag, res.errStr)
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Failed starting discovering services: ${res.errStr}"
-                )
-            }
-
-            is WTWifiDirectResult.Data<*> -> {
-                wtError(tag, "Invalid state")
-            }
+        wifiDirectP2pAction(tag,
+            "Success starting discovering services",
+            "Failed starting discovering services"
+        ) {
+            wifiDirect.discoverServices()
         }
     }
 
@@ -1175,46 +1068,18 @@ class WTWifiDirectManager(
             return
         }
 
-        when (val res = wifiDirect.clearServiceRequests()) {
-            is WTWifiDirectResult.Success -> {
-                wtWifi.eraseP2pError()
-                logd(TAGKClass, tag, "Success clearing service requests")
-            }
-
-            is WTWifiDirectResult.LocalError,
-            is WTWifiDirectResult.WifiP2pError -> {
-                wtWifi.p2pError(tag, res.errStr)
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Failed clearing service requests: ${res.errStr}"
-                )
-            }
-
-            is WTWifiDirectResult.Data<*> -> {
-                wtError(tag, "Invalid state")
-            }
+        wifiDirectP2pAction(tag,
+            "Success clearing service requests",
+            "Failed clearing service requests"
+        ) {
+            wifiDirect.clearServiceRequests()
         }
 
-        when (val res = wifiDirect.clearLocalServices()) {
-            is WTWifiDirectResult.Success -> {
-                wtWifi.eraseP2pError()
-                logd(TAGKClass, tag, "Success clearing local service")
-            }
-
-            is WTWifiDirectResult.LocalError,
-            is WTWifiDirectResult.WifiP2pError -> {
-                wtWifi.p2pError(tag, res.errStr)
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Failed clearing local service: ${res.errStr}"
-                )
-            }
-
-            is WTWifiDirectResult.Data<*> -> {
-                wtError(tag, "Invalid state")
-            }
+        wifiDirectP2pAction(tag,
+            "Success clearing local service",
+            "Failed clearing local service"
+        ) {
+            wifiDirect.clearLocalServices()
         }
     }
 
@@ -1239,8 +1104,12 @@ class WTWifiDirectManager(
                     }
                 )
             }
+
             WIFI_P2P_STATE_CHANGED_ACTION -> {
-                val enabled: Boolean = (WifiP2pManager.WIFI_P2P_STATE_ENABLED == intent.getIntExtra(WifiP2pManager.EXTRA_WIFI_STATE, -1))
+                val enabled: Boolean = (WifiP2pManager.WIFI_P2P_STATE_ENABLED == intent.getIntExtra(
+                    WifiP2pManager.EXTRA_WIFI_STATE,
+                    -1
+                ))
                 logd(
                     tag, "P2P state changed to " +
                             if (enabled) "enabled" else "disabled" + " " + "manager: \n\t\t\$manager"
@@ -1253,10 +1122,12 @@ class WTWifiDirectManager(
                     }
                 )
             }
+
             WIFI_P2P_PEERS_CHANGED_ACTION -> {
                 logd(tag, "P2P peers changed")
                 mainLoopInbox.send(WTWifiEvent.P2p.PeersChanged)
             }
+
             WIFI_P2P_CONNECTION_CHANGED_ACTION -> {
                 val networkInfo = intent
                     .getParcelableExtra<Parcelable>(WifiP2pManager.EXTRA_NETWORK_INFO) as NetworkInfo
@@ -1266,10 +1137,12 @@ class WTWifiDirectManager(
                 )
                 mainLoopInbox.send(WTWifiEvent.P2p.ConnectionChanged)
             }
+
             WIFI_P2P_THIS_DEVICE_CHANGED_ACTION -> {
                 logd(tag, "P2P this device changed")
                 mainLoopInbox.send(WTWifiEvent.P2p.ThisDeviceChanged)
             }
+
             else -> {
                 logd(
                     tag,
@@ -1322,5 +1195,36 @@ class WTWifiDirectManager(
             PipeMessageType.RCWifiRestartChannel
         )
         resetData()
+    }
+
+    internal inline fun wifiDirectP2pAction(
+        tag: String,
+        successMessage: String?,
+        errorMessage: String?,
+        action: () ->  WTWifiDirectResult<Unit>,
+    ):  WTWifiDirectResult<Unit> {
+        return when (val res = action()) {
+            is WTWifiDirectResult.Success -> {
+                wtWifi.eraseP2pError()
+                logd(TAGKClass, tag, successMessage ?: "wifiDirectP2pAction Success")
+                res
+            }
+
+            is WTWifiDirectResult.LocalError,
+            is WTWifiDirectResult.WifiP2pError -> {
+                wtWifi.p2pError(tag, res.errStr)
+                logd(
+                    TAGKClass,
+                    tag,
+                    "${errorMessage ?: "wifiDirectP2pAction Error"} : ${res.errStr}"
+                )
+                res
+            }
+
+            is WTWifiDirectResult.Data<*> -> {
+                wtError(tag, "Invalid state")
+                WTWifiDirectResult.LocalError.InvalidState
+            }
+        }
     }
 }
