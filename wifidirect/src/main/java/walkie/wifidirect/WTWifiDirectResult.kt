@@ -6,16 +6,16 @@ sealed class WTWifiDirectResult<out T> {
     abstract val errStr: String
 
     companion object {
-        fun wifiP2pError(reason: Int): WifiP2pError =
+        fun p2pError(reason: Int): Error.P2p =
             when (reason) {
                 WifiP2pManager.ERROR ->
-                    WifiP2pError.InternalError
+                    Error.P2p.InternalError
                 WifiP2pManager.P2P_UNSUPPORTED ->
-                    WifiP2pError.Unsupported
+                    Error.P2p.Unsupported
                 WifiP2pManager.BUSY ->
-                    WifiP2pError.Busy
+                    Error.P2p.Busy
                 else ->
-                    WifiP2pError.InternalError
+                    Error.P2p.InternalError
             }
     }
 
@@ -26,12 +26,6 @@ sealed class WTWifiDirectResult<out T> {
     data class Data<out T>(val data: T) : WTWifiDirectResult<T>() {
         override val errStr = "SuccessData"
     }
-
-    /*
-    data class Exception(val throwable: Throwable): WTWifiDirectResult<Nothing>() {
-        override val errStr: String = throwable.message ?: throwable::class.simpleName ?: "Unknown exception"
-    }
-    */
 
     fun <T> WTWifiDirectResult<T>.dataOrNull(): T? {
         return (this as? WTWifiDirectResult.Data)?.data
@@ -47,34 +41,35 @@ sealed class WTWifiDirectResult<out T> {
         block(data)
     }
 
-    sealed class WifiP2pError(val errId: Int) : WTWifiDirectResult<Nothing>() {
-        object InternalError : WifiP2pError(WifiP2pManager.ERROR) {
-            override val errStr = "($errId) -> INTERNAL ERROR"
-        }
-        object Unsupported : WifiP2pError(WifiP2pManager.P2P_UNSUPPORTED) {
-            override val errStr = "($errId) ->P2P UNSUPPORTED"
-        }
-        object Busy : WifiP2pError(WifiP2pManager.BUSY) {
-            override val errStr = "($errId) -> BUSY"
-        }
-    }
+    sealed class Error: WTWifiDirectResult<Nothing>() {
+        sealed class P2p(val errId: Int) : Error() {
+            abstract val p2pString: String
+            override val errStr = "($errId) -> $p2pString"
+            object InternalError : P2p(WifiP2pManager.ERROR) {
+                override val p2pString = "($errId) -> INTERNAL ERROR"
+            }
 
-    sealed class LocalError : WTWifiDirectResult<Nothing>() {
-        object ChannelNotInitialized : LocalError() {
-            override val errStr = "Channel not initialized"
-        }
-        object NoWifiPermissions : LocalError() {
-            override val errStr = "Not enough Wi Fi Permissions"
+            object Unsupported : P2p(WifiP2pManager.P2P_UNSUPPORTED) {
+                override val p2pString = "($errId) ->P2P UNSUPPORTED"
+            }
+
+            object Busy : P2p(WifiP2pManager.BUSY) {
+                override val p2pString = "($errId) -> BUSY"
+            }
         }
 
-        object InvalidState : LocalError() {
-            override val errStr = "Invalid State"
-        }
+        sealed class App : Error() {
+            object ChannelNotInitialized : App() {
+                override val errStr = "Channel not initialized"
+            }
 
-        /*
-        object NoData : LocalError() {
-            override val errStr = "No Data Available"
+            object NoWifiPermissions : App() {
+                override val errStr = "Not enough Wi Fi Permissions"
+            }
+
+            object InvalidState : App() {
+                override val errStr = "Invalid State"
+            }
         }
-        */
     }
 }

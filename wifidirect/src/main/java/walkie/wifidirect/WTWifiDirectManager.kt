@@ -45,7 +45,7 @@ import walkie.wifidirect.WTWifiDB.Companion.WT_SERVICE_LOCAL_SERVER_PORT
 import walkie.wifidirect.WTWifiDB.Companion.WT_SERVICE_RND
 import walkie.wifidirect.WTWifiDB.Companion.WT_SERVICE_UNIQUE
 import walkie.wifidirect.WTWifiDB.Companion.WT_SERVICE_WALKIETALKIE
-import walkie.wifidirect.WTWifiDirectResult.LocalError.ChannelNotInitialized.dataOrNull
+import walkie.wifidirect.WTWifiDirectResult.Error.App.ChannelNotInitialized.dataOrNull
 import java.net.InetAddress
 import kotlin.math.max
 import kotlin.random.Random
@@ -1210,8 +1210,7 @@ class WTWifiDirectManager(
                 res
             }
 
-            is WTWifiDirectResult.LocalError,
-            is WTWifiDirectResult.WifiP2pError -> {
+            is WTWifiDirectResult.Error -> {
                 wtWifi.p2pError(tag, res.errStr)
                 logd(
                     TAGKClass,
@@ -1223,7 +1222,7 @@ class WTWifiDirectManager(
 
             is WTWifiDirectResult.Data<*> -> {
                 wtError(tag, "Invalid state")
-                WTWifiDirectResult.LocalError.InvalidState
+                WTWifiDirectResult.Error.App.InvalidState
             }
         }
     }

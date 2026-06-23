@@ -32,10 +32,8 @@ class WTPRMComm (
     /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>() */
     /* private val _callBackList: WTCallBackInt<Any, Any> = WTCallBack() */
 ) :
-    /* WTRemoteCallMuxInt<Any, Any> by _remoteCallMux, */
     PipeMuxInt<Any, PipeMessageType> by _channelMux,
     EventDispatcherInt<Any> by _callBackList
-/* WTCallBackInt<Any, Any> by _callBackList */
 {
     val wtIPComm: WTIPComm = WTIPComm(node, scope)
     private val wtMesh: Mesh<String, WTCommPeerInfo> = WTIPMesh(node.uid(), scope)

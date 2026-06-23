@@ -381,7 +381,7 @@ class WTWifiDirect(
         if (!checkWifiPermissions()) {
             logd(TAGKClass, tag,
                 "Not enough Wi Fi Permissions")
-            return WTWifiDirectResult.LocalError.NoWifiPermissions
+            return WTWifiDirectResult.Error.App.NoWifiPermissions
         }
 
         return when (
@@ -398,7 +398,7 @@ class WTWifiDirect(
             }
             is CallbackResult.Failure -> {
                 val error =
-                    WTWifiDirectResult.wifiP2pError(
+                    WTWifiDirectResult.p2pError(
                         res.reason
                             ?: WifiP2pManager.ERROR
                     )
@@ -424,7 +424,7 @@ class WTWifiDirect(
                 TAGKClass, tag,
                 "No Wi Fi Permissions"
             )
-            return WTWifiDirectResult.LocalError.NoWifiPermissions
+            return WTWifiDirectResult.Error.App.NoWifiPermissions
         }
 
         val data: T = awaitP2pRequest { callback ->

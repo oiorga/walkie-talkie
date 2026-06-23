@@ -27,7 +27,7 @@ enum class P2pConnection {
     Fail
 }
 
-class P2PError(val op: String, val errMsg: String) {
+class WTWifiError(val op: String, val errMsg: String) {
     private var age: Int = 0
     val description: String
         get() = "$op / $errMsg ($age)".also { age++ }
@@ -168,7 +168,7 @@ data class WTWifiDB(
     private var connectToDeviceCached: WTWifiDirectPeerInfo? = null,
     var tick: Int = 0,
     private var cycle: Int  = CYCLE + Random.nextInt(CYCLE / 2),
-    private var lastP2pError: P2PError? = null
+    private var lastP2pError: WTWifiError? = null
     ) {
     companion object {
         const val TAG = "WTWifiDB"
@@ -200,10 +200,10 @@ data class WTWifiDB(
         }
 
     fun p2pError(op: String, errMsg: String) {
-        lastP2pError = P2PError(op, errMsg)
+        lastP2pError = WTWifiError(op, errMsg)
     }
     fun p2pError(): Boolean = (lastP2pError != null)
-    val p2pError: P2PError?
+    val p2pError: WTWifiError?
         get() = lastP2pError
     fun eraseP2pError() = run { lastP2pError = null }
 
