@@ -44,17 +44,18 @@ sealed class WTWifiDirectResult<out T> {
     sealed class Error: WTWifiDirectResult<Nothing>() {
         sealed class P2p(val errId: Int) : Error() {
             abstract val p2pString: String
-            override val errStr = "($errId) -> $p2pString"
+            override val errStr
+                get() = "($errId) -> $p2pString"
             object InternalError : P2p(WifiP2pManager.ERROR) {
-                override val p2pString = "($errId) -> INTERNAL ERROR"
+                override val p2pString = "INTERNAL ERROR"
             }
 
             object Unsupported : P2p(WifiP2pManager.P2P_UNSUPPORTED) {
-                override val p2pString = "($errId) ->P2P UNSUPPORTED"
+                override val p2pString = "P2P UNSUPPORTED"
             }
 
             object Busy : P2p(WifiP2pManager.BUSY) {
-                override val p2pString = "($errId) -> BUSY"
+                override val p2pString = "BUSY"
             }
         }
 

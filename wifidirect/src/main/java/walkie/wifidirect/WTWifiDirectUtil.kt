@@ -2,11 +2,7 @@ package walkie.wifidirect
 
 import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pInfo
-import android.net.wifi.p2p.WifiP2pManager
 import android.util.Log
-import walkie.util.CallbackResult
-import walkie.util.awaitResult
-import walkie.util.awaitValue
 import walkie.util.getInterfaceIpAddress
 import walkie.util.randomString
 
@@ -59,9 +55,13 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     val serviceDiscoveryActive = (currentState is WTWifiState.Enabled && (currentState as WTWifiState.Enabled).serviceDiscovery)
     val serviceAdvAdd = (currentState is WTWifiState.Enabled && (currentState as WTWifiState.Enabled).advertiseLocalService)
     val connecting = wtWifi.isWTServicePeerPresent
+    val engineCoolingDownInfo = wtWifi.engineCoolingDownInfo()
 
     info += "\nTick / Reset Countdown: ${wtWifi.tick} / ${if (wtWifi.isReady) "Off" else channelCountdown}"
-    info += if (wtWifi.p2pError()) "\nLast P2p Error: ${wtWifi.p2pError?.description}" else ""
+    engineCoolingDownInfo?.let {
+        info += if (it.coolingDown) "\nLast P2p Error: ${it.err.errStr}" else ""
+        info += if (it.coolingDown) "\nP2p Engine cool down: ${it.description}" else ""
+    }
 
     info += "\nWIFI Peers List "
     info += "\n Discovery/Services/LocalService: $peersDiscoveryState/$serviceDiscoveryActive/$serviceAdvAdd"

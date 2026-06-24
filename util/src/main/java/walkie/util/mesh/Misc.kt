@@ -10,8 +10,6 @@ class CountDown(val max: Int) {
     val on: Boolean
         get() = (counter in 1..max)
 
-    fun reset() = start()
-
     fun start() {
         counter = max
     }

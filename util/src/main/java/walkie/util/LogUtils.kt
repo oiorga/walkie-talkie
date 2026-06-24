@@ -23,7 +23,7 @@ inline fun <reified T> T.logd(tag: String, message: String? = null, logF: Boolea
     }
     else { }
 
-inline fun <reified T> T.logdAppend(tag: String, message: String, logF: Boolean = true) =
+inline fun <reified T> T.logdAppend(tag: String, message: String = "", logF: Boolean = true) =
     if (logF && Logging.ONE.isEnabled()) {
         if (Logging.ONE.iLog()) Log.d(Logging.TAG, "logdAppend calling log: tag: $tag")
         log(null) { classTag ->

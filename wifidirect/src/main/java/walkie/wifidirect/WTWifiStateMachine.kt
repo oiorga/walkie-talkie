@@ -14,7 +14,6 @@ import walkie.util.mesh.CountDown
 import walkie.util.randomString
 import java.net.InetAddress
 import kotlin.random.Random
-import kotlin.random.nextInt
 
 enum class P2pConnection {
     Null,
@@ -27,10 +26,48 @@ enum class P2pConnection {
     Fail
 }
 
-class WTWifiError(val op: String, val errMsg: String) {
-    private var age: Int = 0
+interface WTWifiErrorTrackerInt {
+    val op: String
+    val err: WTWifiDirectResult.Error
+    val coolingDown: Boolean
     val description: String
-        get() = "$op / $errMsg ($age)".also { age++ }
+}
+
+class WTWifiErrorTrackerInfo(
+    override val op: String,
+    override val err: WTWifiDirectResult.Error,
+    override val coolingDown: Boolean,
+    override val description: String
+): WTWifiErrorTrackerInt {
+
+}
+
+class WTWifiErrorTracker(override val op: String, override val err: WTWifiDirectResult.Error): WTWifiErrorTrackerInt{
+    companion object {
+        const val MAX = 15
+    }
+    private var countDown: CountDown = CountDown(MAX)
+    private var age: Int = 0
+
+    init {
+        if (err == WTWifiDirectResult.Error.P2p.Busy) {
+            countDown.startRandom()
+        }
+    }
+
+    override val coolingDown: Boolean
+        get() = (ttl > 0)
+
+    fun tick(): Int {
+        age++
+        return countDown.tick()
+    }
+
+    val ttl: Int
+        get() = countDown.value
+
+    override val description: String
+        get() = "$op/${err.errStr}/$age/$ttl"
 }
 
 data class WTWifiDirectServiceInfo (
@@ -168,7 +205,7 @@ data class WTWifiDB(
     private var connectToDeviceCached: WTWifiDirectPeerInfo? = null,
     var tick: Int = 0,
     private var cycle: Int  = CYCLE + Random.nextInt(CYCLE / 2),
-    private var lastP2pError: WTWifiError? = null
+    private var errTracker: WTWifiErrorTracker? = null
     ) {
     companion object {
         const val TAG = "WTWifiDB"
@@ -199,13 +236,23 @@ data class WTWifiDB(
             nextEvent = null
         }
 
-    fun p2pError(op: String, errMsg: String) {
-        lastP2pError = WTWifiError(op, errMsg)
+    fun wifiError(op: String, err: WTWifiDirectResult.Error) {
+        errTracker = WTWifiErrorTracker(op, err)
     }
-    fun p2pError(): Boolean = (lastP2pError != null)
-    val p2pError: WTWifiError?
-        get() = lastP2pError
-    fun eraseP2pError() = run { lastP2pError = null }
+    fun eraseP2pError() = run { errTracker = null }
+    val engineCoolingDown: Boolean
+        get() = run { (errTracker?.coolingDown ?: false) }
+
+    fun engineCoolingDownInfo(): WTWifiErrorTrackerInt? {
+        return errTracker?.let {
+            WTWifiErrorTrackerInfo(
+                it.op,
+                it.err,
+                it.coolingDown,
+                it.description
+            )
+        }
+    }
 
     init {
         logging(true)
@@ -299,11 +346,7 @@ data class WTWifiDB(
 
             WTWifiEvent.WTWifi.Timeout,
             WTWifiEvent.WTWifi.Default -> {
-                if (tick > 0) tick--
-                if ((tick == 0) && isReady) {
-                    tick = restartChannelTimeout
-                }
-                logdAppend(tag, "\n\ttick: $tick")
+                processTick()
                 processDefault()
             }
 
@@ -329,14 +372,40 @@ data class WTWifiDB(
         return newWifiDB
     }
 
-    fun processDefault(): WTWifiDB {
-        val tag = "processDefault"
-
-        return processEnabled()
+    fun processTick() {
+        logdAppend(tag, "\n\ttick: $tick")
+        if (tick > 0) tick--
+        if ((tick == 0) && isReady) {
+            tick = restartChannelTimeout
+        }
     }
 
-    fun processEnabled(): WTWifiDB {
-        val tag = "processEnabled"
+    fun processErrorRecovery(): WTWifiDB {
+        val tag = "processErrorRecovery/${randomString(2U)}"
+
+        logdAppend(tag, (errTracker?.description ?: "") + " / ")
+
+        if (errTracker?.tick() == 0) {
+            errTracker = null
+        }
+
+        logd(tag, errTracker?.description ?: "")
+
+        return this
+    }
+
+    fun processDefault(): WTWifiDB {
+        val tag = "processDefault/${randomString(2U)}"
+
+        if (engineCoolingDown) {
+            return processErrorRecovery()
+        }
+
+        return processEnabledState()
+    }
+
+    fun processEnabledState(): WTWifiDB {
+        val tag = "processEnabled/${randomString(2U)}"
         val currentState = state
 
         logd(tag, "tick: $tick state: ${state.toString()}")

@@ -494,6 +494,14 @@ class WTWifiDirectManager(
         logd(tag, event.description)
 
         when (event) {
+            is WTWifiEvent.WTWifi.LocalServerPort -> {
+                wtWifi = wtWifi.transition(event)
+            }
+
+            WTWifiEvent.WTWifi.MergePeersServicesInfo -> {
+                wtWifi = wtWifi.transition(event)
+            }
+
             WTWifiEvent.WTWifi.Default,
             WTWifiEvent.WTWifi.Timeout -> {
                 wtWifi = wtWifi.transition(event)
@@ -566,14 +574,6 @@ class WTWifiDirectManager(
                 */
             }
 
-            is WTWifiEvent.WTWifi.LocalServerPort -> {
-                wtWifi = wtWifi.transition(event)
-            }
-
-            WTWifiEvent.WTWifi.MergePeersServicesInfo -> {
-                wtWifi = wtWifi.transition(event)
-            }
-
             is WTWifiEvent.WTWifi.Command -> {
                 if (null != event.advertiseLocalService) {
                     if (event.advertiseLocalService) addLocalService(removeFirst = true)
@@ -596,9 +596,14 @@ class WTWifiDirectManager(
             }
         }
 
-        wtWifi.consumeNextEvent()?.let { nEvent ->
-            logStr += "\n\tSend nextEvent: $nEvent"
-            mainLoopInbox.send(nEvent)
+        wtWifi.engineCoolingDownInfo()?.let {
+            logStr += "\n\tGot P2p Action Error: ${it.description}"
+        }
+        if (!wtWifi.engineCoolingDown) {
+            wtWifi.consumeNextEvent()?.let { nEvent ->
+                logStr += "\n\tSend nextEvent: $nEvent"
+                mainLoopInbox.send(nEvent)
+            }
         }
 
         logd(tag, logStr)
@@ -640,6 +645,11 @@ class WTWifiDirectManager(
 
         if (!processWifiPermissions()) {
             logd(tag, "Not enough Wifi permissions.")
+            return
+        }
+
+        if (wtWifi.engineCoolingDown) {
+            logd(tag, "Wifi Engine cooling down after Busy error.")
             return
         }
 
@@ -1202,16 +1212,30 @@ class WTWifiDirectManager(
         successMessage: String?,
         errorMessage: String?,
         action: () ->  WTWifiDirectResult<Unit>,
-    ):  WTWifiDirectResult<Unit> {
+    ): WTWifiDirectResult<Unit> {
+        val localTag = "wifiDirectP2pAction/${randomString(2U)}"
+
+        val engineCoolDownInfo = wtWifi.engineCoolingDownInfo()
+        if (engineCoolDownInfo != null) {
+            logd(localTag, "P2p engine cooling down: ${engineCoolDownInfo.description}")
+            return engineCoolDownInfo.err
+        }
+
         return when (val res = action()) {
             is WTWifiDirectResult.Success -> {
                 wtWifi.eraseP2pError()
+                logd(TAGKClass, localTag, successMessage ?: "wifiDirectP2pAction Success")
                 logd(TAGKClass, tag, successMessage ?: "wifiDirectP2pAction Success")
                 res
             }
 
             is WTWifiDirectResult.Error -> {
-                wtWifi.p2pError(tag, res.errStr)
+                wtWifi.wifiError(tag, res)
+                logd(
+                    TAGKClass,
+                    localTag,
+                    "${errorMessage ?: "wifiDirectP2pAction Error"} : ${res.errStr}"
+                )
                 logd(
                     TAGKClass,
                     tag,
@@ -1221,6 +1245,11 @@ class WTWifiDirectManager(
             }
 
             is WTWifiDirectResult.Data<*> -> {
+                logd(
+                    TAGKClass,
+                    localTag,
+                    "Invalid State"
+                )
                 wtError(tag, "Invalid state")
                 WTWifiDirectResult.Error.App.InvalidState
             }

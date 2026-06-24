@@ -25,6 +25,7 @@ import walkie.util.randomString
 import java.util.Timer
 import java.util.TimerTask
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 
 class WalkiePlayGroundTimer(private val delay: Long = 1000L) {
     private var counter: Counter = Counter()
@@ -84,7 +85,7 @@ fun WalkieTalkie.squirrelWheel (scope: CoroutineScope = MainScope(), delay: Long
     }
 }
 
-fun WalkieTalkie.commSquirrelWheel (scope: CoroutineScope, delay: Long = 1003L, addRandom: Long = 10L): Job {
+fun WalkieTalkie.commSquirrelWheel (scope: CoroutineScope, delay: Long = 3003L, addRandom: Long = 10L): Job {
     val tag: String = "commSquirrelWheel/${randomString(2U)}"
 
     logd(tag, "Entry")
@@ -150,9 +151,9 @@ suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: 
         val div = 10
         val maxK = div.toLong()
         for (k in 0..maxK) {
-            delay (div + delay / div)
+            delay ((div + delay / div).milliseconds)
             scope.launch {
-                delay(div * (1 + Random.nextLong(maxK * delay / div)))
+                delay((div * (1 + Random.nextLong(maxK * delay / div))).milliseconds)
                 val messagePayload = "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid()}" +
                         " $c$maxK $k " + "[" + randomString(8U) + "]"
                 val message = ChatMessage(
@@ -172,9 +173,9 @@ suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: 
                 wtHub.sendChatMessage(message)
             }
 
-            delay (div + delay / div)
+            delay ((div + delay / div).milliseconds)
             scope.launch {
-                delay(div * (1 + Random.nextLong(maxK * delay / div)))
+                delay((div * (1 + Random.nextLong(maxK * delay / div))).milliseconds)
                 val messagePayload = "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid()} " + "" +
                         "[" + randomString(8U) + "]"
                 val message = ChatMessage(
