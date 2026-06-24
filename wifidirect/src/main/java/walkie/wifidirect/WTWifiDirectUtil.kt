@@ -55,12 +55,11 @@ internal fun WTWifiDirectManager.wtWifiDirectInfo() : String {
     val serviceDiscoveryActive = (currentState is WTWifiState.Enabled && (currentState as WTWifiState.Enabled).serviceDiscovery)
     val serviceAdvAdd = (currentState is WTWifiState.Enabled && (currentState as WTWifiState.Enabled).advertiseLocalService)
     val connecting = wtWifi.isWTServicePeerPresent
-    val engineCoolingDownInfo = wtWifi.engineCoolingDownInfo()
 
     info += "\nTick / Reset Countdown: ${wtWifi.tick} / ${if (wtWifi.isReady) "Off" else channelCountdown}"
-    engineCoolingDownInfo?.let {
-        info += if (it.coolingDown) "\nLast P2p Error: ${it.err.errStr}" else ""
-        info += if (it.coolingDown) "\nP2p Engine cool down: ${it.description}" else ""
+    wtWifi.onEngineCoolingDown { errT ->
+        info += if (errT.coolingDown) "\nLast P2p Error: ${errT.err.errStr}" else ""
+        info += if (errT.coolingDown) "\nP2p Engine cool down: ${errT.description}" else ""
     }
 
     info += "\nWIFI Peers List "

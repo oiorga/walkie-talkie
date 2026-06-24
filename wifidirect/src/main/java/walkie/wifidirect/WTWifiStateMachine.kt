@@ -239,19 +239,23 @@ data class WTWifiDB(
     fun wifiError(op: String, err: WTWifiDirectResult.Error) {
         errTracker = WTWifiErrorTracker(op, err)
     }
-    fun eraseP2pError() = run { errTracker = null }
-    val engineCoolingDown: Boolean
-        get() = run { (errTracker?.coolingDown ?: false) }
 
-    fun engineCoolingDownInfo(): WTWifiErrorTrackerInt? {
-        return errTracker?.let {
-            WTWifiErrorTrackerInfo(
-                it.op,
-                it.err,
-                it.coolingDown,
-                it.description
-            )
+    fun eraseP2pError() = run { errTracker = null }
+
+    fun <T>onEngineCoolingDown(block: (WTWifiErrorTrackerInt) -> T): T? {
+        errTracker?.let { errT ->
+            if (errT.coolingDown) {
+                return block(errT)
+            }
         }
+        return null
+    }
+
+    private fun wifiErrorTick(): Int {
+        errTracker?.let { errT ->
+            return errT.tick()
+        }
+        return 0
     }
 
     init {
@@ -380,28 +384,14 @@ data class WTWifiDB(
         }
     }
 
-    fun processErrorRecovery(): WTWifiDB {
-        val tag = "processErrorRecovery/${randomString(2U)}"
-
-        logdAppend(tag, (errTracker?.description ?: "") + " / ")
-
-        if (errTracker?.tick() == 0) {
-            errTracker = null
-        }
-
-        logd(tag, errTracker?.description ?: "")
-
-        return this
-    }
-
     fun processDefault(): WTWifiDB {
         val tag = "processDefault/${randomString(2U)}"
 
-        if (engineCoolingDown) {
-            return processErrorRecovery()
+        return if (0 != wifiErrorTick()) {
+            this
+        } else {
+            processEnabledState()
         }
-
-        return processEnabledState()
     }
 
     fun processEnabledState(): WTWifiDB {

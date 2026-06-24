@@ -275,7 +275,7 @@ class WTWifiDirectManager(
 
         wifiDirectP2pAction(tag,
             "Success removing group",
-            "Failed removing group}"
+            "Failed removing group}",
         ) {
             wifiDirect.removeGroup()
         }
@@ -285,7 +285,7 @@ class WTWifiDirectManager(
         device: WifiP2pDevice,
         config: WifiP2pConfig
     ): P2pConnection {
-        val tag = "device: ${randomString(2u)}"
+        val tag = "connect: ${randomString(2u)}"
 
         logd(tag, "Connecting to ${device.uniqueWifiId()}")
 
@@ -296,7 +296,8 @@ class WTWifiDirectManager(
 
         return when (wifiDirectP2pAction(tag,
             "Success connecting to ${device.uniqueWifiId()}",
-            "Failed connecting to ${device.uniqueWifiId()}"
+            "Failed connecting to ${device.uniqueWifiId()}",
+            ignoreError = false
         ) {
             wifiDirect.connect(device, config)
         }) {
@@ -319,7 +320,7 @@ class WTWifiDirectManager(
 
         wifiDirectP2pAction(tag,
             "Success canceling connect",
-            "Failed canceling connect"
+            "Failed canceling connect",
         ) {
             wifiDirect.cancelConnect()
         }
@@ -596,10 +597,9 @@ class WTWifiDirectManager(
             }
         }
 
-        wtWifi.engineCoolingDownInfo()?.let {
-            logStr += "\n\tGot P2p Action Error: ${it.description}"
-        }
-        if (!wtWifi.engineCoolingDown) {
+        wtWifi.onEngineCoolingDown { errInfo ->
+            logStr += "\n\tGot P2p Action Error: ${errInfo.description}"
+        } ?: run {
             wtWifi.consumeNextEvent()?.let { nEvent ->
                 logStr += "\n\tSend nextEvent: $nEvent"
                 mainLoopInbox.send(nEvent)
@@ -648,9 +648,11 @@ class WTWifiDirectManager(
             return
         }
 
-        if (wtWifi.engineCoolingDown) {
+        wtWifi.onEngineCoolingDown {
             logd(tag, "Wifi Engine cooling down after Busy error.")
-            return
+            return@onEngineCoolingDown
+        }?.let {
+            return it
         }
 
         connectToPeers()
@@ -863,7 +865,8 @@ class WTWifiDirectManager(
 
         wifiDirectP2pAction(tag,
             "Success adding local service",
-            "Failed adding local service"
+            "Failed adding local service",
+            ignoreError = false
         ) {
             wifiDirect.addLocalService(
                 instanceName,
@@ -874,7 +877,7 @@ class WTWifiDirectManager(
     }
 
     suspend fun removeServiceRequest() {
-        val tag = "addServiceRequest/${randomString(2u)}"
+        val tag = "removeServiceRequest/${randomString(2u)}"
         val instanceName = WT_SERVICE_WALKIETALKIE /* + "." + deviceUid() */
         /* val serviceType = "_presence._tcp" */
         val serviceType = WT_SERVICE_WALKIETALKIE
@@ -912,7 +915,8 @@ class WTWifiDirectManager(
 
         wifiDirectP2pAction(tag,
             "Success adding service request",
-            "Failed adding service request"
+            "Failed adding service request",
+            ignoreError = false
         ) {
             wifiDirect.addServiceRequest(
                 instanceName,
@@ -1064,7 +1068,8 @@ class WTWifiDirectManager(
 
         wifiDirectP2pAction(tag,
             "Success starting discovering services",
-            "Failed starting discovering services"
+            "Failed starting discovering services",
+            ignoreError = false
         ) {
             wifiDirect.discoverServices()
         }
@@ -1209,28 +1214,30 @@ class WTWifiDirectManager(
 
     internal inline fun wifiDirectP2pAction(
         tag: String,
-        successMessage: String?,
-        errorMessage: String?,
+        successMessage: String? = null,
+        errorMessage: String? = null,
+        ignoreError: Boolean = true,
         action: () ->  WTWifiDirectResult<Unit>,
     ): WTWifiDirectResult<Unit> {
         val localTag = "wifiDirectP2pAction/${randomString(2U)}"
 
-        val engineCoolDownInfo = wtWifi.engineCoolingDownInfo()
-        if (engineCoolDownInfo != null) {
-            logd(localTag, "P2p engine cooling down: ${engineCoolDownInfo.description}")
-            return engineCoolDownInfo.err
+        wtWifi.onEngineCoolingDown { errT ->
+            logd(localTag, "P2p engine cooling down: ${errT.description}")
+            return@onEngineCoolingDown errT.err
+        }?.let {
+            return it
         }
 
         return when (val res = action()) {
             is WTWifiDirectResult.Success -> {
-                wtWifi.eraseP2pError()
+                if (!ignoreError) wtWifi.eraseP2pError()
                 logd(TAGKClass, localTag, successMessage ?: "wifiDirectP2pAction Success")
                 logd(TAGKClass, tag, successMessage ?: "wifiDirectP2pAction Success")
                 res
             }
 
             is WTWifiDirectResult.Error -> {
-                wtWifi.wifiError(tag, res)
+                if (!ignoreError) wtWifi.wifiError(tag, res)
                 logd(
                     TAGKClass,
                     localTag,
