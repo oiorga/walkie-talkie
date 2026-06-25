@@ -44,7 +44,7 @@ class WTWifiErrorTrackerInfo(
 
 class WTWifiErrorTracker(override val op: String, override val err: WTWifiDirectResult.Error): WTWifiErrorTrackerInt{
     companion object {
-        const val MAX = 15
+        const val MAX = 7
     }
     private var countDown: CountDown = CountDown(MAX)
     private var age: Int = 0

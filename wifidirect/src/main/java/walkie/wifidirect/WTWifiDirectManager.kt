@@ -1,5 +1,6 @@
 package walkie.wifidirect
 
+import WTModOpType
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.NetworkInfo
@@ -34,6 +35,9 @@ import walkie.util.generic.PipeMuxInt
 import walkie.util.generic.GenericList
 import walkie.util.generic.Mailbox
 import walkie.util.generic.MailboxData
+import walkie.util.generic.ModuleOp
+import walkie.util.generic.ModuleOpImpl
+import walkie.util.generic.ModuleOpInt
 import walkie.util.generic.RemoteCallMux
 import walkie.util.generic.typedCall
 import walkie.util.logd
@@ -65,8 +69,10 @@ class WTWifiDirectManager(
     val node: NodeIdInt,
     val scope: CoroutineScope,
     private val _channelMux: PipeMuxInt<Any, PipeMessageType> = PipeMux(),
-    private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
+    private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
+    private val _moduleOp: ModuleOpInt<WTModOpType> = ModuleOpImpl<WTModOpType>()
 ) :
+    ModuleOpInt<WTModOpType> by _moduleOp,
     PipeMuxInt<Any, PipeMessageType> by _channelMux,
     RemoteCallMuxInt by _remoteCallMux {
 
@@ -1262,4 +1268,47 @@ class WTWifiDirectManager(
             }
         }
     }
+
+
+    /*
+    override fun <I, O> modSet(
+        opId: WTModOpType,
+        input: I
+    ): ModuleOp.Output<O> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <I, O> modGet(opId: WTModOpType): ModuleOp.Output<O> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <I, O> modSend(
+        opId: WTModOpType,
+        input: I
+    ): ModuleOp.Output<O> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <I, O> modSetAsync(
+        opId: WTModOpType,
+        input: I
+    ): ModuleOp.Output<O> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <I, O> modSubscribe(
+        opId: WTModOpType,
+        input: I
+    ): ModuleOp.Output<O> {
+        TODO("Not yet implemented")
+    }
+
+    override fun <I, O> modEmit(
+        opId: WTModOpType,
+        input: I
+    ): ModuleOp.Output<O> {
+        TODO("Not yet implemented")
+    }
+    */
+
 }
