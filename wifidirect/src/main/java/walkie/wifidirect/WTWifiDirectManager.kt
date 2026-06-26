@@ -1269,8 +1269,6 @@ class WTWifiDirectManager(
         }
     }
 
-
-    /*
     override fun <I, O> modSet(
         opId: WTModOpType,
         input: I
@@ -1296,19 +1294,10 @@ class WTWifiDirectManager(
         TODO("Not yet implemented")
     }
 
-    override fun <I, O> modSubscribe(
+    override fun <I, O> modRegister(
         opId: WTModOpType,
         input: I
     ): ModuleOp.Output<O> {
         TODO("Not yet implemented")
     }
-
-    override fun <I, O> modEmit(
-        opId: WTModOpType,
-        input: I
-    ): ModuleOp.Output<O> {
-        TODO("Not yet implemented")
-    }
-    */
-
 }

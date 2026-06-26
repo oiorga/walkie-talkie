@@ -6,8 +6,7 @@ interface ModuleOpInt<T> {
     fun <I, O> modGet(opId: T): ModuleOp.Output<O>
     fun <I, O> modSend(opId: T, input: I): ModuleOp.Output<O>
     fun <I, O> modSetAsync(opId: T, input: I): ModuleOp.Output<O>
-    fun <I, O> modSubscribe(opId: T, input: I): ModuleOp.Output<O>
-    fun <I, O> modEmit(opId: T, input: I): ModuleOp.Output<O>
+    fun <I, O> modRegister(opId: T, input: I): ModuleOp.Output<O>
 }
 
 sealed class ModuleOp {
@@ -15,9 +14,8 @@ sealed class ModuleOp {
         data class Set<T, O>(val id: T): Type<T, O>()
         data class Get<T, O>(val id: T): Type<T, O>()
         data class Send<T, O>(val id: T): Type<T, O>()
-        data class Emit<T, O>(val id: T): Type<T, O>()
+        data class Register<T, O>(val id: T): Type<T, O>()
         data class SetAsync<T, O>(val id: T) : Type<T, O>()
-        data class Subscribe<T, O>(val id: T) : Type<T, O>()
     }
 
     data class Input<I>(val value: I) : ModuleOp()
@@ -33,25 +31,29 @@ class ModuleOpImpl<T>(): ModuleOpInt<T> {
         val TAGKClass = ModuleOpImpl::class
     }
 
-    override fun <I, O> execute(op: ModuleOp.Type<T, O>, input: ModuleOp.Input<I>): ModuleOp.Output<O> {
+    override fun <I, O> execute(
+        op: ModuleOp.Type<T, O>,
+        input: ModuleOp.Input<I>
+    ): ModuleOp.Output<O> {
         return when (op) {
             is ModuleOp.Type.Set -> {
                 modSet(op.id, input.value)
             }
+
             is ModuleOp.Type.Get -> {
                 modGet<I, O>(op.id)
             }
+
             is ModuleOp.Type.Send -> {
                 modSend(op.id, input.value)
             }
+
             is ModuleOp.Type.SetAsync -> {
                 modSetAsync(op.id, input.value)
             }
-            is ModuleOp.Type.Subscribe -> {
-                modSubscribe(op.id, input.value)
-            }
-            is ModuleOp.Type.Emit -> {
-                modEmit(op.id, input.value)
+
+            is ModuleOp.Type.Register -> {
+                modRegister(op.id, input.value)
             }
         }
     }
@@ -59,19 +61,20 @@ class ModuleOpImpl<T>(): ModuleOpInt<T> {
     override fun <I, O> modSet(opId: T, input: I): ModuleOp.Output<O> {
         error("$TAG Not Implemented")
     }
+
     override fun <I, O> modGet(opId: T): ModuleOp.Output<O> {
         error("$TAG Not Implemented")
     }
+
     override fun <I, O> modSend(opId: T, input: I): ModuleOp.Output<O> {
         error("$TAG Not Implemented")
     }
+
     override fun <I, O> modSetAsync(opId: T, input: I): ModuleOp.Output<O> {
         error("$TAG Not Implemented")
     }
-    override fun <I, O> modSubscribe(opId: T, input: I): ModuleOp.Output<O> {
-        error("$TAG Not Implemented")
-    }
-    override fun <I, O> modEmit(opId: T, input: I): ModuleOp.Output<O> {
+
+    override fun <I, O> modRegister(opId: T, input: I): ModuleOp.Output<O> {
         error("$TAG Not Implemented")
     }
 }
