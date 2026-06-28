@@ -87,7 +87,6 @@ dependencies {
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.navigation.compose)
-    implementation(libs.kotlinx.serialization.json)
     implementation(project(":talkie-api"))
     implementation(project(":util"))
     implementation(project(":util-api"))

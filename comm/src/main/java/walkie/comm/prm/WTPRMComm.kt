@@ -6,17 +6,19 @@ import walkie.comm.WTIPMesh
 import walkie.comm.ip.WTIPComm
 import walkie.comm.ip.WTIPCommPacketType
 import walkie.util.generic.PipeMux
-import walkie.util.generic.PipeMuxInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.WTMedium
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.util.api.PipeId
-import walkie.util.api.PipeIdInt
-import walkie.util.api.PipeMessageType
+import walkie.talkie.api.wtsystem.PipeId
+import walkie.talkie.api.wtsystem.PipeMessageType
 import walkie.util.api.DispatchEventId
+import walkie.util.api.PipeIdInt
+import walkie.util.api.PipeMessageInt
+import walkie.util.api.PipeMuxInt
 import walkie.util.generic.EventDispatcher
 import walkie.util.generic.EventDispatcherInt
+import walkie.util.generic.PipeMessage
 import walkie.util.inetToIpString
 import walkie.util.logd
 import walkie.util.logging
@@ -27,12 +29,12 @@ import java.net.InetAddress
 class WTPRMComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _channelMux: PipeMuxInt<Any, PipeMessageType> = PipeMux<Any, PipeMessageType>(),
+    private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher()
     /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>() */
     /* private val _callBackList: WTCallBackInt<Any, Any> = WTCallBack() */
 ) :
-    PipeMuxInt<Any, PipeMessageType> by _channelMux,
+    PipeMuxInt<PipeMessageType, Any> by _pipeMux,
     EventDispatcherInt<Any> by _callBackList
 {
     val wtIPComm: WTIPComm = WTIPComm(node, scope)
@@ -135,33 +137,35 @@ class WTPRMComm (
 
     override suspend fun pipeOnReceive(
         pipeId: PipeIdInt,
-        inputType: PipeMessageType?,
-        input: Any?
+        msg: PipeMessageInt<PipeMessageType, Any>
     ) {
         val tag = "channelOnReceive/${randomString(2u)}"
+        val type = msg.type
+        val data = msg.data
 
         logd(
             TAGKClass,
             tag,
-            "channelId: $pipeId inputType: $inputType"
+            "channelId: $pipeId inputType: $type"
         )
 
         when (pipeId) {
             PipeId.RCToPRMComm -> {
-                when (inputType) {
+                when (type) {
                     PipeMessageType.RCControlMesh -> {
-                        wtMesh.addPeersJson(input as String)
+                        wtMesh.addPeersJson(data as String)
                     }
                     PipeMessageType.RCLocalIp -> {
-                        val localIpAddress = (if (null != input) input as InetAddress else null)
+                        val localIpAddress = (if (null != data) data as InetAddress else null)
                         logd(TAGKClass,
                             tag,
-                            "$inputType localIpAddress: $localIpAddress")
+                            "$type localIpAddress: $localIpAddress")
                         pipeSend(
                             PipeId.RCToIpComm,
                             scope,
-                            PipeMessageType.RCLocalIp,
-                            localIpAddress
+                            PipeMessage(
+                                PipeMessageType.RCLocalIp,
+                                localIpAddress)
                         )
                         if (null != localIpAddress) {
                             wtMesh.addPeer(
@@ -186,13 +190,13 @@ class WTPRMComm (
 
                     }
                     PipeMessageType.RCGroupInfo -> {
-                        val (name, ipAddress, serverPort) = input as Triple<*, *, *>
+                        val (name, ipAddress, serverPort) = data as Triple<*, *, *>
                         val groupOwnerName = (if (null != name ) name as String else null)
                         val groupIpAddress = (if (null != ipAddress ) ipAddress as InetAddress else null)
                         val groupServerPort = (if (null != serverPort ) serverPort as Int else null)
                         logd(TAGKClass,
                             tag,
-                            "$inputType groupOwnerName/groupIpAddress: $groupOwnerName/$groupIpAddress/$groupServerPort")
+                            "$type groupOwnerName/groupIpAddress: $groupOwnerName/$groupIpAddress/$groupServerPort")
                         if (null != groupIpAddress &&
                             null != groupOwnerName &&
                             null != groupServerPort) {
@@ -223,18 +227,18 @@ class WTPRMComm (
                     else -> {
                         logd(TAGKClass,
                             tag,
-                            "Unprocessed input type $inputType")
+                            "Unprocessed input type $type")
                         throw (NotImplementedError(
                             "Not Implemented: " +
                                     "\nchannelId: $pipeId " +
-                                    "\ninputType: $inputType " +
-                                    "\ninput: $input "
+                                    "\ninputType: $type " +
+                                    "\ninput: $data "
                         ))
                     }
                 }
             }
             else -> {
-                throw (NotImplementedError("$tag channelId: $pipeId: inputType: $inputType Not Implemented "))
+                throw (NotImplementedError("$tag channelId: $pipeId: inputType: $type Not Implemented "))
             }
         }
     }
@@ -248,6 +252,8 @@ internal fun WTPRMComm.peersUpdateSendDebugInfo() {
     pipeSend(
         PipeId.RCToWTActivity,
         scope,
-        PipeMessageType.RCWTMeshDebugInfoMessage,
-        str)
+        PipeMessage(
+            PipeMessageType.RCWTMeshDebugInfoMessage,
+            str)
+    )
 }

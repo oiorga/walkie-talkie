@@ -1,9 +1,8 @@
-package walkie.util.api
+package walkie.talkie.api.wtsystem
 
-interface PipeIdInt
-interface PipeMessageInt
+import walkie.util.api.PipeIdInt
 
-enum class PipeMessageType : PipeMessageInt {
+enum class PipeMessageType {
     RCDummy0, RCDummy1, RCDummy2, RCDummy3, RCDummy4, RCDummy5, RCDummy6, RCDummy7, RCDummy8, RCDummy9,
     RCNA,
     RCPrimitiveType,
@@ -25,7 +24,8 @@ enum class PipeMessageType : PipeMessageInt {
     RCUpdateChatUI,
     RCUpdateMainUI,
     RCUpdateDebugUI,
-    RCUpdatePeersUI
+    RCUpdatePeersUI,
+    RCCommToChatPacket
 }
 
 enum class PipeId : PipeIdInt {

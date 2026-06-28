@@ -11,19 +11,21 @@ import walkie.chat.ChatMessageItemList
 import walkie.chat.Receiver
 import walkie.chat.Sender
 import walkie.util.generic.PipeMux
-import walkie.util.generic.PipeMuxInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
 import walkie.talkie.api.wtchat.DiscussionAbs
 import walkie.talkie.api.wtchat.DiscussionMapAbs
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
+import walkie.talkie.api.wtsystem.PipeId
+import walkie.talkie.api.wtsystem.PipeMessageType
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.node.NodeId
-import walkie.util.api.PipeId
 import walkie.util.api.PipeIdInt
-import walkie.util.api.PipeMessageType
+import walkie.util.api.PipeMessageInt
+import walkie.util.api.PipeMuxInt
 import walkie.util.api.RemoteCallMuxInt
+import walkie.util.generic.PipeMessage
 import walkie.util.generic.RemoteCallMux
 import walkie.util.logd
 import walkie.util.logging
@@ -41,9 +43,9 @@ data class DiscussionMap(
     private val systemNode: NodeIdInt,
     val scope: CoroutineScope,
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
-    private val _channelMux: PipeMuxInt<Any, PipeMessageType> = PipeMux<Any, PipeMessageType>(),
+    private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
 ) : RemoteCallMuxInt by _remoteCallMux,
-    PipeMuxInt<Any, PipeMessageType> by _channelMux
+    PipeMuxInt<PipeMessageType, Any> by _pipeMux
 {
     lateinit var updateUiLiveData: UpdateUiLiveData
 
@@ -104,7 +106,12 @@ data class DiscussionMap(
 
         mutex.unlock()
 
-        pipeSend(PipeId.RCTOCommonData,  scope, PipeMessageType.RCUpdateChatUI, chatMessage.groupId.type)
+        pipeSend(PipeId.RCTOCommonData,  scope,
+            PipeMessage(
+                PipeMessageType.RCUpdateChatUI,
+                chatMessage.groupId.type
+            )
+        )
     }
 
     suspend fun createDiscussion(chatGroupId: ChatGroupId) : ChatDiscussion {
@@ -190,12 +197,12 @@ data class DiscussionMap(
 
     override suspend fun pipeOnReceive(
         pipeId: PipeIdInt,
-        type: PipeMessageType?,
-        input: Any?
+        msg: PipeMessageInt<PipeMessageType, Any>
         ) {
+        val data = msg.data
         when (pipeId) {
             PipeId.RCCommToChat -> {
-                recvFromComm(input as CommPacket)
+                recvFromComm(data as CommPacket)
             }
             else -> {
                 logd(TAG, "$TAG: channelOnReceive: $pipeId not handled")
@@ -228,7 +235,12 @@ data class DiscussionMap(
 
         commPacket.logD(tag, logF)
 
-        pipeSend(PipeId.RCToComm, scope, messageType, commPacket)
+        pipeSend(PipeId.RCToComm, scope,
+            PipeMessage(
+                messageType,
+                commPacket
+            )
+        )
     }
 
     private suspend fun processCommPacketIn(commPacket: CommPacket): ChatMessage {

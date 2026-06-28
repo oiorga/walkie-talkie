@@ -25,19 +25,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import walkie.talkie.api.wtdebug.wtError
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.util.api.PipeId
+import walkie.talkie.api.wtsystem.PipeId
+import walkie.talkie.api.wtsystem.PipeMessageType
 import walkie.util.api.PipeIdInt
-import walkie.util.api.PipeMessageType
+import walkie.util.api.PipeMessageInt
+import walkie.util.api.PipeMuxInt
 import walkie.util.api.RemoteCallId
 import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.PipeMux
-import walkie.util.generic.PipeMuxInt
 import walkie.util.generic.GenericList
 import walkie.util.generic.Mailbox
 import walkie.util.generic.MailboxData
-import walkie.util.generic.ModuleOp
 import walkie.util.generic.ModuleOpImpl
 import walkie.util.generic.ModuleOpInt
+import walkie.util.generic.PipeMessage
 import walkie.util.generic.RemoteCallMux
 import walkie.util.generic.typedCall
 import walkie.util.logd
@@ -55,25 +56,16 @@ import kotlin.math.max
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
 
-/* Ugly. To revisit. To prevent coroutines to restart at onCreate on screen rotation */
-class WTWiFiDirectStatic private constructor() {
-    companion object {
-        val INSTANCE: WTWiFiDirectStatic by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { WTWiFiDirectStatic() }
-        val ONE = INSTANCE
-    }
-    var scanPeersS: Boolean = false
-}
-
 class WTWifiDirectManager(
     val manager: WifiP2pManager,
     val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _channelMux: PipeMuxInt<Any, PipeMessageType> = PipeMux(),
+    private val _channelMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
     private val _moduleOp: ModuleOpInt<WTModOpType> = ModuleOpImpl<WTModOpType>()
 ) :
     ModuleOpInt<WTModOpType> by _moduleOp,
-    PipeMuxInt<Any, PipeMessageType> by _channelMux,
+    PipeMuxInt<PipeMessageType, Any> by _channelMux,
     RemoteCallMuxInt by _remoteCallMux {
 
     companion object {
@@ -188,35 +180,34 @@ class WTWifiDirectManager(
 
     override suspend fun pipeOnReceive(
         pipeId: PipeIdInt,
-        type: PipeMessageType?,
-        input: Any?
+        msg: PipeMessageInt<PipeMessageType, Any>
     ) {
         val tag = "channelOnReceive/${randomString(2U)}"
 
-        logd(tag, "channelId: $pipeId inputType: $type")
+        logd(tag, "channelId: $pipeId inputType: ${msg.type}")
         when (pipeId) {
             PipeId.RCToWifi -> {
-                when (type) {
+                when (msg.type) {
                     PipeMessageType.RCWifiBroadcastReceiver -> {
-                        if (null != input) {
-                            processBcastReceiverMessage(input as Intent)
+                        if (null != msg.data) {
+                            processBcastReceiverMessage(msg.data as Intent)
                         } else {
                             /***************************/
                         }
                     }
 
                     PipeMessageType.RCLocalServerPort -> {
-                        mainLoopInbox.send(WTWifiEvent.WTWifi.LocalServerPort(input as Int))
+                        mainLoopInbox.send(WTWifiEvent.WTWifi.LocalServerPort(msg.data as Int))
                     }
 
                     else -> {
-                        throw (NotImplementedError("$tag: channelOnReceive: channelId: $pipeId: inputType: $type Not Implemented "))
+                        throw (NotImplementedError("$tag: channelOnReceive: channelId: $pipeId: inputType: $msg.type Not Implemented "))
                     }
                 }
             }
 
             else -> {
-                throw (NotImplementedError("$tag: channelOnReceive: channelId: $pipeId: inputType: $type Not Implemented "))
+                throw (NotImplementedError("$tag: channelOnReceive: channelId: $pipeId: inputType: $msg.type Not Implemented "))
             }
         }
     }
@@ -229,8 +220,9 @@ class WTWifiDirectManager(
         pipeSend(
             PipeId.RCToComm,
             scope,
-            PipeMessageType.RCGroupInfo,
-            Triple(null, null, null)
+            msg = PipeMessage(
+                PipeMessageType.RCGroupInfo,
+                Triple(null, null, null))
         )
         mainLoopJob?.cancel()
         mainLoopJob = null
@@ -629,8 +621,8 @@ class WTWifiDirectManager(
         pipeSend(
             PipeId.RCToWTActivity,
             scope,
-            PipeMessageType.RCWifiDebugInfoMessage,
-            wtWifiDirectInfo()
+            msg = PipeMessage(PipeMessageType.RCWifiDebugInfoMessage,
+                wtWifiDirectInfo())
         )
     }
 
@@ -666,18 +658,21 @@ class WTWifiDirectManager(
 
     suspend fun mainLoopInit() {
         val tag = "mainLoopInit/${randomString(2u)}"
-        val s = WTWiFiDirectStatic.INSTANCE
+        //val s = WTWiFiDirectStatic.INSTANCE
 
-        logd(tag, "Entry: ${s.scanPeersS}")
+        //logd(tag, "Entry: ${s.scanPeersS}")
 
+        /*
         if (s.scanPeersS) return
         s.scanPeersS = true
+        */
 
         pipeSend(
             PipeId.RCToWTActivity,
             scope,
-            PipeMessageType.RCWifiDebugInfoMessage,
-            wtWifiDirectInfo()
+            msg = PipeMessage(
+                PipeMessageType.RCWifiDebugInfoMessage,
+                wtWifiDirectInfo())
         )
 
         cancelConnect()
@@ -687,8 +682,9 @@ class WTWifiDirectManager(
         pipeSend(
             PipeId.RCToComm,
             scope,
-            PipeMessageType.RCGroupInfo,
-            Triple(null, null, null)
+            msg = PipeMessage(
+                PipeMessageType.RCGroupInfo,
+                Triple(null, null, null))
         )
 
         initServices()
@@ -724,8 +720,9 @@ class WTWifiDirectManager(
                 pipeSend(
                     PipeId.RCToComm,
                     scope,
-                    PipeMessageType.RCGroupInfo,
-                    Triple(null, null, null)
+                    msg = PipeMessage(
+                        PipeMessageType.RCGroupInfo,
+                        Triple(null, null, null))
                 )
             }
             if (!wtIsGroupOwner &&
@@ -742,21 +739,26 @@ class WTWifiDirectManager(
                 pipeSend(
                     PipeId.RCToComm,
                     scope,
-                    PipeMessageType.RCGroupInfo,
-                    Triple(null, null, null)
+                    msg = PipeMessage(
+                        PipeMessageType.RCGroupInfo,
+                        Triple(null, null, null))
                 )
 
                 pipeSend(
                     PipeId.RCToComm,
                     scope,
-                    PipeMessageType.RCGroupInfo,
-                    Triple(wtGroupOwnerName, wtGroupIp, wtGroupServerPort)
+                    msg = PipeMessage(
+                        PipeMessageType.RCGroupInfo,
+                        Triple(wtGroupOwnerName, wtGroupIp, wtGroupServerPort)
+                    )
                 )
                 pipeSend(
                     PipeId.RCToComm,
                     scope,
-                    PipeMessageType.RCLocalIp,
-                    wtLocalIp
+                    msg = PipeMessage(
+                        PipeMessageType.RCLocalIp,
+                        wtLocalIp
+                    )
                 )
                 localIpAlreadyChanged = true
             }
@@ -772,8 +774,10 @@ class WTWifiDirectManager(
                 pipeSend(
                     PipeId.RCToComm,
                     scope,
-                    PipeMessageType.RCLocalIp,
-                    wtLocalIp
+                    msg = PipeMessage(
+                        PipeMessageType.RCLocalIp,
+                        wtLocalIp
+                    )
                 )
             }
         }
@@ -796,8 +800,10 @@ class WTWifiDirectManager(
             pipeSend(
                 PipeId.RCToComm,
                 scope,
-                PipeMessageType.RCGroupInfo,
-                Triple(null, null, null)
+                msg = PipeMessage(
+                    PipeMessageType.RCGroupInfo,
+                    Triple(null, null, null)
+                )
             )
             restartChannel(true)
         }
@@ -1189,7 +1195,7 @@ class WTWifiDirectManager(
 
     suspend fun stop() {
         val tag = "wtWifiDirectStop/${randomString(2u)}"
-        val s = WTWiFiDirectStatic.INSTANCE
+        //val s = WTWiFiDirectStatic.INSTANCE
 
         logd(tag, "Entry")
 
@@ -1205,15 +1211,18 @@ class WTWifiDirectManager(
         pipeSend(
             PipeId.RCToWTActivity,
             scope,
+            msg = PipeMessage(
             PipeMessageType.RCWifiDebugInfoMessage,
             wtWifiDirectInfo()
+            )
         )
 
-        s.scanPeersS = false
         pipeSend(
             PipeId.RCToWTActivity,
             scope,
-            PipeMessageType.RCWifiRestartChannel
+            msg = PipeMessage(
+                PipeMessageType.RCWifiRestartChannel,
+                null)
         )
         resetData()
     }
@@ -1267,37 +1276,5 @@ class WTWifiDirectManager(
                 WTWifiDirectResult.Error.App.InvalidState
             }
         }
-    }
-
-    override fun <I, O> modSet(
-        opId: WTModOpType,
-        input: I
-    ): ModuleOp.Output<O> {
-        TODO("Not yet implemented")
-    }
-
-    override fun <I, O> modGet(opId: WTModOpType): ModuleOp.Output<O> {
-        TODO("Not yet implemented")
-    }
-
-    override fun <I, O> modSend(
-        opId: WTModOpType,
-        input: I
-    ): ModuleOp.Output<O> {
-        TODO("Not yet implemented")
-    }
-
-    override fun <I, O> modSetAsync(
-        opId: WTModOpType,
-        input: I
-    ): ModuleOp.Output<O> {
-        TODO("Not yet implemented")
-    }
-
-    override fun <I, O> modRegister(
-        opId: WTModOpType,
-        input: I
-    ): ModuleOp.Output<O> {
-        TODO("Not yet implemented")
     }
 }

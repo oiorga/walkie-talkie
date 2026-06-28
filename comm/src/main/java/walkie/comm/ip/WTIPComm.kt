@@ -10,19 +10,21 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import walkie.comm.ip.WTIPComm.Companion.TAGKClass
 import walkie.util.generic.PipeMux
-import walkie.util.generic.PipeMuxInt
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
+import walkie.talkie.api.wtsystem.PipeId
+import walkie.talkie.api.wtsystem.PipeMessageType
 import walkie.util.TCPClient
 import walkie.util.TCPServer
-import walkie.util.api.PipeId
-import walkie.util.api.PipeIdInt
-import walkie.util.api.PipeMessageType
 import walkie.util.api.DispatchEventId
+import walkie.util.api.PipeIdInt
+import walkie.util.api.PipeMessageInt
+import walkie.util.api.PipeMuxInt
 import walkie.util.exceptionToString
 import walkie.util.generic.BlockingQueue
 import walkie.util.generic.EventDispatcher
 import walkie.util.generic.EventDispatcherInt
+import walkie.util.generic.PipeMessage
 import walkie.util.getInetAddressByName
 import walkie.util.logd
 import walkie.util.logging
@@ -45,12 +47,12 @@ class WTIPCommStatic private constructor() {
 class WTIPComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _channelMux: PipeMuxInt<Any, PipeMessageType> = PipeMux<Any, PipeMessageType>(),
+    private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux<PipeMessageType, Any>(),
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher()
     /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>() */
 ) :
     /* WTRemoteCallMuxInt<Any, Any> by _remoteCallMux, */
-    PipeMuxInt<Any, PipeMessageType> by _channelMux,
+    PipeMuxInt<PipeMessageType, Any> by _pipeMux,
     EventDispatcherInt<Any> by _callBackList
 {
     val ipOutQueue = BlockingQueue<Triple<InetAddress, Int, ByteArray>>("ipOutQueue", 100)
@@ -121,16 +123,17 @@ class WTIPComm (
 
     override suspend fun pipeOnReceive(
         pipeId: PipeIdInt,
-        inputType: PipeMessageType?,
-        input: Any?
+        msg: PipeMessageInt<PipeMessageType, Any>
         ) {
         val tag = "channelOnReceive/${randomString(2u)}"
+        val type = msg.type
+        val data = msg.data
 
-        logd(tag, "channelId: $pipeId inputType: $inputType input: $input")
+        logd(tag, "channelId: $pipeId inputType: $type input: $data")
 
         when (pipeId) {
             PipeId.RCToIpComm -> {
-                when (inputType) {
+                when (type) {
                     /*
                     WTChannelMessageType.RCStop -> {
                         logd(tag, "Stopping IPComm")
@@ -138,12 +141,12 @@ class WTIPComm (
                     }
                     */
                     PipeMessageType.RCLocalIp -> {
-                        localServerIpAddress = if (null != input) input as InetAddress else null
+                        localServerIpAddress = if (null != data) data as InetAddress else null
                         logd(
                             tag,
                             "\nchannelId: $pipeId " +
-                                    "\ninputType: $inputType " +
-                                    "\ninput: $input " +
+                                    "\ninputType: $type " +
+                                    "\ninput: $data " +
                                     "\nlocalServerIpAddress: $localServerIpAddress"
                         )
                         if (null == localServerIpAddress) {
@@ -156,14 +159,14 @@ class WTIPComm (
                         throw (NotImplementedError(
                             "Not Implemented: " +
                                     "\nchannelId: $pipeId " +
-                                    "\ninputType: $inputType " +
-                                    "\ninput: $input "
+                                    "\ninputType: $type " +
+                                    "\ninput: $data "
                         ))
                     }
                 }
             }
             else -> {
-                throw (NotImplementedError("$tag: channelId: $pipeId: inputType: $inputType Not Implemented "))
+                throw (NotImplementedError("$tag: channelId: $pipeId: inputType: $type Not Implemented "))
             }
         }
     }
@@ -210,10 +213,18 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
                 /* throw (exc) */
                 return
             }
-            pipeSend(PipeId.RCToComm, scope,PipeMessageType.RCWifiMessage, commPacket)
+            pipeSend(PipeId.RCToComm, scope,
+                PipeMessage(
+                    PipeMessageType.RCWifiMessage,
+                    commPacket)
+            )
         }
         WTIPCommPacketType.ControlMesh -> {
-            pipeSend(PipeId.RCToPRMComm, scope,PipeMessageType.RCControlMesh, decodedJSon!!.jsonString)
+            pipeSend(PipeId.RCToPRMComm, scope,
+                PipeMessage(
+                    PipeMessageType.RCControlMesh,
+                    decodedJSon!!.jsonString)
+            )
         }
         else -> {
             logd(TAGKClass,

@@ -13,6 +13,7 @@ import walkie.chat.ChatGroupMap
 import walkie.comm.WTComm
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtdebug.WTDebugInt
+import walkie.talkie.api.wtsystem.PipeId
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.common.WTCommonData
 import walkie.talkie.globalmap.DiscussionMap
@@ -20,11 +21,10 @@ import walkie.talkie.node.NodeId
 import walkie.talkie.playground.commSquirrelWheel
 import walkie.util.CoroutineRuntime
 import walkie.util.Logging
-import walkie.util.api.PipeId
+import walkie.util.api.registerAsReceiver
+import walkie.util.api.registerSenders
 import walkie.util.generateBinaryRec
 import walkie.util.generic.genericListOf
-import walkie.util.generic.registerAsReceiver
-import walkie.util.generic.registerSenders
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString

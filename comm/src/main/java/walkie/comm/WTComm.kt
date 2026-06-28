@@ -4,7 +4,6 @@ import kotlinx.coroutines.CoroutineScope
 import walkie.comm.ip.wtIPCommMain
 import walkie.comm.prm.WTPRMComm
 import walkie.util.generic.PipeMux
-import walkie.util.generic.PipeMuxInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.CommPacketInt
@@ -13,11 +12,13 @@ import walkie.talkie.api.wtcomm.WTCommChatMessageOut
 import walkie.talkie.api.wtcomm.WTCommPacketIn
 import walkie.talkie.api.wtcomm.WTCommPacketOut
 import walkie.talkie.api.wtsystem.NodeIdInt
-
-import walkie.util.api.PipeId
-import walkie.util.api.PipeIdInt
-import walkie.util.api.PipeMessageType
+import walkie.talkie.api.wtsystem.PipeId
+import walkie.talkie.api.wtsystem.PipeMessageType
 import walkie.util.api.DispatchEventId
+import walkie.util.api.PipeIdInt
+import walkie.util.api.PipeMessageInt
+import walkie.util.api.PipeMuxInt
+import walkie.util.generic.PipeMessage
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -25,9 +26,9 @@ import walkie.util.randomString
 class WTComm (
     private val nodeId: NodeIdInt,
     val scope: CoroutineScope,
-    private val _channelMux: PipeMuxInt<Any, PipeMessageType> = PipeMux<Any, PipeMessageType>(),
+    private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
     /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>(), */
-) : PipeMuxInt<Any, PipeMessageType> by _channelMux,
+) : PipeMuxInt<PipeMessageType, Any> by _pipeMux,
     /* WTRemoteCallMuxInt<Any, Any> by _remoteCallMux, */
     WTCommChatMessageIn,
     WTCommChatMessageOut,
@@ -77,11 +78,20 @@ class WTComm (
         wtPRMComm.wtIPComm.registerReceiver(PipeId.RCToComm, scope, this)
 
         wtPRMComm.registerToEvent(DispatchEventId.CBMeshNewPeer) { _ ->
-            pipeSend(PipeId.RCTOCommonData, scope, PipeMessageType.RCUpdatePeersUI)
+            pipeSend(PipeId.RCTOCommonData, scope,
+                PipeMessage(
+                    PipeMessageType.RCUpdatePeersUI,
+                    null
+                )
+            )
         }
         wtPRMComm.registerToEvent(DispatchEventId.CBServerPort) { serverPort ->
             logd(tag, "$this sending serverPort: $serverPort to RCToWifi")
-            pipeSend(PipeId.RCToWifi, scope, PipeMessageType.RCLocalServerPort, serverPort!!)
+            pipeSend(PipeId.RCToWifi, scope,
+                PipeMessage(
+                    PipeMessageType.RCLocalServerPort,
+                    serverPort!!)
+            )
         }
         logd(tag, "Init Exit")
     }
@@ -99,7 +109,11 @@ class WTComm (
     }
 
     override suspend fun chatMessageOut(commPacket: CommPacketInt) {
-        pipeSend(PipeId.RCCommToChat, scope, null, commPacket)
+        pipeSend(PipeId.RCCommToChat, scope,
+            PipeMessage(
+                PipeMessageType.RCCommToChatPacket,
+                commPacket)
+        )
     }
 
     override suspend fun commPacketOut(commPacket: CommPacketInt) {
@@ -113,42 +127,61 @@ class WTComm (
         }
     }
 
-    override suspend fun pipeOnReceive(pipeId: PipeIdInt, inputType: PipeMessageType?, input: Any?) {
+    override suspend fun pipeOnReceive(pipeId: PipeIdInt, msg: PipeMessageInt<PipeMessageType, Any>) {
         val tag = "channelOnReceive/${randomString(2U)}"
-        val logF = (inputType == PipeMessageType.RCChatMessage || inputType == PipeMessageType.RCChatMessageLoopback)
-        logd(tag, "channelOnReceive: channelId: $pipeId inputType: $inputType")
+        val type = msg.type
+        val data = msg.data
+        val logF = (type == PipeMessageType.RCChatMessage || type == PipeMessageType.RCChatMessageLoopback)
+        logd(tag, "channelOnReceive: channelId: $pipeId inputType: $type")
 
         when (pipeId) {
             PipeId.RCChatToComm -> {
-                chatMessageIn(input as CommPacketInt)
-            }
-            PipeId.RCWifiToComm -> {
-                commPacketIn(input as CommPacketInt)
-            }
-            PipeId.RCToComm -> {
-                when (inputType) {
-                    PipeMessageType.RCWifiMessage -> {
-                        commPacketIn(input as CommPacketInt)
-                    }
-                    PipeMessageType.RCChatMessage -> {
-                        commPacketOut(input as CommPacketInt)
-                    }
-                    PipeMessageType.RCChatMessageLoopback -> {
-                        chatMessageLoopback(input as CommPacketInt)
-                    }
-                    PipeMessageType.RCLocalIp -> {
-                        pipeSend(PipeId.RCToPRMComm, scope, PipeMessageType.RCLocalIp, input)
-                    }
-                    PipeMessageType.RCGroupInfo -> {
-                        pipeSend(PipeId.RCToPRMComm, scope, PipeMessageType.RCGroupInfo, input)
+                when (type) {
+                    PipeMessageType.RCCommToChatPacket -> {
+                        chatMessageIn(data as CommPacketInt)
                     }
                     else -> {
-                        throw (NotImplementedError("$TAG: channelOnReceive: channelId: $pipeId: inputType: $inputType Not Implemented "))
+                        throw (NotImplementedError("$TAG: channelOnReceive: channelId: $pipeId: inputType: $type Not Implemented "))
+                    }
+                }
+            }
+            PipeId.RCWifiToComm -> {
+                commPacketIn(data as CommPacketInt)
+            }
+            PipeId.RCToComm -> {
+                when (type) {
+                    PipeMessageType.RCWifiMessage -> {
+                        commPacketIn(data as CommPacketInt)
+                    }
+                    PipeMessageType.RCChatMessage -> {
+                        commPacketOut(data as CommPacketInt)
+                    }
+                    PipeMessageType.RCChatMessageLoopback -> {
+                        chatMessageLoopback(data as CommPacketInt)
+                    }
+                    PipeMessageType.RCLocalIp -> {
+                        pipeSend(PipeId.RCToPRMComm, scope,
+                            PipeMessage(
+                                PipeMessageType.RCLocalIp,
+                                data
+                            )
+                        )
+                    }
+                    PipeMessageType.RCGroupInfo -> {
+                        pipeSend(PipeId.RCToPRMComm, scope,
+                            PipeMessage(
+                                PipeMessageType.RCGroupInfo,
+                                data
+                            )
+                        )
+                    }
+                    else -> {
+                        throw (NotImplementedError("$TAG: channelOnReceive: channelId: $pipeId: inputType: $type Not Implemented "))
                     }
                 }
             }
             else -> {
-                throw (NotImplementedError("$TAG: channelOnReceive: channelId: $pipeId: inputType: $inputType Not Implemented "))
+                throw (NotImplementedError("$TAG: channelOnReceive: channelId: $pipeId: inputType: $type Not Implemented "))
             }
         }
     }

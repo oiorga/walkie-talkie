@@ -47,18 +47,19 @@ import walkie.comm.WTComm
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtmisc.InfoMap
 import walkie.talkie.api.wtmisc.WTNavigation
+import walkie.talkie.api.wtsystem.PipeId
+import walkie.talkie.api.wtsystem.PipeMessageType
 import walkie.util.generic.PipeMux
-import walkie.util.generic.PipeMuxInt
-import walkie.util.generic.registerSenders
 import walkie.talkie.ui.nav.WTNavInit
 import walkie.talkie.ui.screens.customComposablesInit
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.viewmodel.WTViewModelFactory
-import walkie.util.api.PipeId
 import walkie.util.api.PipeIdInt
-import walkie.util.api.PipeMessageType
+import walkie.util.api.PipeMessageInt
+import walkie.util.api.PipeMuxInt
 import walkie.util.api.RemoteCallId
 import walkie.util.api.RemoteCallMuxInt
+import walkie.util.api.registerSenders
 import walkie.util.generic.RemoteCallMux
 import walkie.util.logd
 import walkie.util.logging
@@ -67,11 +68,11 @@ import kotlin.getValue
 import kotlin.system.exitProcess
 
 class WTActivity(
-    private val _channelMux: PipeMuxInt<Any, PipeMessageType> = PipeMux<Any, PipeMessageType>(),
+    private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
     ) :
     ComponentActivity(),
-    PipeMuxInt<Any, PipeMessageType> by _channelMux,
+    PipeMuxInt<PipeMessageType, Any> by _pipeMux,
     RemoteCallMuxInt by _remoteCallMux {
 
         companion object {
@@ -246,16 +247,17 @@ class WTActivity(
     private val info1 = InfoMap(groupIdWDI)
     override suspend fun pipeOnReceive(
         pipeId: PipeIdInt,
-        type: PipeMessageType?,
-        input: Any?
+        msg: PipeMessageInt<PipeMessageType, Any>
     ) {
+        val type = msg.type
+        val data = msg.data
         when (pipeId) {
             PipeId.RCToWTActivity -> {
                 when (type) {
                     PipeMessageType.RCWifiDebugInfoMessage -> {
                         val groupId = groupIdWDI
-                        if (info1["b"] != input as String) {
-                            info1["b"] = input
+                        if (info1["b"] != data as String) {
+                            info1["b"] = data
                             wtHub.wtGlobalDiscussionMap.replaceDiscussion(
                                 ChatGroupId(
                                     groupId = groupId,
@@ -280,8 +282,8 @@ class WTActivity(
                     }
                     PipeMessageType.RCWTMeshDebugInfoMessage -> {
                         val groupId = groupIdWDI
-                        if (info1["a"] != input as String) {
-                            info1["a"] = input
+                        if (info1["a"] != data as String) {
+                            info1["a"] = data
                             wtHub.wtGlobalDiscussionMap.replaceDiscussion(
                                 ChatGroupId(
                                     groupId = groupId,

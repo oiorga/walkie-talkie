@@ -2,20 +2,19 @@ package walkie.util.generic
 
 interface ModuleOpInt<T> {
     fun <I, O> execute(op: ModuleOp.Type<T, O>, input: ModuleOp.Input<I>): ModuleOp.Output<O>
-    fun <I, O> modSet(opId: T, input: I): ModuleOp.Output<O>
-    fun <I, O> modGet(opId: T): ModuleOp.Output<O>
-    fun <I, O> modSend(opId: T, input: I): ModuleOp.Output<O>
-    fun <I, O> modSetAsync(opId: T, input: I): ModuleOp.Output<O>
-    fun <I, O> modRegister(opId: T, input: I): ModuleOp.Output<O>
+    fun <I, O> set(opId: T, input: I): ModuleOp.Output<O>
+    fun <I, O> get(opId: T): ModuleOp.Output<O>
+    fun <I, O> registerEvent(opId: T, input: I): ModuleOp.Output<O>
+    fun <I, O> registerCallback(opId: T, input: I): ModuleOp.Output<O>
+
 }
 
 sealed class ModuleOp {
     sealed class Type<T, O> : ModuleOp() {
         data class Set<T, O>(val id: T): Type<T, O>()
         data class Get<T, O>(val id: T): Type<T, O>()
-        data class Send<T, O>(val id: T): Type<T, O>()
-        data class Register<T, O>(val id: T): Type<T, O>()
-        data class SetAsync<T, O>(val id: T) : Type<T, O>()
+        data class RegisterCallback<T, O>(val id: T): Type<T, O>()
+        data class RegisterEvent<T, O>(val id: T): Type<T, O>()
     }
 
     data class Input<I>(val value: I) : ModuleOp()
@@ -37,44 +36,40 @@ class ModuleOpImpl<T>(): ModuleOpInt<T> {
     ): ModuleOp.Output<O> {
         return when (op) {
             is ModuleOp.Type.Set -> {
-                modSet(op.id, input.value)
+                set(op.id, input.value)
             }
 
             is ModuleOp.Type.Get -> {
-                modGet<I, O>(op.id)
+                get<I, O>(op.id)
             }
 
-            is ModuleOp.Type.Send -> {
-                modSend(op.id, input.value)
+            is ModuleOp.Type.RegisterEvent -> {
+                registerEvent(op.id, input.value)
             }
 
-            is ModuleOp.Type.SetAsync -> {
-                modSetAsync(op.id, input.value)
+            is ModuleOp.Type.RegisterCallback -> {
+                registerCallback(op.id, input.value)
             }
 
-            is ModuleOp.Type.Register -> {
-                modRegister(op.id, input.value)
+            else -> {
+                ModuleOp.Output.Empty
             }
         }
     }
 
-    override fun <I, O> modSet(opId: T, input: I): ModuleOp.Output<O> {
+    override fun <I, O> set(opId: T, input: I): ModuleOp.Output<O> {
         error("$TAG Not Implemented")
     }
 
-    override fun <I, O> modGet(opId: T): ModuleOp.Output<O> {
+    override fun <I, O> get(opId: T): ModuleOp.Output<O> {
         error("$TAG Not Implemented")
     }
 
-    override fun <I, O> modSend(opId: T, input: I): ModuleOp.Output<O> {
+    override fun <I, O> registerEvent(opId: T, input: I): ModuleOp.Output<O> {
         error("$TAG Not Implemented")
     }
 
-    override fun <I, O> modSetAsync(opId: T, input: I): ModuleOp.Output<O> {
-        error("$TAG Not Implemented")
-    }
-
-    override fun <I, O> modRegister(opId: T, input: I): ModuleOp.Output<O> {
+    override fun <I, O> registerCallback(opId: T, input: I): ModuleOp.Output<O> {
         error("$TAG Not Implemented")
     }
 }
