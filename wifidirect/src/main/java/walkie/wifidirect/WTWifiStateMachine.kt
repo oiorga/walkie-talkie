@@ -44,7 +44,7 @@ class WTWifiErrorTrackerInfo(
 
 class WTWifiErrorTracker(override val op: String, override val err: WTWifiDirectResult.Error): WTWifiErrorTrackerInt{
     companion object {
-        const val MAX = 7
+        const val MAX = 17
     }
     private var countDown: CountDown = CountDown(MAX)
     private var age: Int = 0
@@ -112,7 +112,7 @@ interface WTWifiDirectEnv {
 }
 
 interface WTWifiCommandInt<T> {
-    val removeGroup: T
+    val cancelConnect: T
     val peersDiscovery: T
     val serviceDiscovery: T
     val advertiseLocalService: T
@@ -142,7 +142,7 @@ sealed class WTWifiEvent {
         object MergePeersServicesInfo: WTWifi()
 
         data class Command(
-            override val removeGroup: Boolean? = null,
+            override val cancelConnect: Boolean? = null,
             override val peersDiscovery: Boolean? = null,
             override val serviceDiscovery: Boolean? = null,
             override val advertiseLocalService: Boolean? = null,
@@ -406,7 +406,6 @@ data class WTWifiDB(
                 var serviceDiscovery: Boolean? = null
                 var advertiseLocalService: Boolean? = null
                 var connecting: Boolean? = null
-                var removeGroup: Boolean? = null
 
                 if (!state.peersDiscovery) {
                     peersDiscovery = true
@@ -466,9 +465,9 @@ data class WTWifiDB(
                     }
                 }
 
-                if ((removeGroup != null) || (peersDiscovery != null) || (serviceDiscovery != null) || (advertiseLocalService != null)) {
+                if ((peersDiscovery != null) || (serviceDiscovery != null) || (advertiseLocalService != null)) {
                     nextEvent = WTWifiEvent.WTWifi.Command(
-                        removeGroup,
+                        cancelConnect = null,
                         peersDiscovery,
                         serviceDiscovery,
                         advertiseLocalService

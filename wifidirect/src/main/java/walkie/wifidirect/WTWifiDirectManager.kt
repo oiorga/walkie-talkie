@@ -295,7 +295,7 @@ class WTWifiDirectManager(
         return when (wifiDirectP2pAction(tag,
             "Success connecting to ${device.uniqueWifiId()}",
             "Failed connecting to ${device.uniqueWifiId()}",
-            ignoreError = false
+            ignoreP2pError = false
         ) {
             wifiDirect.connect(device, config)
         }) {
@@ -382,15 +382,7 @@ class WTWifiDirectManager(
             }
 
             P2pConnection.Fail -> {
-                logd(
-                    TAGKClass,
-                    tag,
-                    "Connect to: ${device.name} ${device.address} GO = ${device.isGroupOwner} is In Fail. Change to Retry.",
-                )
-                if (isConnectedToGroup) {
-                    device.p2pConnection = P2pConnection.Connected
-                    device.cip.stop()
-                }
+                wtError(tag, "Connect to: ${device.name} ${device.address} GO = ${device.isGroupOwner} is In Fail. Invalid State")
             }
 
             P2pConnection.InProgress -> {
@@ -584,9 +576,9 @@ class WTWifiDirectManager(
                         discoverServices()
                     }
                 }
-                if (null != event.removeGroup && event.removeGroup) {
+                if (true == event.cancelConnect) {
                     logStr += "\n\tRequest removing group"
-                    removeGroup()
+                    cancelConnect()
                 }
             }
 
@@ -658,14 +650,6 @@ class WTWifiDirectManager(
 
     suspend fun mainLoopInit() {
         val tag = "mainLoopInit/${randomString(2u)}"
-        //val s = WTWiFiDirectStatic.INSTANCE
-
-        //logd(tag, "Entry: ${s.scanPeersS}")
-
-        /*
-        if (s.scanPeersS) return
-        s.scanPeersS = true
-        */
 
         pipeSend(
             PipeId.RCToWTActivity,
@@ -825,7 +809,12 @@ class WTWifiDirectManager(
 
         connectToDevice?.let { device ->
             logdAppend(tag, "\n\t\tConnecting to: ${device.name}")
-            connectTo(device)
+            if (P2pConnection.Fail == connectTo(device)) {
+                /* To revisit this */
+                wtWifi.eraseP2pError()
+                mainLoopInbox.send(
+                    WTWifiEvent.WTWifi.Command(cancelConnect = true))
+            }
         }
 
         logd(tag)
@@ -878,7 +867,7 @@ class WTWifiDirectManager(
         wifiDirectP2pAction(tag,
             "Success adding local service",
             "Failed adding local service",
-            ignoreError = false
+            ignoreP2pError = false
         ) {
             wifiDirect.addLocalService(
                 instanceName,
@@ -928,7 +917,7 @@ class WTWifiDirectManager(
         wifiDirectP2pAction(tag,
             "Success adding service request",
             "Failed adding service request",
-            ignoreError = false
+            ignoreP2pError = false
         ) {
             wifiDirect.addServiceRequest(
                 instanceName,
@@ -1081,7 +1070,7 @@ class WTWifiDirectManager(
         wifiDirectP2pAction(tag,
             "Success starting discovering services",
             "Failed starting discovering services",
-            ignoreError = false
+            ignoreP2pError = false
         ) {
             wifiDirect.discoverServices()
         }
@@ -1231,7 +1220,7 @@ class WTWifiDirectManager(
         tag: String,
         successMessage: String? = null,
         errorMessage: String? = null,
-        ignoreError: Boolean = true,
+        ignoreP2pError: Boolean = true,
         action: () ->  WTWifiDirectResult<Unit>,
     ): WTWifiDirectResult<Unit> {
         val localTag = "wifiDirectP2pAction/${randomString(2U)}"
@@ -1245,14 +1234,14 @@ class WTWifiDirectManager(
 
         return when (val res = action()) {
             is WTWifiDirectResult.Success -> {
-                if (!ignoreError) wtWifi.eraseP2pError()
+                if (!ignoreP2pError) wtWifi.eraseP2pError()
                 logd(TAGKClass, localTag, successMessage ?: "wifiDirectP2pAction Success")
                 logd(TAGKClass, tag, successMessage ?: "wifiDirectP2pAction Success")
                 res
             }
 
             is WTWifiDirectResult.Error -> {
-                if (!ignoreError) wtWifi.wifiError(tag, res)
+                if (!ignoreP2pError) wtWifi.wifiError(tag, res)
                 logd(
                     TAGKClass,
                     localTag,
