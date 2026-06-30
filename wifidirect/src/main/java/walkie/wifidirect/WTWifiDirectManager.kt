@@ -1,6 +1,6 @@
 package walkie.wifidirect
 
-import WTModOpType
+import walkie.talkie.api.wtModule.WTModOpType
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.NetworkInfo
@@ -565,18 +565,22 @@ class WTWifiDirectManager(
                 */
             }
 
-            is WTWifiEvent.WTWifi.Command -> {
-                if (null != event.advertiseLocalService) {
-                    if (event.advertiseLocalService) addLocalService(removeFirst = true)
-                    else removeLocalService()
+            is WTWifiEvent.WTWifi.Command.AdvertiseLocalService -> {
+                if (event.enable) {
+                    addLocalService(removeFirst = true)
                 }
-                if (null != event.serviceDiscovery) {
-                    if (event.serviceDiscovery) {
-                        addServiceRequest(removeFirst = true)
-                        discoverServices()
-                    }
+                else {
+                    removeLocalService()
                 }
-                if (true == event.cancelConnect) {
+            }
+            is WTWifiEvent.WTWifi.Command.ServiceDiscovery -> {
+                if (event.enable) {
+                    addServiceRequest(removeFirst = true)
+                    discoverServices()
+                }
+            }
+            is WTWifiEvent.WTWifi.Command.CancelConnect -> {
+                if (event.apply) {
                     logStr += "\n\tRequest removing group"
                     cancelConnect()
                 }
@@ -590,8 +594,7 @@ class WTWifiDirectManager(
         wtWifi.onEngineCoolingDown { errInfo ->
             logStr += "\n\tGot P2p Action Error: ${errInfo.description}"
         } ?: run {
-            wtWifi.consumeNextEvent()?.let { nEvent ->
-                logStr += "\n\tSend nextEvent: $nEvent"
+            wtWifi.consumeNextEvents().forEach { nEvent ->
                 mainLoopInbox.send(nEvent)
             }
         }
@@ -813,7 +816,7 @@ class WTWifiDirectManager(
                 /* To revisit this */
                 wtWifi.eraseP2pError()
                 mainLoopInbox.send(
-                    WTWifiEvent.WTWifi.Command(cancelConnect = true))
+                    WTWifiEvent.WTWifi.Command.CancelConnect())
             }
         }
 

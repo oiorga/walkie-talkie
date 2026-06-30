@@ -13,6 +13,7 @@ import walkie.util.logging
 import walkie.util.mesh.CountDown
 import walkie.util.randomString
 import java.net.InetAddress
+import java.util.LinkedList
 import kotlin.random.Random
 
 enum class P2pConnection {
@@ -141,12 +142,12 @@ sealed class WTWifiEvent {
         data class LocalServerPort(val value: Int? = null): WTWifi()
         object MergePeersServicesInfo: WTWifi()
 
-        data class Command(
-            override val cancelConnect: Boolean? = null,
-            override val peersDiscovery: Boolean? = null,
-            override val serviceDiscovery: Boolean? = null,
-            override val advertiseLocalService: Boolean? = null,
-        ): WTWifiCommandInt<Boolean?>, WTWifi()
+        sealed class Command: WTWifiEvent() {
+            data class CancelConnect(val apply: Boolean = true): Command()
+            data class PeersDiscovery(val enable: Boolean = true): Command()
+            data class ServiceDiscovery(val enable: Boolean = true): Command()
+            data class AdvertiseLocalService(val enable: Boolean = true): Command()
+        }
     }
 
     sealed class P2p: WTWifiEvent() {
@@ -229,11 +230,11 @@ data class WTWifiDB(
 
     val tag = TAG
 
-    private var nextEvent: WTWifiEvent? = null
+    private var nextEventList: List<WTWifiEvent> = emptyList()
 
-    fun consumeNextEvent(): WTWifiEvent? =
-        nextEvent.also {
-            nextEvent = null
+    fun consumeNextEvents(): List<WTWifiEvent> =
+        nextEventList.also {
+            nextEventList = emptyList()
         }
 
     fun wifiError(op: String, err: WTWifiDirectResult.Error) {
@@ -278,7 +279,7 @@ data class WTWifiDB(
             WTWifiEvent.P2p.WifiEnabled -> {
                 if (state is WTWifiState.Enabled) this
                 else {
-                    nextEvent = WTWifiEvent.WTWifi.Default
+                    nextEventList = listOf(WTWifiEvent.WTWifi.Default)
                     copy(
                         state = WTWifiState.Enabled(),
                         thisDevice = thisDevice ?: this.thisDevice
@@ -327,7 +328,7 @@ data class WTWifiDB(
                         "${device.deviceName} " 
                     }
                 }")
-                nextEvent = WTWifiEvent.WTWifi.MergePeersServicesInfo
+                nextEventList = listOf(WTWifiEvent.WTWifi.MergePeersServicesInfo)
                 copy(p2pPeers = p2pPeers)
             }
 
@@ -339,7 +340,7 @@ data class WTWifiDB(
                     }
                 }")
 
-                nextEvent = WTWifiEvent.WTWifi.MergePeersServicesInfo
+                nextEventList = listOf(WTWifiEvent.WTWifi.MergePeersServicesInfo)
                 copy(directServices = directServices ?: this.directServices)
             }
 
@@ -365,11 +366,9 @@ data class WTWifiDB(
             }
         }
 
-        newWifiDB.nextEvent = nextEvent
+        newWifiDB.nextEventList = nextEventList
 
-        newWifiDB.nextEvent?.let { eve ->
-            logdAppend(tag, "\n\tnextEvent: ${eve.toString()}")
-        }
+        logdAppend(tag, "\n\tnextEvent: ${newWifiDB.nextEventList}")
 
         logd(tag)
 
@@ -466,14 +465,13 @@ data class WTWifiDB(
                 }
 
                 if ((peersDiscovery != null) || (serviceDiscovery != null) || (advertiseLocalService != null)) {
-                    nextEvent = WTWifiEvent.WTWifi.Command(
-                        cancelConnect = null,
-                        peersDiscovery,
-                        serviceDiscovery,
-                        advertiseLocalService
-                    )
+                    nextEventList = buildList {
+                        peersDiscovery?.let { add(WTWifiEvent.WTWifi.Command.PeersDiscovery(it)) }
+                        serviceDiscovery?.let { add(WTWifiEvent.WTWifi.Command.ServiceDiscovery(it)) }
+                        advertiseLocalService?.let { add(WTWifiEvent.WTWifi.Command.AdvertiseLocalService(it)) }
+                    }
                 }
-                logd(tag, "nextEvent: $nextEvent")
+                logd(tag, "nextEvent: $nextEventList")
 
                 if ((connecting != null) || (peersDiscovery != null) || (serviceDiscovery != null) || (advertiseLocalService != null)) {
                     copy(
