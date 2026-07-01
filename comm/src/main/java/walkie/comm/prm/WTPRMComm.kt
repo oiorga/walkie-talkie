@@ -10,8 +10,8 @@ import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.WTMedium
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtsystem.PipeId
-import walkie.talkie.api.wtsystem.PipeMessageType
+import walkie.talkie.api.wtModule.PipeId
+import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.util.api.DispatchEventId
 import walkie.util.api.PipeIdInt
 import walkie.util.api.PipeMessageInt
@@ -54,8 +54,8 @@ class WTPRMComm (
     init {
         logging(true)
 
-        this.registerReceiver(PipeId.RCToIpComm, wtIPComm.scope,wtIPComm)
-        wtIPComm.registerReceiver(PipeId.RCToPRMComm, scope,this)
+        this.registerReceiver(PipeId.ToIpComm, wtIPComm.scope,wtIPComm)
+        wtIPComm.registerReceiver(PipeId.ToPRMComm, scope,this)
         wtMesh.registerSend { destPeer, jSon ->
             val tag = "wtMeshPRMSend/${randomString(2U)}"
             val dest = destPeer.umCI
@@ -150,21 +150,21 @@ class WTPRMComm (
         )
 
         when (pipeId) {
-            PipeId.RCToPRMComm -> {
+            PipeId.ToPRMComm -> {
                 when (type) {
-                    PipeMessageType.RCControlMesh -> {
+                    PipeMessageType.ControlMesh -> {
                         wtMesh.addPeersJson(data as String)
                     }
-                    PipeMessageType.RCLocalIp -> {
+                    PipeMessageType.LocalIp -> {
                         val localIpAddress = (if (null != data) data as InetAddress else null)
                         logd(TAGKClass,
                             tag,
                             "$type localIpAddress: $localIpAddress")
                         pipeSend(
-                            PipeId.RCToIpComm,
+                            PipeId.ToIpComm,
                             scope,
                             PipeMessage(
-                                PipeMessageType.RCLocalIp,
+                                PipeMessageType.LocalIp,
                                 localIpAddress)
                         )
                         if (null != localIpAddress) {
@@ -186,10 +186,10 @@ class WTPRMComm (
                             */
                         }
                     }
-                    PipeMessageType.RCGroupServerPort -> {
+                    PipeMessageType.GroupServerPort -> {
 
                     }
-                    PipeMessageType.RCGroupInfo -> {
+                    PipeMessageType.GroupInfo -> {
                         val (name, ipAddress, serverPort) = data as Triple<*, *, *>
                         val groupOwnerName = (if (null != name ) name as String else null)
                         val groupIpAddress = (if (null != ipAddress ) ipAddress as InetAddress else null)
@@ -250,10 +250,10 @@ internal fun WTPRMComm.peersUpdateSendDebugInfo() {
         str += "\n\tDest: ${directUnderlay(k)?.uid} ${directUnderlay(k)?.umCI}"
     }
     pipeSend(
-        PipeId.RCToWTActivity,
+        PipeId.ToWTActivity,
         scope,
         PipeMessage(
-            PipeMessageType.RCWTMeshDebugInfoMessage,
+            PipeMessageType.MeshDebugInfoMessage,
             str)
     )
 }

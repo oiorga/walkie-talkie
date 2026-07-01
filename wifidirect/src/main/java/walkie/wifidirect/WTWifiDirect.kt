@@ -12,7 +12,7 @@ import android.net.wifi.p2p.WifiP2pManager
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest
 import kotlinx.coroutines.CoroutineScope
-import walkie.talkie.api.wtsystem.PipeMessageType
+import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.util.CallbackResult
 import walkie.util.api.PipeMuxInt
 import walkie.util.api.RemoteCallMuxInt

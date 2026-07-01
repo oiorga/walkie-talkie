@@ -25,8 +25,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import walkie.talkie.api.wtdebug.wtError
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtsystem.PipeId
-import walkie.talkie.api.wtsystem.PipeMessageType
+import walkie.talkie.api.wtModule.PipeId
+import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.util.api.PipeIdInt
 import walkie.util.api.PipeMessageInt
 import walkie.util.api.PipeMuxInt
@@ -36,6 +36,7 @@ import walkie.util.generic.PipeMux
 import walkie.util.generic.GenericList
 import walkie.util.generic.Mailbox
 import walkie.util.generic.MailboxData
+import walkie.util.generic.ModuleOp
 import walkie.util.generic.ModuleOpImpl
 import walkie.util.generic.ModuleOpInt
 import walkie.util.generic.PipeMessage
@@ -186,9 +187,9 @@ class WTWifiDirectManager(
 
         logd(tag, "channelId: $pipeId inputType: ${msg.type}")
         when (pipeId) {
-            PipeId.RCToWifi -> {
+            PipeId.ToWifi -> {
                 when (msg.type) {
-                    PipeMessageType.RCWifiBroadcastReceiver -> {
+                    PipeMessageType.WifiBroadcastReceiver -> {
                         if (null != msg.data) {
                             processBcastReceiverMessage(msg.data as Intent)
                         } else {
@@ -196,7 +197,7 @@ class WTWifiDirectManager(
                         }
                     }
 
-                    PipeMessageType.RCLocalServerPort -> {
+                    PipeMessageType.LocalServerPort -> {
                         mainLoopInbox.send(WTWifiEvent.WTWifi.LocalServerPort(msg.data as Int))
                     }
 
@@ -218,10 +219,10 @@ class WTWifiDirectManager(
         logd(TAGKClass, tag, "Entry")
 
         pipeSend(
-            PipeId.RCToComm,
+            PipeId.ToComm,
             scope,
             msg = PipeMessage(
-                PipeMessageType.RCGroupInfo,
+                PipeMessageType.GroupInfo,
                 Triple(null, null, null))
         )
         mainLoopJob?.cancel()
@@ -614,9 +615,9 @@ class WTWifiDirectManager(
         )
 
         pipeSend(
-            PipeId.RCToWTActivity,
+            PipeId.ToWTActivity,
             scope,
-            msg = PipeMessage(PipeMessageType.RCWifiDebugInfoMessage,
+            msg = PipeMessage(PipeMessageType.WifiDebugInfoMessage,
                 wtWifiDirectInfo())
         )
     }
@@ -655,10 +656,10 @@ class WTWifiDirectManager(
         val tag = "mainLoopInit/${randomString(2u)}"
 
         pipeSend(
-            PipeId.RCToWTActivity,
+            PipeId.ToWTActivity,
             scope,
             msg = PipeMessage(
-                PipeMessageType.RCWifiDebugInfoMessage,
+                PipeMessageType.WifiDebugInfoMessage,
                 wtWifiDirectInfo())
         )
 
@@ -667,10 +668,10 @@ class WTWifiDirectManager(
         clearAllServices()
 
         pipeSend(
-            PipeId.RCToComm,
+            PipeId.ToComm,
             scope,
             msg = PipeMessage(
-                PipeMessageType.RCGroupInfo,
+                PipeMessageType.GroupInfo,
                 Triple(null, null, null))
         )
 
@@ -705,10 +706,10 @@ class WTWifiDirectManager(
                     "Group info changed(Null): wtGroupIp: $oldGroupIp -> $wtGroupIp wtLocalIp: $oldLocalIp -> $wtLocalIp"
                 )
                 pipeSend(
-                    PipeId.RCToComm,
+                    PipeId.ToComm,
                     scope,
                     msg = PipeMessage(
-                        PipeMessageType.RCGroupInfo,
+                        PipeMessageType.GroupInfo,
                         Triple(null, null, null))
                 )
             }
@@ -724,26 +725,26 @@ class WTWifiDirectManager(
                 )
 
                 pipeSend(
-                    PipeId.RCToComm,
+                    PipeId.ToComm,
                     scope,
                     msg = PipeMessage(
-                        PipeMessageType.RCGroupInfo,
+                        PipeMessageType.GroupInfo,
                         Triple(null, null, null))
                 )
 
                 pipeSend(
-                    PipeId.RCToComm,
+                    PipeId.ToComm,
                     scope,
                     msg = PipeMessage(
-                        PipeMessageType.RCGroupInfo,
+                        PipeMessageType.GroupInfo,
                         Triple(wtGroupOwnerName, wtGroupIp, wtGroupServerPort)
                     )
                 )
                 pipeSend(
-                    PipeId.RCToComm,
+                    PipeId.ToComm,
                     scope,
                     msg = PipeMessage(
-                        PipeMessageType.RCLocalIp,
+                        PipeMessageType.LocalIp,
                         wtLocalIp
                     )
                 )
@@ -759,10 +760,10 @@ class WTWifiDirectManager(
             if (wtLocalIp != oldLocalIp && !localIpAlreadyChanged) {
                 logd(tag, "Local IP info changed(IP): wtLocalIp: $oldLocalIp -> $wtLocalIp")
                 pipeSend(
-                    PipeId.RCToComm,
+                    PipeId.ToComm,
                     scope,
                     msg = PipeMessage(
-                        PipeMessageType.RCLocalIp,
+                        PipeMessageType.LocalIp,
                         wtLocalIp
                     )
                 )
@@ -785,10 +786,10 @@ class WTWifiDirectManager(
             removeGroup()
             wtWifi = wtWifi.reset()
             pipeSend(
-                PipeId.RCToComm,
+                PipeId.ToComm,
                 scope,
                 msg = PipeMessage(
-                    PipeMessageType.RCGroupInfo,
+                    PipeMessageType.GroupInfo,
                     Triple(null, null, null)
                 )
             )
@@ -1201,19 +1202,19 @@ class WTWifiDirectManager(
 
         resetData()
         pipeSend(
-            PipeId.RCToWTActivity,
+            PipeId.ToWTActivity,
             scope,
             msg = PipeMessage(
-            PipeMessageType.RCWifiDebugInfoMessage,
+            PipeMessageType.WifiDebugInfoMessage,
             wtWifiDirectInfo()
             )
         )
 
         pipeSend(
-            PipeId.RCToWTActivity,
+            PipeId.ToWTActivity,
             scope,
             msg = PipeMessage(
-                PipeMessageType.RCWifiRestartChannel,
+                PipeMessageType.WifiRestartChannel,
                 null)
         )
         resetData()
@@ -1269,4 +1270,10 @@ class WTWifiDirectManager(
             }
         }
     }
+
+    override fun <PipeMuxInt, Nothing> registerForEvent(opId: WTModOpType, emitter: PipeMuxInt): ModuleOp.Output.Empty {
+        //registerAsReceiver()
+        error("$TAG Not Implemented")
+    }
+
 }

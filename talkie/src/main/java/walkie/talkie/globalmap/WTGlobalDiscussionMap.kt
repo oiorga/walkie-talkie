@@ -17,8 +17,8 @@ import walkie.talkie.api.wtchat.DiscussionAbs
 import walkie.talkie.api.wtchat.DiscussionMapAbs
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtsystem.PipeId
-import walkie.talkie.api.wtsystem.PipeMessageType
+import walkie.talkie.api.wtModule.PipeId
+import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.node.NodeId
 import walkie.util.api.PipeIdInt
@@ -106,9 +106,9 @@ data class DiscussionMap(
 
         mutex.unlock()
 
-        pipeSend(PipeId.RCTOCommonData,  scope,
+        pipeSend(PipeId.TOCommonData,  scope,
             PipeMessage(
-                PipeMessageType.RCUpdateChatUI,
+                PipeMessageType.UpdateChatUI,
                 chatMessage.groupId.type
             )
         )
@@ -201,7 +201,7 @@ data class DiscussionMap(
         ) {
         val data = msg.data
         when (pipeId) {
-            PipeId.RCCommToChat -> {
+            PipeId.ToChat -> {
                 recvFromComm(data as CommPacket)
             }
             else -> {
@@ -215,7 +215,7 @@ data class DiscussionMap(
         val tag = "sendToComm/${randomString(2U)}"
         val logF = chatMessage.groupId.type == ChatGroupType.RemoteChat || chatMessage.groupId.type == ChatGroupType.RemoteChatTesting
 
-        val messageType = if (null == receiver) PipeMessageType.RCChatMessageLoopback else PipeMessageType.RCChatMessage
+        val messageType = if (null == receiver) PipeMessageType.ChatMessageLoopback else PipeMessageType.ChatMessage
         val receiverId = receiver?.node?.id() ?: chatMessage.sender.node.id()
         val receiverUnique = receiver?.node?.unique() ?: chatMessage.sender.node.unique()
 
@@ -235,7 +235,7 @@ data class DiscussionMap(
 
         commPacket.logD(tag, logF)
 
-        pipeSend(PipeId.RCToComm, scope,
+        pipeSend(PipeId.ToComm, scope,
             PipeMessage(
                 messageType,
                 commPacket

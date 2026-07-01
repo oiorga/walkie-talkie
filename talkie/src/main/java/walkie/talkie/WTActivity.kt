@@ -47,8 +47,8 @@ import walkie.comm.WTComm
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtmisc.InfoMap
 import walkie.talkie.api.wtmisc.WTNavigation
-import walkie.talkie.api.wtsystem.PipeId
-import walkie.talkie.api.wtsystem.PipeMessageType
+import walkie.talkie.api.wtModule.PipeId
+import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.util.generic.PipeMux
 import walkie.talkie.ui.nav.WTNavInit
 import walkie.talkie.ui.screens.customComposablesInit
@@ -252,9 +252,9 @@ class WTActivity(
         val type = msg.type
         val data = msg.data
         when (pipeId) {
-            PipeId.RCToWTActivity -> {
+            PipeId.ToWTActivity -> {
                 when (type) {
-                    PipeMessageType.RCWifiDebugInfoMessage -> {
+                    PipeMessageType.WifiDebugInfoMessage -> {
                         val groupId = groupIdWDI
                         if (info1["b"] != data as String) {
                             info1["b"] = data
@@ -280,7 +280,7 @@ class WTActivity(
                             wtHub.sendChatMessage(message)
                         }
                     }
-                    PipeMessageType.RCWTMeshDebugInfoMessage -> {
+                    PipeMessageType.MeshDebugInfoMessage -> {
                         val groupId = groupIdWDI
                         if (info1["a"] != data as String) {
                             info1["a"] = data
@@ -306,7 +306,7 @@ class WTActivity(
                             wtHub.sendChatMessage(message)
                         }
                     }
-                    PipeMessageType.RCWifiRestartChannel -> {
+                    PipeMessageType.WifiRestartChannel -> {
                         logd(tag, "RCWifiRestartChannel")
                         wifiRestartChannel()
                         wtHub.wtComm.wtPRMComm().wtIPComm.stop()
@@ -428,7 +428,7 @@ internal fun WTActivity.wtCustomInit(){
     registerRemoteCall(RemoteCallId.RCRequestWifiDPermissions) { _ -> requestWifiPermissions() }
     wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermissions, this)
     this.registerSenders(
-        pipeId = PipeId.RCToWTActivity,
+        pipeId = PipeId.ToWTActivity,
         wtScope,
         wtHub.wtWifiD,
         wtHub.wtComm.wtPRMComm()

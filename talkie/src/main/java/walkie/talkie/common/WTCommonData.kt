@@ -18,8 +18,8 @@ import walkie.talkie.ui.screens.WTUITheme
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.BuildConfig
 import walkie.talkie.api.wtdebug.WTDebugInt
-import walkie.talkie.api.wtsystem.PipeId
-import walkie.talkie.api.wtsystem.PipeMessageType
+import walkie.talkie.api.wtModule.PipeId
+import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.util.CoroutineRuntime
 import walkie.util.api.PipeIdInt
 import walkie.util.api.PipeMessageInt
@@ -93,7 +93,7 @@ class WTCommonData private constructor (
 
         logd(tag, "channelId: $pipeId inputType: $type input: $data")
         when (pipeId) {
-            PipeId.RCTOCommonData -> {
+            PipeId.TOCommonData -> {
                 if (updateUI(type, data))
                     updateUiLiveData.update()
             }
@@ -116,7 +116,7 @@ internal fun WTCommonData.updateUI(
 ): Boolean {
     val tag = "updateUI/${randomString(2U)}"
     val updateUI: Boolean = when (uiScreenMajor) {
-        PipeMessageType.RCUpdateChatUI -> {
+        PipeMessageType.UpdateChatUI -> {
             wtChatUpdateUI(uiScreenMinor as ChatGroupType, wtVModel?.currentScreen())
         }
         else -> {

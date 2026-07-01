@@ -12,8 +12,8 @@ import walkie.comm.ip.WTIPComm.Companion.TAGKClass
 import walkie.util.generic.PipeMux
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtsystem.PipeId
-import walkie.talkie.api.wtsystem.PipeMessageType
+import walkie.talkie.api.wtModule.PipeId
+import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.util.TCPClient
 import walkie.util.TCPServer
 import walkie.util.api.DispatchEventId
@@ -132,7 +132,7 @@ class WTIPComm (
         logd(tag, "channelId: $pipeId inputType: $type input: $data")
 
         when (pipeId) {
-            PipeId.RCToIpComm -> {
+            PipeId.ToIpComm -> {
                 when (type) {
                     /*
                     WTChannelMessageType.RCStop -> {
@@ -140,7 +140,7 @@ class WTIPComm (
                         /* stop() */
                     }
                     */
-                    PipeMessageType.RCLocalIp -> {
+                    PipeMessageType.LocalIp -> {
                         localServerIpAddress = if (null != data) data as InetAddress else null
                         logd(
                             tag,
@@ -213,16 +213,16 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
                 /* throw (exc) */
                 return
             }
-            pipeSend(PipeId.RCToComm, scope,
+            pipeSend(PipeId.ToComm, scope,
                 PipeMessage(
-                    PipeMessageType.RCWifiMessage,
+                    PipeMessageType.WifiMessage,
                     commPacket)
             )
         }
         WTIPCommPacketType.ControlMesh -> {
-            pipeSend(PipeId.RCToPRMComm, scope,
+            pipeSend(PipeId.ToPRMComm, scope,
                 PipeMessage(
-                    PipeMessageType.RCControlMesh,
+                    PipeMessageType.ControlMesh,
                     decodedJSon!!.jsonString)
             )
         }

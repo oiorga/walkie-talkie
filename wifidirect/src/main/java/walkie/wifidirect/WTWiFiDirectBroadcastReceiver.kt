@@ -25,8 +25,8 @@ import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION
 import kotlinx.coroutines.CoroutineScope
-import walkie.talkie.api.wtsystem.PipeId
-import walkie.talkie.api.wtsystem.PipeMessageType
+import walkie.talkie.api.wtModule.PipeId
+import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.util.api.PipeMuxInt
 import walkie.util.generic.PipeMessage
 import walkie.util.generic.PipeMux
@@ -71,10 +71,10 @@ class WiFiDirectBroadcastReceiver (
             WIFI_P2P_THIS_DEVICE_CHANGED_ACTION,
             -> {
                 pipeSend(
-                    pipeId = PipeId.RCToWifi,
+                    pipeId = PipeId.ToWifi,
                     scope = scope,
                     msg = PipeMessage(
-                        type = PipeMessageType.RCWifiBroadcastReceiver,
+                        type = PipeMessageType.WifiBroadcastReceiver,
                         data = intent)
                 )
             }

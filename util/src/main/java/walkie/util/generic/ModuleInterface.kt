@@ -4,9 +4,8 @@ interface ModuleOpInt<T> {
     fun <I, O> execute(op: ModuleOp.Type<T, O>, input: ModuleOp.Input<I>): ModuleOp.Output<O>
     fun <I, O> set(opId: T, input: I): ModuleOp.Output<O>
     fun <I, O> get(opId: T): ModuleOp.Output<O>
-    fun <I, O> registerEvent(opId: T, input: I): ModuleOp.Output<O>
-    fun <I, O> registerCallback(opId: T, input: I): ModuleOp.Output<O>
-
+    fun <I, Nothing> registerForEvent(opId: T, emitter: I): ModuleOp.Output.Empty
+    fun <I, O> registerCallback(opId: T, callBack: I): ModuleOp.Output.Empty
 }
 
 sealed class ModuleOp {
@@ -14,7 +13,7 @@ sealed class ModuleOp {
         data class Set<T, O>(val id: T): Type<T, O>()
         data class Get<T, O>(val id: T): Type<T, O>()
         data class RegisterCallback<T, O>(val id: T): Type<T, O>()
-        data class RegisterEvent<T, O>(val id: T): Type<T, O>()
+        data class RegisterForEvent<T, O>(val id: T): Type<T, O>()
     }
 
     data class Input<I>(val value: I) : ModuleOp()
@@ -43,12 +42,12 @@ class ModuleOpImpl<T>(): ModuleOpInt<T> {
                 get<I, O>(op.id)
             }
 
-            is ModuleOp.Type.RegisterEvent -> {
-                registerEvent(op.id, input.value)
+            is ModuleOp.Type.RegisterForEvent -> {
+                registerForEvent<I, Nothing>(op.id, input.value)
             }
 
             is ModuleOp.Type.RegisterCallback -> {
-                registerCallback(op.id, input.value)
+                registerCallback<I, O>(op.id, input.value)
             }
 
             else -> {
@@ -65,11 +64,11 @@ class ModuleOpImpl<T>(): ModuleOpInt<T> {
         error("$TAG Not Implemented")
     }
 
-    override fun <I, O> registerEvent(opId: T, input: I): ModuleOp.Output<O> {
+    override fun <I, Nothing> registerForEvent(opId: T, emitter: I): ModuleOp.Output.Empty {
         error("$TAG Not Implemented")
     }
 
-    override fun <I, O> registerCallback(opId: T, input: I): ModuleOp.Output<O> {
+    override fun <I, Nothing> registerCallback(opId: T, callBack: I): ModuleOp.Output.Empty {
         error("$TAG Not Implemented")
     }
 }

@@ -13,7 +13,6 @@ import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
 
-
 data class PipeMessage<T, D>(
     override val type: T,
     override val data: D?

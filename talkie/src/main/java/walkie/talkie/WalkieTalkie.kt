@@ -13,7 +13,7 @@ import walkie.chat.ChatGroupMap
 import walkie.comm.WTComm
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtdebug.WTDebugInt
-import walkie.talkie.api.wtsystem.PipeId
+import walkie.talkie.api.wtModule.PipeId
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.common.WTCommonData
 import walkie.talkie.globalmap.DiscussionMap
@@ -124,27 +124,27 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
             wtHub.wtComm = WTComm(wtHub.wtSystemNodeId, wtHub.wtScope)
 
             wtHub.wtGlobalDiscussionMap.registerSenders(
-                pipeId = PipeId.RCCommToChat,
+                pipeId = PipeId.ToChat,
                 wtHub.wtGlobalDiscussionMap.scope,
                 wtHub.wtComm
             )
 
             wtHub.wtComm.registerSenders(
-                PipeId.RCToComm,
+                PipeId.ToComm,
                 wtHub.wtComm.scope,
                 wtHub.wtGlobalDiscussionMap,
                 wtHub.wtWifiD
             )
 
             wtHub.registerAsReceiver(
-                PipeId.RCTOCommonData,
+                PipeId.TOCommonData,
                 wtHub.wtScope,
                 wtHub.wtGlobalDiscussionMap,
                 wtHub.wtComm
             )
 
             wtHub.wtWifiD.registerSenders(
-                PipeId.RCToWifi,
+                PipeId.ToWifi,
                 wtHub.wtWifiD.scope,
                 wtHub.wtBcastReceiver,
                 wtHub.wtComm,
