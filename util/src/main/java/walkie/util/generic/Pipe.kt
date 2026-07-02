@@ -19,7 +19,7 @@ data class PipeMessage<T, D>(
 ) : PipeMessageInt<T, D>
 
 class PipeMux<T, K>() : PipeMuxInt<T, K> {
-    override val pipeMap: MutableMap<PipeIdInt, MutableSharedFlow<PipeMessageInt<T, K>>> = mutableMapOf()
+    override var pipeMap: MutableMap<PipeIdInt, MutableSharedFlow<PipeMessageInt<T, K>>> = mutableMapOf()
     override val receiverMap: MutableMap<PipeIdInt, PipeMuxInt<T, K>> = mutableMapOf()
 
     private val lock = Any()
@@ -41,15 +41,28 @@ class PipeMux<T, K>() : PipeMuxInt<T, K> {
     override fun pipeCreate(pipeId: PipeIdInt) : MutableSharedFlow<PipeMessageInt<T, K>>? {
         synchronized(lock) {
             if (null == pipeMap[pipeId]) {
-                pipeMap[pipeId] =
-                    MutableSharedFlow<PipeMessageInt<T, K>>(
-                        replay = 10,
-                        extraBufferCapacity = 100,
-                        onBufferOverflow = BufferOverflow.SUSPEND
-                    )
+                pipeMap[pipeId] = MutableSharedFlow<PipeMessageInt<T, K>>(
+                    replay = 10,
+                    extraBufferCapacity = 100,
+                    onBufferOverflow = BufferOverflow.SUSPEND
+                )
             }
         }
         return pipeMap[pipeId]
+    }
+
+    override fun addPipeMux(pipeImpl: PipeMuxInt<T, K>) {
+        synchronized(lock) {
+            pipeMap.putAll(pipeImpl.pipeMap)
+            pipeImpl.pipeMap = pipeMap
+        }
+    }
+
+    override fun joinPipeMux(pipeImpl: PipeMuxInt<T, K>) {
+        synchronized(lock) {
+            pipeImpl.pipeMap.putAll(pipeMap)
+            pipeMap = pipeImpl.pipeMap
+        }
     }
 
     override fun registerReceiver (pipeId: PipeIdInt, scope: CoroutineScope, receiverObj: PipeMuxInt<T, K>) {
@@ -92,7 +105,7 @@ class PipeMux<T, K>() : PipeMuxInt<T, K> {
 
         val pipe  = receiverMap[pipeId]?.pipe(pipeId) ?: run {
             logd(tag, "pipeSend: pipe for ${receiverMap[pipeId]}[$pipeId] does not exist")
-            throw (NoSuchElementException("${this}: pipeSend: pipe for ${receiverMap[pipeId]}[$pipeId] does not exist"))
+            throw (NoSuchElementException("${this}: pipeSend: pipe for ${receiverMap[pipeId]}[$pipeId][${receiverMap[pipeId]?.pipe(pipeId)}] does not exist"))
         }
 
         scope.launch {

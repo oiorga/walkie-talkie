@@ -35,7 +35,7 @@ class WTComm (
     WTCommPacketOut,
     WTCommPacketIn
 {
-    private val wtPRMComm: WTPRMComm = WTPRMComm(nodeId, scope)
+    val wtPRMComm: WTPRMComm = WTPRMComm(nodeId, scope)
 
     companion object {
         const val TAG = "WTComm"
@@ -44,12 +44,8 @@ class WTComm (
 
     val tag = TAG
 
-    fun wtPRMComm() : WTPRMComm {
-        return wtPRMComm
-    }
-
     private fun directNodes(): List<String> {
-        return wtPRMComm().directNodes().toList()
+        return wtPRMComm.directNodes().toList()
     }
 
     fun directNodesInfo(): List<WTCommPeerInfo> {
@@ -59,7 +55,7 @@ class WTComm (
         directNodes().filter { peer ->
             peer != nodeId.uid()
         }.forEach { peer ->
-            val directUnderlay = wtPRMComm().directUnderlay(peer)
+            val directUnderlay = wtPRMComm.directUnderlay(peer)
             if (null != directUnderlay) {
                 directNodesList.add(directUnderlay)
             } else {
@@ -97,7 +93,7 @@ class WTComm (
     }
 
     fun start() {
-        wtPRMComm().wtIPComm.wtIPCommMain(scope)
+        wtPRMComm.wtIPComm.wtIPCommMain(scope)
     }
 
     private suspend fun chatMessageLoopback(commPacket: CommPacketInt) {

@@ -309,7 +309,7 @@ class WTActivity(
                     PipeMessageType.WifiRestartChannel -> {
                         logd(tag, "RCWifiRestartChannel")
                         wifiRestartChannel()
-                        wtHub.wtComm.wtPRMComm().wtIPComm.stop()
+                        wtHub.wtComm.wtPRMComm.wtIPComm.stop()
                     }
                     else -> {
                         logd(tag, "channelOnReceive channelMessageType $pipeId/$type. Not implemented.")
@@ -427,11 +427,13 @@ internal fun WTActivity.wtCustomInit(){
     wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCCheckWifiDPermissions, this)
     registerRemoteCall(RemoteCallId.RCRequestWifiDPermissions) { _ -> requestWifiPermissions() }
     wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermissions, this)
+
+    //joinPipeMux(wtHub)
     this.registerSenders(
         pipeId = PipeId.ToWTActivity,
         wtScope,
         wtHub.wtWifiD,
-        wtHub.wtComm.wtPRMComm()
+        wtHub.wtComm.wtPRMComm
     )
 
     /* To move to App init section */

@@ -21,6 +21,7 @@ import walkie.talkie.node.NodeId
 import walkie.talkie.playground.commSquirrelWheel
 import walkie.util.CoroutineRuntime
 import walkie.util.Logging
+import walkie.util.api.addPipeMux
 import walkie.util.api.registerAsReceiver
 import walkie.util.api.registerSenders
 import walkie.util.generateBinaryRec
@@ -122,6 +123,13 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 wtHub.updateUiLiveData
 
             wtHub.wtComm = WTComm(wtHub.wtSystemNodeId, wtHub.wtScope)
+
+            wtHub.addPipeMux(
+                wtHub.wtGlobalDiscussionMap,
+                wtHub.wtComm,
+                wtHub.wtWifiD,
+                wtHub.wtComm.wtPRMComm,
+                wtHub.wtComm.wtPRMComm.wtIPComm)
 
             wtHub.wtGlobalDiscussionMap.registerSenders(
                 pipeId = PipeId.ToChat,
