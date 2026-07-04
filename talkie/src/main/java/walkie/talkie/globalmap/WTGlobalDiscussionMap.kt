@@ -61,6 +61,9 @@ data class DiscussionMap(
         logging(true)
         
         logd(TAG, "init")
+
+        pipeCreate(PipeId.ToChat)
+        subscribe(PipeId.ToChat, scope, ::pipeOnReceive)
     }
 
     private suspend fun addMessage(chatMessage: ChatMessageAbs) {

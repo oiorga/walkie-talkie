@@ -52,6 +52,7 @@ class WTCommonData private constructor (
         logging(true)
         logd(tag, "init")
         /* registerRemoteCall(RemoteCallId.RCUpdateUI) { run { updateUiLiveData.update() } } */
+        //subscribe(PipeId.TOCommonData, wtScope)
     }
 
     // They say view model should not be exposed here, in the global data structures that keeps general info related to app modules

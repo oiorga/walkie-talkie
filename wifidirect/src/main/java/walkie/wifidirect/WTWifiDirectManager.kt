@@ -177,9 +177,13 @@ class WTWifiDirectManager(
 
     init {
         logging(true)
+        pipeCreate(PipeId.ToWifi)
+        subscribe(PipeId.ToWifi, scope) { pipeId, msg ->
+            pipeOnReceive(pipeId, msg)
+        }
     }
 
-    override suspend fun pipeOnReceive(
+     override suspend fun pipeOnReceive(
         pipeId: PipeIdInt,
         msg: PipeMessageInt<PipeMessageType, Any>
     ) {

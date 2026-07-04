@@ -59,7 +59,6 @@ import walkie.util.api.PipeMessageInt
 import walkie.util.api.PipeMuxInt
 import walkie.util.api.RemoteCallId
 import walkie.util.api.RemoteCallMuxInt
-import walkie.util.api.registerSenders
 import walkie.util.generic.RemoteCallMux
 import walkie.util.logd
 import walkie.util.logging
@@ -429,12 +428,19 @@ internal fun WTActivity.wtCustomInit(){
     wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermissions, this)
 
     //joinPipeMux(wtHub)
+
+    /*
     this.registerSenders(
         pipeId = PipeId.ToWTActivity,
         wtScope,
         wtHub.wtWifiD,
         wtHub.wtComm.wtPRMComm
     )
+    */
+
+    joinPipeMux(wtHub)
+    pipeCreate(PipeId.ToWTActivity)
+    subscribe(PipeId.ToWTActivity, wtScope, ::pipeOnReceive)
 
     /* To move to App init section */
     wtHub.wtComm.start()

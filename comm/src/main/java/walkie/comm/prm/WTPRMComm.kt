@@ -54,8 +54,14 @@ class WTPRMComm (
     init {
         logging(true)
 
+        /*
         this.registerReceiver(PipeId.ToIpComm, wtIPComm.scope,wtIPComm)
         wtIPComm.registerReceiver(PipeId.ToPRMComm, scope,this)
+        */
+
+        pipeCreate(PipeId.ToPRMComm)
+        subscribe(PipeId.ToPRMComm, scope, ::pipeOnReceive)
+
         wtMesh.registerSend { destPeer, jSon ->
             val tag = "wtMeshPRMSend/${randomString(2U)}"
             val dest = destPeer.umCI

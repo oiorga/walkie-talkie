@@ -73,6 +73,9 @@ class WTIPComm (
     init {
         logging(true)
         logd(tag, "init")
+
+        pipeCreate(PipeId.ToIpComm)
+        subscribe(PipeId.ToIpComm, scope, ::pipeOnReceive)
     }
 
     suspend fun stop() {

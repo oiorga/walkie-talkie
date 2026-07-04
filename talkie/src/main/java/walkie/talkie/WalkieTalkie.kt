@@ -22,8 +22,6 @@ import walkie.talkie.playground.commSquirrelWheel
 import walkie.util.CoroutineRuntime
 import walkie.util.Logging
 import walkie.util.api.addPipeMux
-import walkie.util.api.registerAsReceiver
-import walkie.util.api.registerSenders
 import walkie.util.generateBinaryRec
 import walkie.util.generic.genericListOf
 import walkie.util.logd
@@ -106,6 +104,8 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 CoroutineRuntime.RunJob.Supervisor,
                 CoroutineRuntime.RunDispatcher.Main)
             wtHub.wtScope = wtHub.wtRuntime.scope
+            wtHub.pipeCreate(PipeId.TOCommonData)
+            wtHub.subscribe(PipeId.TOCommonData, wtHub.wtScope, wtHub::pipeOnReceive)
         }
         1 -> {
             wifiDInit()
@@ -128,29 +128,37 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 wtHub.wtGlobalDiscussionMap,
                 wtHub.wtComm,
                 wtHub.wtWifiD,
+                wtHub.wtBcastReceiver,
                 wtHub.wtComm.wtPRMComm,
                 wtHub.wtComm.wtPRMComm.wtIPComm)
 
+            /*
             wtHub.wtGlobalDiscussionMap.registerSenders(
                 pipeId = PipeId.ToChat,
                 wtHub.wtGlobalDiscussionMap.scope,
                 wtHub.wtComm
             )
+            */
 
+            /*
             wtHub.wtComm.registerSenders(
                 PipeId.ToComm,
                 wtHub.wtComm.scope,
                 wtHub.wtGlobalDiscussionMap,
                 wtHub.wtWifiD
             )
+            */
 
+            /*
             wtHub.registerAsReceiver(
                 PipeId.TOCommonData,
                 wtHub.wtScope,
                 wtHub.wtGlobalDiscussionMap,
                 wtHub.wtComm
             )
+            */
 
+            /*
             wtHub.wtWifiD.registerSenders(
                 PipeId.ToWifi,
                 wtHub.wtWifiD.scope,
@@ -158,6 +166,7 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 wtHub.wtComm,
                 wtHub.wtWifiD
             )
+            */
 
             /*
             this.registerSenders(

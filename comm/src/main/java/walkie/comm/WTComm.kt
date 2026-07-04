@@ -70,8 +70,13 @@ class WTComm (
         logging(true)
         logd(tag, "Init Entry")
 
+        /*
         this.registerReceiver(PipeId.ToPRMComm, wtPRMComm.scope, wtPRMComm)
         wtPRMComm.wtIPComm.registerReceiver(PipeId.ToComm, scope, this)
+        */
+
+        pipeCreate(PipeId.ToComm)
+        subscribe(PipeId.ToComm, scope, ::pipeOnReceive)
 
         wtPRMComm.registerToEvent(DispatchEventId.CBMeshNewPeer) { _ ->
             pipeSend(PipeId.TOCommonData, scope,

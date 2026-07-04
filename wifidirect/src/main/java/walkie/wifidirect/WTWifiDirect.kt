@@ -29,10 +29,8 @@ class WTWifiDirect(
     private var channel: WifiP2pManager.Channel,
     private var env: WTWifiDirectEnv,
     scope: CoroutineScope,
-    private val _channelMux: PipeMuxInt<Any, PipeMessageType> = PipeMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
 ) :
-    PipeMuxInt<Any, PipeMessageType> by _channelMux,
     RemoteCallMuxInt by _remoteCallMux {
     companion object {
         const val TAG = "WTWifiDirect"
