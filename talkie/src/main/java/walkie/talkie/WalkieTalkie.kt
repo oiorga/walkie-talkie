@@ -105,7 +105,7 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 CoroutineRuntime.RunDispatcher.Main)
             wtHub.wtScope = wtHub.wtRuntime.scope
             wtHub.pipeCreate(PipeId.TOCommonData)
-            wtHub.subscribe(PipeId.TOCommonData, wtHub.wtScope, wtHub::pipeOnReceive)
+            wtHub.subscribe(PipeId.TOCommonData, wtHub.wtScope, wtHub::onPipeMessage)
         }
         1 -> {
             wifiDInit()
@@ -131,50 +131,6 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 wtHub.wtBcastReceiver,
                 wtHub.wtComm.wtPRMComm,
                 wtHub.wtComm.wtPRMComm.wtIPComm)
-
-            /*
-            wtHub.wtGlobalDiscussionMap.registerSenders(
-                pipeId = PipeId.ToChat,
-                wtHub.wtGlobalDiscussionMap.scope,
-                wtHub.wtComm
-            )
-            */
-
-            /*
-            wtHub.wtComm.registerSenders(
-                PipeId.ToComm,
-                wtHub.wtComm.scope,
-                wtHub.wtGlobalDiscussionMap,
-                wtHub.wtWifiD
-            )
-            */
-
-            /*
-            wtHub.registerAsReceiver(
-                PipeId.TOCommonData,
-                wtHub.wtScope,
-                wtHub.wtGlobalDiscussionMap,
-                wtHub.wtComm
-            )
-            */
-
-            /*
-            wtHub.wtWifiD.registerSenders(
-                PipeId.ToWifi,
-                wtHub.wtWifiD.scope,
-                wtHub.wtBcastReceiver,
-                wtHub.wtComm,
-                wtHub.wtWifiD
-            )
-            */
-
-            /*
-            this.registerSenders(
-                channelId = ChannelId.RCToWTActivity,
-                wtHub.wtWifiD,
-                wtHub.wtComm.wtPRMComm()
-            )
-            */
 
         }
         2 -> {

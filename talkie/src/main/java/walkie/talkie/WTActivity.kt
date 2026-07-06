@@ -244,7 +244,7 @@ class WTActivity(
 
     private val groupIdWDI = "WIFI Direct Info"
     private val info1 = InfoMap(groupIdWDI)
-    override suspend fun pipeOnReceive(
+    override suspend fun onPipeMessage(
         pipeId: PipeIdInt,
         msg: PipeMessageInt<PipeMessageType, Any>
     ) {
@@ -427,20 +427,9 @@ internal fun WTActivity.wtCustomInit(){
     registerRemoteCall(RemoteCallId.RCRequestWifiDPermissions) { _ -> requestWifiPermissions() }
     wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermissions, this)
 
-    //joinPipeMux(wtHub)
-
-    /*
-    this.registerSenders(
-        pipeId = PipeId.ToWTActivity,
-        wtScope,
-        wtHub.wtWifiD,
-        wtHub.wtComm.wtPRMComm
-    )
-    */
-
     joinPipeMux(wtHub)
     pipeCreate(PipeId.ToWTActivity)
-    subscribe(PipeId.ToWTActivity, wtScope, ::pipeOnReceive)
+    subscribe(PipeId.ToWTActivity, wtScope, ::onPipeMessage)
 
     /* To move to App init section */
     wtHub.wtComm.start()

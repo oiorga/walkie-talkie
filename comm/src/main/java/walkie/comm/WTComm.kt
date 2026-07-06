@@ -76,7 +76,7 @@ class WTComm (
         */
 
         pipeCreate(PipeId.ToComm)
-        subscribe(PipeId.ToComm, scope, ::pipeOnReceive)
+        subscribe(PipeId.ToComm, scope, ::onPipeMessage)
 
         wtPRMComm.registerToEvent(DispatchEventId.CBMeshNewPeer) { _ ->
             pipeSend(PipeId.TOCommonData, scope,
@@ -128,7 +128,7 @@ class WTComm (
         }
     }
 
-    override suspend fun pipeOnReceive(pipeId: PipeIdInt, msg: PipeMessageInt<PipeMessageType, Any>) {
+    override suspend fun onPipeMessage(pipeId: PipeIdInt, msg: PipeMessageInt<PipeMessageType, Any>) {
         val tag = "channelOnReceive/${randomString(2U)}"
         val type = msg.type
         val data = msg.data

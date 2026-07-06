@@ -78,37 +78,7 @@ class WiFiDirectBroadcastReceiver (
                         data = intent)
                 )
             }
-            /*
-            WIFI_P2P_STATE_CHANGED_ACTION -> {
-                channelSend(
-                    channelId = WTChannelId.RCToWifi,
-                    input = intent,
-                    inputType = WTChannelMessageType.RCWifiBroadcastReceiver)
-            }
-            WIFI_P2P_PEERS_CHANGED_ACTION -> {
-                /*
-                 * Request available peers from the wifi p2p manager. This is an
-                 * asynchronous call and the calling activity is notified with a
-                 * callback on PeerListListener.onPeersAvailable()
-                 */
-                channelSend(
-                    channelId = WTChannelId.RCToWifi,
-                    input = intent,
-                    inputType = WTChannelMessageType.RCWifiBroadcastReceiver)
-            }
-            WIFI_P2P_CONNECTION_CHANGED_ACTION -> {
-                channelSend(
-                    channelId = WTChannelId.RCToWifi,
-                    input = intent,
-                    inputType = WTChannelMessageType.RCWifiBroadcastReceiver)
-            }
-            WIFI_P2P_THIS_DEVICE_CHANGED_ACTION -> {
-                channelSend(
-                    channelId = WTChannelId.RCToWifi,
-                    input = intent,
-                    inputType = WTChannelMessageType.RCWifiBroadcastReceiver)
-            }
-            */
+
             else -> {
                 logd(tag, "P2P changed to Not Addressed ${action.toString()}")
                 throw (NotImplementedError("$tag: $tag: P2P changed to Not Addressed ${action.toString()}"))

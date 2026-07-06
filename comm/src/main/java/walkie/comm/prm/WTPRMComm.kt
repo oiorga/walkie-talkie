@@ -31,8 +31,6 @@ class WTPRMComm (
     val scope: CoroutineScope,
     private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher()
-    /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>() */
-    /* private val _callBackList: WTCallBackInt<Any, Any> = WTCallBack() */
 ) :
     PipeMuxInt<PipeMessageType, Any> by _pipeMux,
     EventDispatcherInt<Any> by _callBackList
@@ -54,13 +52,8 @@ class WTPRMComm (
     init {
         logging(true)
 
-        /*
-        this.registerReceiver(PipeId.ToIpComm, wtIPComm.scope,wtIPComm)
-        wtIPComm.registerReceiver(PipeId.ToPRMComm, scope,this)
-        */
-
         pipeCreate(PipeId.ToPRMComm)
-        subscribe(PipeId.ToPRMComm, scope, ::pipeOnReceive)
+        subscribe(PipeId.ToPRMComm, scope, ::onPipeMessage)
 
         wtMesh.registerSend { destPeer, jSon ->
             val tag = "wtMeshPRMSend/${randomString(2U)}"
@@ -141,7 +134,7 @@ class WTPRMComm (
         return success
     }
 
-    override suspend fun pipeOnReceive(
+    override suspend fun onPipeMessage(
         pipeId: PipeIdInt,
         msg: PipeMessageInt<PipeMessageType, Any>
     ) {

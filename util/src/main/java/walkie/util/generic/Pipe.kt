@@ -37,7 +37,6 @@ class PipeMux<T, K>() : PipeMuxInt<T, K> {
 
     override val pipeMap: MutableMap<PipeIdInt, MutableSharedFlow<PipeMessageInt<T, K>>>
         get() = _pipeMap
-    //override val receiverMap: MutableMap<PipeIdInt, PipeMuxInt<T, K>> = mutableMapOf()
 
     override fun subscribe(pipeId: PipeIdInt, scope: CoroutineScope, onReceive: suspend (pipeId: PipeIdInt, msg: PipeMessageInt<T, K>) -> Unit) {
         val tag = "subscribe/${randomString(2u)}"
@@ -129,53 +128,12 @@ class PipeMux<T, K>() : PipeMuxInt<T, K> {
         }
     }
 
-    /*
-    override fun registerReceiver (pipeId: PipeIdInt, scope: CoroutineScope, receiverObj: PipeMuxInt<T, K>) {
-        val tag = "registerReceiver/${randomString(2u)}"
-
-        logd(tag, "registerReceiver: pipeId ${pipeId.toString()} ${receiverObj.toString()}")
-
-        synchronized(lock) {
-            receiverMap.putIfAbsent(pipeId, receiverObj)
-
-            if (null != receiverObj.pipe(pipeId)) {
-                logd(tag, "registerReceiver: pipeId ${pipeId.toString()} already exists")
-            } else {
-                receiverObj.pipeCreate(pipeId)
-                scope.launch {
-                    receiverObj.pipe(pipeId)
-                        ?.onEach { msg ->
-                            receiverObj.pipeOnReceive(
-                                pipeId = pipeId,
-                                msg
-                            )
-                        }
-                        ?.collect()
-                }
-            }
-        }
-    }
-    */
-
     override fun pipeSend (pipeId: PipeIdInt, scope: CoroutineScope, msg: PipeMessageInt<T, K>) {
         val tag = "pipeSend/${randomString(2u)}"
         val data= msg.data
 
         logd(tag, "pipeSend: pipeId ${pipeId.toString()} data: ${if (null != data) data::class else null}  type: ${msg.type}")
-
-        /*
-        if (null == receiverMap[pipeId]) {
-            logd(tag, "pipeSend: receiver object for pipe $pipeId / $msg.type is not registered")
-            throw (NoSuchElementException("TAG: pipeSend: receiver object for pipe $pipeId / $msg.type is not registered"))
-        }
-
-        val pipe  = receiverMap[pipeId]?.pipe(pipeId) ?: run {
-            logd(tag, "pipeSend: pipe for ${receiverMap[pipeId]}[$pipeId] does not exist")
-            throw (NoSuchElementException("${this}: pipeSend: pipe for ${receiverMap[pipeId]}[$pipeId][${receiverMap[pipeId]?.pipe(pipeId)}] does not exist"))
-        }
-        */
-
-        val pipe = pipeMap[pipeId] ?: run {
+   val pipe = pipeMap[pipeId] ?: run {
             logd(tag, "pipeSend: pipe for $pipeMap $pipeId -> ${pipeMap[pipeId]} does not exist")
             throw (NoSuchElementException("${this}: pipeSend: pipe for $pipeMap $pipeId -> ${pipeMap[pipeId]} does not exist"))
         }
@@ -185,7 +143,7 @@ class PipeMux<T, K>() : PipeMuxInt<T, K> {
         }
     }
 
-    override suspend fun pipeOnReceive(pipeId: PipeIdInt, msg: PipeMessageInt<T, K>) {
+    override suspend fun onPipeMessage(pipeId: PipeIdInt, msg: PipeMessageInt<T, K>) {
         val tag = "pipeOnReceive/${randomString(2u)}"
 
         logd(tag, "${this.toString()} pipeOnReceive pipeId: $pipeId ${msg.type} ${msg.data}. Not implemented.")

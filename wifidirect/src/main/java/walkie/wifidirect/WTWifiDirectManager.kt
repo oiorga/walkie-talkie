@@ -179,11 +179,11 @@ class WTWifiDirectManager(
         logging(true)
         pipeCreate(PipeId.ToWifi)
         subscribe(PipeId.ToWifi, scope) { pipeId, msg ->
-            pipeOnReceive(pipeId, msg)
+            onPipeMessage(pipeId, msg)
         }
     }
 
-     override suspend fun pipeOnReceive(
+     override suspend fun onPipeMessage(
         pipeId: PipeIdInt,
         msg: PipeMessageInt<PipeMessageType, Any>
     ) {

@@ -49,9 +49,7 @@ class WTIPComm (
     val scope: CoroutineScope,
     private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux<PipeMessageType, Any>(),
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher()
-    /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>() */
 ) :
-    /* WTRemoteCallMuxInt<Any, Any> by _remoteCallMux, */
     PipeMuxInt<PipeMessageType, Any> by _pipeMux,
     EventDispatcherInt<Any> by _callBackList
 {
@@ -75,7 +73,7 @@ class WTIPComm (
         logd(tag, "init")
 
         pipeCreate(PipeId.ToIpComm)
-        subscribe(PipeId.ToIpComm, scope, ::pipeOnReceive)
+        subscribe(PipeId.ToIpComm, scope, ::onPipeMessage)
     }
 
     suspend fun stop() {
@@ -124,7 +122,7 @@ class WTIPComm (
         }
     }
 
-    override suspend fun pipeOnReceive(
+    override suspend fun onPipeMessage(
         pipeId: PipeIdInt,
         msg: PipeMessageInt<PipeMessageType, Any>
         ) {
