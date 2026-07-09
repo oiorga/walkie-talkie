@@ -104,8 +104,7 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 CoroutineRuntime.RunJob.Supervisor,
                 CoroutineRuntime.RunDispatcher.Main)
             wtHub.wtScope = wtHub.wtRuntime.scope
-            wtHub.pipeCreate(PipeId.TOCommonData)
-            wtHub.subscribe(PipeId.TOCommonData, wtHub.wtScope, wtHub::onPipeMessage)
+            wtHub.subscribe(PipeId.TOCommonData, wtHub.wtScope, true,wtHub::onPipeMessage)
         }
         1 -> {
             wifiDInit()

@@ -72,8 +72,7 @@ class WTIPComm (
         logging(true)
         logd(tag, "init")
 
-        pipeCreate(PipeId.ToIpComm)
-        subscribe(PipeId.ToIpComm, scope, ::onPipeMessage)
+        subscribe(PipeId.ToIpComm, scope, true,::onPipeMessage)
     }
 
     suspend fun stop() {
@@ -214,14 +213,14 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
                 /* throw (exc) */
                 return
             }
-            pipeSend(PipeId.ToComm, scope,
+            pipeSendAsync(PipeId.ToComm, scope,
                 PipeMessage(
                     PipeMessageType.WifiMessage,
                     commPacket)
             )
         }
         WTIPCommPacketType.ControlMesh -> {
-            pipeSend(PipeId.ToPRMComm, scope,
+            pipeSendAsync(PipeId.ToPRMComm, scope,
                 PipeMessage(
                     PipeMessageType.ControlMesh,
                     decodedJSon!!.jsonString)

@@ -428,8 +428,7 @@ internal fun WTActivity.wtCustomInit(){
     wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermissions, this)
 
     joinPipeMux(wtHub)
-    pipeCreate(PipeId.ToWTActivity)
-    subscribe(PipeId.ToWTActivity, wtScope, ::onPipeMessage)
+    subscribe(PipeId.ToWTActivity, wtScope, true,::onPipeMessage)
 
     /* To move to App init section */
     wtHub.wtComm.start()

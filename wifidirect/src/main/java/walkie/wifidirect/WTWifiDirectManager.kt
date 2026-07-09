@@ -23,22 +23,24 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
+import walkie.talkie.api.wtModule.ModuleOpImpl
+import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.wtdebug.wtError
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.PipeId
 import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.modOpToPipeType
 import walkie.util.api.PipeIdInt
 import walkie.util.api.PipeMessageInt
 import walkie.util.api.PipeMuxInt
 import walkie.util.api.RemoteCallId
 import walkie.util.api.RemoteCallMuxInt
+import walkie.util.generic.CallBackInterface
 import walkie.util.generic.PipeMux
 import walkie.util.generic.GenericList
 import walkie.util.generic.Mailbox
 import walkie.util.generic.MailboxData
 import walkie.util.generic.ModuleOp
-import walkie.util.generic.ModuleOpImpl
-import walkie.util.generic.ModuleOpInt
 import walkie.util.generic.PipeMessage
 import walkie.util.generic.RemoteCallMux
 import walkie.util.generic.typedCall
@@ -56,17 +58,16 @@ import java.net.InetAddress
 import kotlin.math.max
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
-
 class WTWifiDirectManager(
     val manager: WifiP2pManager,
     val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _channelMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
+    private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
-    private val _moduleOp: ModuleOpInt<WTModOpType> = ModuleOpImpl<WTModOpType>()
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl()
 ) :
-    ModuleOpInt<WTModOpType> by _moduleOp,
-    PipeMuxInt<PipeMessageType, Any> by _channelMux,
+    ModuleOpInt by _moduleOp,
+    PipeMuxInt<PipeMessageType, Any> by _pipeMux,
     RemoteCallMuxInt by _remoteCallMux {
 
     companion object {
@@ -177,13 +178,27 @@ class WTWifiDirectManager(
 
     init {
         logging(true)
-        pipeCreate(PipeId.ToWifi)
+
+        /*
         subscribe(PipeId.ToWifi, scope) { pipeId, msg ->
             onPipeMessage(pipeId, msg)
         }
+        */
+
+        subscribe(
+            ModuleOp.Subscribe.CallBack<
+                    WTModOpType,
+                    PipeIdInt,
+                    PipeMessageInt<PipeMessageType, Any>>(
+                opId = WTModOpType.WTSubscribeToWifiD,
+                callBack = CallBackInterface { pipeId, msg ->
+                    onPipeMessage(pipeId, msg)
+                }
+            )
+        )
     }
 
-     override suspend fun onPipeMessage(
+    override suspend fun onPipeMessage(
         pipeId: PipeIdInt,
         msg: PipeMessageInt<PipeMessageType, Any>
     ) {
@@ -222,12 +237,13 @@ class WTWifiDirectManager(
 
         logd(TAGKClass, tag, "Entry")
 
-        pipeSend(
+        pipeSendAsync(
             PipeId.ToComm,
             scope,
             msg = PipeMessage(
                 PipeMessageType.GroupInfo,
-                Triple(null, null, null))
+                Triple(null, null, null)
+            )
         )
         mainLoopJob?.cancel()
         mainLoopJob = null
@@ -276,7 +292,8 @@ class WTWifiDirectManager(
             return
         }
 
-        wifiDirectP2pAction(tag,
+        wifiDirectP2pAction(
+            tag,
             "Success removing group",
             "Failed removing group}",
         ) {
@@ -297,7 +314,8 @@ class WTWifiDirectManager(
             return P2pConnection.Fail
         }
 
-        return when (wifiDirectP2pAction(tag,
+        return when (wifiDirectP2pAction(
+            tag,
             "Success connecting to ${device.uniqueWifiId()}",
             "Failed connecting to ${device.uniqueWifiId()}",
             ignoreP2pError = false
@@ -307,6 +325,7 @@ class WTWifiDirectManager(
             WTWifiDirectResult.Success -> {
                 P2pConnection.InProgress
             }
+
             else -> {
                 P2pConnection.Fail
             }
@@ -321,7 +340,8 @@ class WTWifiDirectManager(
             return
         }
 
-        wifiDirectP2pAction(tag,
+        wifiDirectP2pAction(
+            tag,
             "Success canceling connect",
             "Failed canceling connect",
         ) {
@@ -387,7 +407,10 @@ class WTWifiDirectManager(
             }
 
             P2pConnection.Fail -> {
-                wtError(tag, "Connect to: ${device.name} ${device.address} GO = ${device.isGroupOwner} is In Fail. Invalid State")
+                wtError(
+                    tag,
+                    "Connect to: ${device.name} ${device.address} GO = ${device.isGroupOwner} is In Fail. Invalid State"
+                )
             }
 
             P2pConnection.InProgress -> {
@@ -573,17 +596,18 @@ class WTWifiDirectManager(
             is WTWifiEvent.WTWifi.Command.AdvertiseLocalService -> {
                 if (event.enable) {
                     addLocalService(removeFirst = true)
-                }
-                else {
+                } else {
                     removeLocalService()
                 }
             }
+
             is WTWifiEvent.WTWifi.Command.ServiceDiscovery -> {
                 if (event.enable) {
                     addServiceRequest(removeFirst = true)
                     discoverServices()
                 }
             }
+
             is WTWifiEvent.WTWifi.Command.CancelConnect -> {
                 if (event.apply) {
                     logStr += "\n\tRequest removing group"
@@ -618,11 +642,13 @@ class WTWifiDirectManager(
                     "\n\tlocalIp = ${this.wtLocalIp}"
         )
 
-        pipeSend(
+        pipeSendAsync(
             PipeId.ToWTActivity,
             scope,
-            msg = PipeMessage(PipeMessageType.WifiDebugInfoMessage,
-                wtWifiDirectInfo())
+            msg = PipeMessage(
+                PipeMessageType.WifiDebugInfoMessage,
+                wtWifiDirectInfo()
+            )
         )
     }
 
@@ -659,24 +685,26 @@ class WTWifiDirectManager(
     suspend fun mainLoopInit() {
         val tag = "mainLoopInit/${randomString(2u)}"
 
-        pipeSend(
+        pipeSendAsync(
             PipeId.ToWTActivity,
             scope,
             msg = PipeMessage(
                 PipeMessageType.WifiDebugInfoMessage,
-                wtWifiDirectInfo())
+                wtWifiDirectInfo()
+            )
         )
 
         cancelConnect()
         removeGroup()
         clearAllServices()
 
-        pipeSend(
+        pipeSendAsync(
             PipeId.ToComm,
             scope,
             msg = PipeMessage(
                 PipeMessageType.GroupInfo,
-                Triple(null, null, null))
+                Triple(null, null, null)
+            )
         )
 
         initServices()
@@ -709,12 +737,13 @@ class WTWifiDirectManager(
                     tag,
                     "Group info changed(Null): wtGroupIp: $oldGroupIp -> $wtGroupIp wtLocalIp: $oldLocalIp -> $wtLocalIp"
                 )
-                pipeSend(
+                pipeSendAsync(
                     PipeId.ToComm,
                     scope,
                     msg = PipeMessage(
                         PipeMessageType.GroupInfo,
-                        Triple(null, null, null))
+                        Triple(null, null, null)
+                    )
                 )
             }
             if (!wtIsGroupOwner &&
@@ -728,15 +757,16 @@ class WTWifiDirectManager(
                     "Group info changed(Group): wtGroupIp: $oldGroupIp -> $wtGroupIp wtGroupServerPort: $oldGroupServerPort -> $wtGroupServerPort wtLocalIp: $oldLocalIp -> $wtLocalIp"
                 )
 
-                pipeSend(
+                pipeSendAsync(
                     PipeId.ToComm,
                     scope,
                     msg = PipeMessage(
                         PipeMessageType.GroupInfo,
-                        Triple(null, null, null))
+                        Triple(null, null, null)
+                    )
                 )
 
-                pipeSend(
+                pipeSendAsync(
                     PipeId.ToComm,
                     scope,
                     msg = PipeMessage(
@@ -744,7 +774,7 @@ class WTWifiDirectManager(
                         Triple(wtGroupOwnerName, wtGroupIp, wtGroupServerPort)
                     )
                 )
-                pipeSend(
+                pipeSendAsync(
                     PipeId.ToComm,
                     scope,
                     msg = PipeMessage(
@@ -763,7 +793,7 @@ class WTWifiDirectManager(
             }
             if (wtLocalIp != oldLocalIp && !localIpAlreadyChanged) {
                 logd(tag, "Local IP info changed(IP): wtLocalIp: $oldLocalIp -> $wtLocalIp")
-                pipeSend(
+                pipeSendAsync(
                     PipeId.ToComm,
                     scope,
                     msg = PipeMessage(
@@ -789,7 +819,7 @@ class WTWifiDirectManager(
             logd(tag, "Lost P2P Connection/Info")
             removeGroup()
             wtWifi = wtWifi.reset()
-            pipeSend(
+            pipeSendAsync(
                 PipeId.ToComm,
                 scope,
                 msg = PipeMessage(
@@ -821,7 +851,8 @@ class WTWifiDirectManager(
                 /* To revisit this */
                 wtWifi.eraseP2pError()
                 mainLoopInbox.send(
-                    WTWifiEvent.WTWifi.Command.CancelConnect())
+                    WTWifiEvent.WTWifi.Command.CancelConnect()
+                )
             }
         }
 
@@ -843,7 +874,8 @@ class WTWifiDirectManager(
             return
         }
 
-        wifiDirectP2pAction(tag,
+        wifiDirectP2pAction(
+            tag,
             "Success removing local service",
             "Failed removing local service"
         ) {
@@ -872,7 +904,8 @@ class WTWifiDirectManager(
             removeLocalService()
         }
 
-        wifiDirectP2pAction(tag,
+        wifiDirectP2pAction(
+            tag,
             "Success adding local service",
             "Failed adding local service",
             ignoreP2pError = false
@@ -896,7 +929,8 @@ class WTWifiDirectManager(
             return
         }
 
-        wifiDirectP2pAction(tag,
+        wifiDirectP2pAction(
+            tag,
             "Success removing service request",
             "Failed removing service request"
         ) {
@@ -922,7 +956,8 @@ class WTWifiDirectManager(
             removeServiceRequest()
         }
 
-        wifiDirectP2pAction(tag,
+        wifiDirectP2pAction(
+            tag,
             "Success adding service request",
             "Failed adding service request",
             ignoreP2pError = false
@@ -1059,7 +1094,8 @@ class WTWifiDirectManager(
             return
         }
 
-        wifiDirectP2pAction(tag,
+        wifiDirectP2pAction(
+            tag,
             "Success stopping peers discovery",
             "Failed stopping peers discovery"
         ) {
@@ -1075,7 +1111,8 @@ class WTWifiDirectManager(
             return
         }
 
-        wifiDirectP2pAction(tag,
+        wifiDirectP2pAction(
+            tag,
             "Success starting discovering services",
             "Failed starting discovering services",
             ignoreP2pError = false
@@ -1092,14 +1129,16 @@ class WTWifiDirectManager(
             return
         }
 
-        wifiDirectP2pAction(tag,
+        wifiDirectP2pAction(
+            tag,
             "Success clearing service requests",
             "Failed clearing service requests"
         ) {
             wifiDirect.clearServiceRequests()
         }
 
-        wifiDirectP2pAction(tag,
+        wifiDirectP2pAction(
+            tag,
             "Success clearing local service",
             "Failed clearing local service"
         ) {
@@ -1205,21 +1244,22 @@ class WTWifiDirectManager(
         wtWifiDirect?.channelClose()
 
         resetData()
-        pipeSend(
+        pipeSendAsync(
             PipeId.ToWTActivity,
             scope,
             msg = PipeMessage(
-            PipeMessageType.WifiDebugInfoMessage,
-            wtWifiDirectInfo()
+                PipeMessageType.WifiDebugInfoMessage,
+                wtWifiDirectInfo()
             )
         )
 
-        pipeSend(
+        pipeSendAsync(
             PipeId.ToWTActivity,
             scope,
             msg = PipeMessage(
                 PipeMessageType.WifiRestartChannel,
-                null)
+                null
+            )
         )
         resetData()
     }
@@ -1229,7 +1269,7 @@ class WTWifiDirectManager(
         successMessage: String? = null,
         errorMessage: String? = null,
         ignoreP2pError: Boolean = true,
-        action: () ->  WTWifiDirectResult<Unit>,
+        action: () -> WTWifiDirectResult<Unit>,
     ): WTWifiDirectResult<Unit> {
         val localTag = "wifiDirectP2pAction/${randomString(2U)}"
 
@@ -1275,9 +1315,21 @@ class WTWifiDirectManager(
         }
     }
 
-    override fun <PipeMuxInt, Nothing> registerForEvent(opId: WTModOpType, emitter: PipeMuxInt): ModuleOp.Output.Empty {
-        //registerAsReceiver()
-        error("$TAG Not Implemented")
-    }
+    override fun subscribe(modReq: ModuleOp): ModuleOp.Output.Empty {
+        if (modReq is ModuleOp.Subscribe.CallBack<*, *, *>) {
+            (modReq.opId as? WTModOpType)?.let { opId ->
+                val callBack = (modReq.callBack as? CallBackInterface<PipeIdInt, PipeMessageInt<PipeMessageType, Any>>)?.let { callB ->
+                    callB::onEvent
+                } ?: ::onPipeMessage
+                subscribe(
+                    pipeId = modOpToPipeType(opId),
+                    scope = scope,
+                    autoCreate = true,
+                    onReceive = callBack
+                )
+            }
+        }
 
+        return ModuleOp.Output.Empty
+    }
 }

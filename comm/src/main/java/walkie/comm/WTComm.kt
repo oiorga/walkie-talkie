@@ -75,11 +75,10 @@ class WTComm (
         wtPRMComm.wtIPComm.registerReceiver(PipeId.ToComm, scope, this)
         */
 
-        pipeCreate(PipeId.ToComm)
-        subscribe(PipeId.ToComm, scope, ::onPipeMessage)
+        subscribe(PipeId.ToComm, scope, true, ::onPipeMessage)
 
         wtPRMComm.registerToEvent(DispatchEventId.CBMeshNewPeer) { _ ->
-            pipeSend(PipeId.TOCommonData, scope,
+            pipeSendAsync(PipeId.TOCommonData, scope,
                 PipeMessage(
                     PipeMessageType.UpdatePeersUI,
                     null
@@ -88,7 +87,7 @@ class WTComm (
         }
         wtPRMComm.registerToEvent(DispatchEventId.CBServerPort) { serverPort ->
             logd(tag, "$this sending serverPort: $serverPort to RCToWifi")
-            pipeSend(PipeId.ToWifi, scope,
+            pipeSendAsync(PipeId.ToWifi, scope,
                 PipeMessage(
                     PipeMessageType.LocalServerPort,
                     serverPort!!)
@@ -110,7 +109,7 @@ class WTComm (
     }
 
     override suspend fun chatMessageOut(commPacket: CommPacketInt) {
-        pipeSend(PipeId.ToChat, scope,
+        pipeSendAsync(PipeId.ToChat, scope,
             PipeMessage(
                 PipeMessageType.CommToChatPacket,
                 commPacket)
@@ -148,7 +147,7 @@ class WTComm (
                         chatMessageLoopback(data as CommPacketInt)
                     }
                     PipeMessageType.LocalIp -> {
-                        pipeSend(PipeId.ToPRMComm, scope,
+                        pipeSendAsync(PipeId.ToPRMComm, scope,
                             PipeMessage(
                                 PipeMessageType.LocalIp,
                                 data
@@ -156,7 +155,7 @@ class WTComm (
                         )
                     }
                     PipeMessageType.GroupInfo -> {
-                        pipeSend(PipeId.ToPRMComm, scope,
+                        pipeSendAsync(PipeId.ToPRMComm, scope,
                             PipeMessage(
                                 PipeMessageType.GroupInfo,
                                 data

@@ -62,8 +62,7 @@ data class DiscussionMap(
         
         logd(TAG, "init")
 
-        pipeCreate(PipeId.ToChat)
-        subscribe(PipeId.ToChat, scope, ::onPipeMessage)
+        subscribe(PipeId.ToChat, scope, true,::onPipeMessage)
     }
 
     private suspend fun addMessage(chatMessage: ChatMessageAbs) {
@@ -109,7 +108,7 @@ data class DiscussionMap(
 
         mutex.unlock()
 
-        pipeSend(PipeId.TOCommonData,  scope,
+        pipeSendAsync(PipeId.TOCommonData,  scope,
             PipeMessage(
                 PipeMessageType.UpdateChatUI,
                 chatMessage.groupId.type
@@ -238,7 +237,7 @@ data class DiscussionMap(
 
         commPacket.logD(tag, logF)
 
-        pipeSend(PipeId.ToComm, scope,
+        pipeSendAsync(PipeId.ToComm, scope,
             PipeMessage(
                 messageType,
                 commPacket

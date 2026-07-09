@@ -52,8 +52,7 @@ class WTPRMComm (
     init {
         logging(true)
 
-        pipeCreate(PipeId.ToPRMComm)
-        subscribe(PipeId.ToPRMComm, scope, ::onPipeMessage)
+        subscribe(PipeId.ToPRMComm, scope, true, ::onPipeMessage)
 
         wtMesh.registerSend { destPeer, jSon ->
             val tag = "wtMeshPRMSend/${randomString(2U)}"
@@ -159,7 +158,7 @@ class WTPRMComm (
                         logd(TAGKClass,
                             tag,
                             "$type localIpAddress: $localIpAddress")
-                        pipeSend(
+                        pipeSendAsync(
                             PipeId.ToIpComm,
                             scope,
                             PipeMessage(
@@ -248,7 +247,7 @@ internal fun WTPRMComm.peersUpdateSendDebugInfo() {
     directNodes().forEach { k ->
         str += "\n\tDest: ${directUnderlay(k)?.uid} ${directUnderlay(k)?.umCI}"
     }
-    pipeSend(
+    pipeSendAsync(
         PipeId.ToWTActivity,
         scope,
         PipeMessage(

@@ -70,7 +70,7 @@ class WiFiDirectBroadcastReceiver (
             WIFI_P2P_CONNECTION_CHANGED_ACTION,
             WIFI_P2P_THIS_DEVICE_CHANGED_ACTION,
             -> {
-                pipeSend(
+                pipeSendAsync(
                     pipeId = PipeId.ToWifi,
                     scope = scope,
                     msg = PipeMessage(
