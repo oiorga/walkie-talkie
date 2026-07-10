@@ -427,8 +427,8 @@ internal fun WTActivity.wtCustomInit(){
     registerRemoteCall(RemoteCallId.RCRequestWifiDPermissions) { _ -> requestWifiPermissions() }
     wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermissions, this)
 
-    joinPipeMux(wtHub)
-    subscribe(PipeId.ToWTActivity, wtScope, true,::onPipeMessage)
+    pipeMuxJoin(wtHub)
+    pipeSubscribe(PipeId.ToWTActivity, wtScope, true,::onPipeMessage)
 
     /* To move to App init section */
     wtHub.wtComm.start()

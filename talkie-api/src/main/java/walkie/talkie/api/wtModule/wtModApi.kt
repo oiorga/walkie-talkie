@@ -14,7 +14,11 @@ class ModuleOpImpl(): ModuleOpInt {
         error("Not yet implemented")
     }
 
-    override fun subscribe(modReq: ModuleOp): ModuleOp.Output.Empty {
+    override fun subscribeToEvent(modReq: ModuleOp): ModuleOp.Output.Empty {
+        error("Not yet implemented")
+    }
+
+    override fun sendEvent(modReq: ModuleOp): ModuleOp.Output.Empty {
         error("Not yet implemented")
     }
 
@@ -28,9 +32,9 @@ class ModuleOpImpl(): ModuleOpInt {
     }
 }
 
-fun modOpToPipeType(modOpType: WTModOpType): PipeIdInt {
-    return when (modOpType) {
-        WTModOpType.WTSubscribeToWifiD -> {
+fun modOpToPipeType(modOpId: WTModOpId): PipeIdInt {
+    return when (modOpId) {
+        WTModOpId.WTSubscribeToWifiD -> {
             PipeId.ToWifi
         }
         else -> {
@@ -39,7 +43,7 @@ fun modOpToPipeType(modOpType: WTModOpType): PipeIdInt {
     }
 }
 
-enum class WTModOpType {
+enum class WTModOpId {
     WTSubscribeToWifiD,
     WTWifiNotifyGroupChange,
     WTWifiNotifyIpChange,

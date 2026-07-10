@@ -75,7 +75,7 @@ class WTComm (
         wtPRMComm.wtIPComm.registerReceiver(PipeId.ToComm, scope, this)
         */
 
-        subscribe(PipeId.ToComm, scope, true, ::onPipeMessage)
+        pipeSubscribe(PipeId.ToComm, scope, true, ::onPipeMessage)
 
         wtPRMComm.registerToEvent(DispatchEventId.CBMeshNewPeer) { _ ->
             pipeSendAsync(PipeId.TOCommonData, scope,

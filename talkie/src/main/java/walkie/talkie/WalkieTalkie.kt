@@ -21,7 +21,7 @@ import walkie.talkie.node.NodeId
 import walkie.talkie.playground.commSquirrelWheel
 import walkie.util.CoroutineRuntime
 import walkie.util.Logging
-import walkie.util.api.addPipeMux
+import walkie.util.api.pipeMuxAdd
 import walkie.util.generateBinaryRec
 import walkie.util.generic.genericListOf
 import walkie.util.logd
@@ -104,7 +104,7 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 CoroutineRuntime.RunJob.Supervisor,
                 CoroutineRuntime.RunDispatcher.Main)
             wtHub.wtScope = wtHub.wtRuntime.scope
-            wtHub.subscribe(PipeId.TOCommonData, wtHub.wtScope, true,wtHub::onPipeMessage)
+            wtHub.pipeSubscribe(PipeId.TOCommonData, wtHub.wtScope, true,wtHub::onPipeMessage)
         }
         1 -> {
             wifiDInit()
@@ -123,7 +123,7 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
 
             wtHub.wtComm = WTComm(wtHub.wtSystemNodeId, wtHub.wtScope)
 
-            wtHub.addPipeMux(
+            wtHub.pipeMuxAdd(
                 wtHub.wtGlobalDiscussionMap,
                 wtHub.wtComm,
                 wtHub.wtWifiD,

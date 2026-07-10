@@ -72,7 +72,7 @@ class WTIPComm (
         logging(true)
         logd(tag, "init")
 
-        subscribe(PipeId.ToIpComm, scope, true,::onPipeMessage)
+        pipeSubscribe(PipeId.ToIpComm, scope, true,::onPipeMessage)
     }
 
     suspend fun stop() {

@@ -1,6 +1,6 @@
 package walkie.wifidirect
 
-import walkie.talkie.api.wtModule.WTModOpType
+import walkie.talkie.api.wtModule.WTModOpId
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.NetworkInfo
@@ -180,17 +180,17 @@ class WTWifiDirectManager(
         logging(true)
 
         /*
-        subscribe(PipeId.ToWifi, scope) { pipeId, msg ->
+        subscribeToPipe(PipeId.ToWifi, scope) { pipeId, msg ->
             onPipeMessage(pipeId, msg)
         }
         */
 
-        subscribe(
-            ModuleOp.Subscribe.CallBack<
-                    WTModOpType,
+        subscribeToEvent(
+            ModuleOp.SubscribeEvent.CallBack<
+                    WTModOpId,
                     PipeIdInt,
                     PipeMessageInt<PipeMessageType, Any>>(
-                opId = WTModOpType.WTSubscribeToWifiD,
+                opId = WTModOpId.WTSubscribeToWifiD,
                 callBack = CallBackInterface { pipeId, msg ->
                     onPipeMessage(pipeId, msg)
                 }
@@ -250,9 +250,6 @@ class WTWifiDirectManager(
         wtWifi = wtWifi.reset()
     }
 
-    /*
-    * Transition to self-contained Wi-Fi direct manager
-    */
     suspend fun requestPeersInfo(): GenericList<WifiP2pDevice> {
         val tag = "requestPeersInfo/${randomString(2u)}"
 
@@ -1231,7 +1228,6 @@ class WTWifiDirectManager(
 
     suspend fun stop() {
         val tag = "wtWifiDirectStop/${randomString(2u)}"
-        //val s = WTWiFiDirectStatic.INSTANCE
 
         logd(tag, "Entry")
 
@@ -1315,13 +1311,13 @@ class WTWifiDirectManager(
         }
     }
 
-    override fun subscribe(modReq: ModuleOp): ModuleOp.Output.Empty {
-        if (modReq is ModuleOp.Subscribe.CallBack<*, *, *>) {
-            (modReq.opId as? WTModOpType)?.let { opId ->
+    override fun subscribeToEvent(modReq: ModuleOp): ModuleOp.Output.Empty {
+        if (modReq is ModuleOp.SubscribeEvent.CallBack<*, *, *>) {
+            (modReq.opId as? WTModOpId)?.let { opId ->
                 val callBack = (modReq.callBack as? CallBackInterface<PipeIdInt, PipeMessageInt<PipeMessageType, Any>>)?.let { callB ->
                     callB::onEvent
                 } ?: ::onPipeMessage
-                subscribe(
+                pipeSubscribe(
                     pipeId = modOpToPipeType(opId),
                     scope = scope,
                     autoCreate = true,

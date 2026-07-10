@@ -10,7 +10,8 @@ fun interface CallBackInterface<TChId, TMsg> {
 interface ModuleOpInterface<TOp> {
     fun <Output> set(modReq: TOp): ModuleOp.Output<Output>
     fun <Output> get(modReq: TOp): ModuleOp.Output<Output>
-    fun subscribe(modReq: TOp): ModuleOp.Output.Empty
+    fun subscribeToEvent(modReq: TOp): ModuleOp.Output.Empty
+    fun sendEvent(modReq: TOp): ModuleOp.Output.Empty
     fun registerCallback(modReq: TOp): ModuleOp.Output.Empty
 }
 
@@ -23,11 +24,19 @@ sealed class ModuleOp {
         data class Value<TOpId, V> (val opId: TOpId, val value: V): Set<TOpId, V>()
     }
 
-    sealed class Subscribe<TOpId, TChId, TMsg>: ModuleOp() {
+    sealed class SubscribeEvent<TOpId, TChId, TMsg>: ModuleOp() {
         data class CallBack<TOpId, TChId, TMsg> (
             val opId: TOpId,
             val callBack: CallBackInterface<TChId, TMsg>
-        ): Subscribe<TOpId, TChId, TMsg>()
+        ): SubscribeEvent<TOpId, TChId, TMsg>()
+    }
+
+    sealed class SendEvent<TOpId, TChId, TMsg>: ModuleOp() {
+        data class Info<TOpId, TChId, TMsg> (
+            val opId: TOpId,
+            val chId: TChId,
+            val msg: TMsg
+        ): SendEvent<TOpId, TChId, TMsg>()
     }
 
     data class Input<I>(val value: I) : ModuleOp()

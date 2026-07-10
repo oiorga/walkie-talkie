@@ -52,7 +52,7 @@ class WTPRMComm (
     init {
         logging(true)
 
-        subscribe(PipeId.ToPRMComm, scope, true, ::onPipeMessage)
+        pipeSubscribe(PipeId.ToPRMComm, scope, true, ::onPipeMessage)
 
         wtMesh.registerSend { destPeer, jSon ->
             val tag = "wtMeshPRMSend/${randomString(2U)}"

@@ -38,7 +38,7 @@ class PipeMux<T, K>() : PipeMuxInt<T, K> {
     override val pipeMap: MutableMap<PipeIdInt, MutableSharedFlow<PipeMessageInt<T, K>>>
         get() = _pipeMap
 
-    override fun subscribe(pipeId: PipeIdInt, scope: CoroutineScope, autoCreate: Boolean, onReceive: (suspend (pipeId: PipeIdInt, msg: PipeMessageInt<T, K>) -> Unit)) {
+    override fun pipeSubscribe(pipeId: PipeIdInt, scope: CoroutineScope, autoCreate: Boolean, onReceive: (suspend (pipeId: PipeIdInt, msg: PipeMessageInt<T, K>) -> Unit)) {
         val tag = "subscribe/${randomString(2u)}"
 
         synchronized(lock) {
@@ -53,7 +53,7 @@ class PipeMux<T, K>() : PipeMuxInt<T, K> {
 
             if (null == subscriberMap[pipeId]) {
                 val job = scope.launch {
-                    pipe(pipeId)
+                    pipeGet(pipeId)
                         ?.onEach { msg ->
                             onReceive.invoke(
                                 pipeId,
@@ -74,7 +74,7 @@ class PipeMux<T, K>() : PipeMuxInt<T, K> {
         }
     }
 
-    override fun unsubscribe(pipeId: PipeIdInt) {
+    override fun pipeUnsubscribe(pipeId: PipeIdInt) {
         val tag = "unsubscribe/${randomString(2u)}"
 
         synchronized(lock) {
@@ -100,7 +100,7 @@ class PipeMux<T, K>() : PipeMuxInt<T, K> {
         logd (TAG, "init")
     }
 
-    override fun pipe(pipeId: PipeIdInt) : MutableSharedFlow<PipeMessageInt<T, K>>? {
+    override fun pipeGet(pipeId: PipeIdInt) : MutableSharedFlow<PipeMessageInt<T, K>>? {
         return pipeMap[pipeId]
     }
 
@@ -120,13 +120,13 @@ class PipeMux<T, K>() : PipeMuxInt<T, K> {
         return pipeMap[pipeId]
     }
 
-    override fun addPipeMux(pipeImpl: PipeMuxInt<T, K>) {
+    override fun pipeMuxAdd(pipeImpl: PipeMuxInt<T, K>) {
         synchronized(lock) {
             pipeImpl.pipeMapTransfer(pipeMap)
         }
     }
 
-    override fun joinPipeMux(pipeImpl: PipeMuxInt<T, K>) {
+    override fun pipeMuxJoin(pipeImpl: PipeMuxInt<T, K>) {
         synchronized(lock) {
             pipeMapTransfer(pipeImpl.pipeMap)
         }
