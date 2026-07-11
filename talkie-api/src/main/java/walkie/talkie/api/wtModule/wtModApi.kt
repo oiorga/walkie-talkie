@@ -1,29 +1,38 @@
 package walkie.talkie.api.wtModule
 
 import walkie.util.api.PipeIdInt
+import walkie.util.api.PipeMessageInt
 import walkie.util.generic.ModuleOp
 import walkie.util.generic.ModuleOpInterface
 
-interface ModuleOpInt : ModuleOpInterface<ModuleOp>
+interface ModuleOpInt : ModuleOpInterface<WTModuleOp>
+
+typealias WTPipeMessage = PipeMessageInt<PipeMessageType, Any>
+
+typealias WTModuleOp = ModuleOp<
+        WTModOpId,
+        PipeIdInt,
+        WTPipeMessage>
+
 class ModuleOpImpl(): ModuleOpInt {
-    override fun <Output> set(modReq: ModuleOp): ModuleOp.Output<Output> {
-        error("Not yet implemented")
+    override fun <Output> set(modReq: WTModuleOp): ModuleOp.Output<Output> {
+        TODO("Not yet implemented")
     }
 
-    override fun <Output> get(modReq: ModuleOp): ModuleOp.Output<Output> {
-        error("Not yet implemented")
+    override fun <Output> get(modReq: WTModuleOp): ModuleOp.Output<Output> {
+        TODO("Not yet implemented")
     }
 
-    override fun subscribeToEvent(modReq: ModuleOp): ModuleOp.Output.Empty {
-        error("Not yet implemented")
+    override fun subscribeToEvent(modReq: WTModuleOp): ModuleOp.Output.Empty {
+        TODO("Not yet implemented")
     }
 
-    override fun sendEvent(modReq: ModuleOp): ModuleOp.Output.Empty {
-        error("Not yet implemented")
+    override fun sendEvent(modReq: WTModuleOp): ModuleOp.Output.Empty {
+        TODO("Not yet implemented")
     }
 
-    override fun registerCallback(modReq: ModuleOp): ModuleOp.Output.Empty {
-        error("Not yet implemented")
+    override fun registerCallback(modReq: WTModuleOp): ModuleOp.Output.Empty {
+        TODO("Not yet implemented")
     }
 
     companion object {
@@ -34,8 +43,14 @@ class ModuleOpImpl(): ModuleOpInt {
 
 fun modOpToPipeType(modOpId: WTModOpId): PipeIdInt {
     return when (modOpId) {
-        WTModOpId.WTSubscribeToWifiD -> {
+        WTModOpId.WTToWifiD -> {
             PipeId.ToWifi
+        }
+        WTModOpId.WTToComm -> {
+            PipeId.ToComm
+        }
+        WTModOpId.WTToActivity -> {
+            PipeId.ToActivity
         }
         else -> {
             PipeId.PipeNA
@@ -44,7 +59,9 @@ fun modOpToPipeType(modOpId: WTModOpId): PipeIdInt {
 }
 
 enum class WTModOpId {
-    WTSubscribeToWifiD,
+    WTToWifiD,
+    WTToComm,
+    WTToActivity,
     WTWifiNotifyGroupChange,
     WTWifiNotifyIpChange,
     WTWifiNotifyAllChange
@@ -76,6 +93,6 @@ enum class PipeId : PipeIdInt {
     ToChat,
     ToPRMComm,
     ToIpComm,
-    ToWTActivity,
+    ToActivity,
     TOCommonData
 }

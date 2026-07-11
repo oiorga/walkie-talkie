@@ -251,7 +251,7 @@ class WTActivity(
         val type = msg.type
         val data = msg.data
         when (pipeId) {
-            PipeId.ToWTActivity -> {
+            PipeId.ToActivity -> {
                 when (type) {
                     PipeMessageType.WifiDebugInfoMessage -> {
                         val groupId = groupIdWDI
@@ -428,7 +428,7 @@ internal fun WTActivity.wtCustomInit(){
     wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermissions, this)
 
     pipeMuxJoin(wtHub)
-    pipeSubscribe(PipeId.ToWTActivity, wtScope, true,::onPipeMessage)
+    pipeSubscribe(PipeId.ToActivity, wtScope, true,::onPipeMessage)
 
     /* To move to App init section */
     wtHub.wtComm.start()

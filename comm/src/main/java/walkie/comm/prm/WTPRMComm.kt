@@ -248,7 +248,7 @@ internal fun WTPRMComm.peersUpdateSendDebugInfo() {
         str += "\n\tDest: ${directUnderlay(k)?.uid} ${directUnderlay(k)?.umCI}"
     }
     pipeSendAsync(
-        PipeId.ToWTActivity,
+        PipeId.ToActivity,
         scope,
         PipeMessage(
             PipeMessageType.MeshDebugInfoMessage,
