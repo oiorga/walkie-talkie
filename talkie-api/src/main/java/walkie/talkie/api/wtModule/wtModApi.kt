@@ -9,10 +9,9 @@ interface ModuleOpInt : ModuleOpInterface<WTModuleOp>
 
 typealias WTPipeMessage = PipeMessageInt<PipeMessageType, Any>
 
-typealias WTModuleOp = ModuleOp<
-        WTModOpId,
-        PipeIdInt,
-        WTPipeMessage>
+typealias WTPipeCallback = suspend (PipeIdInt, PipeMessageInt<PipeMessageType, Any>) -> Unit
+
+typealias WTModuleOp = ModuleOp<WTModOp>
 
 class ModuleOpImpl(): ModuleOpInt {
     override fun <Output> set(modReq: WTModuleOp): ModuleOp.Output<Output> {
@@ -23,11 +22,11 @@ class ModuleOpImpl(): ModuleOpInt {
         TODO("Not yet implemented")
     }
 
-    override fun subscribeToEvent(modReq: WTModuleOp): ModuleOp.Output.Empty {
+    override fun subscribe(modReq: WTModuleOp): ModuleOp.Output.Empty {
         TODO("Not yet implemented")
     }
 
-    override fun sendEvent(modReq: WTModuleOp): ModuleOp.Output.Empty {
+    override fun send(modReq: WTModuleOp): ModuleOp.Output.Empty {
         TODO("Not yet implemented")
     }
 
@@ -39,32 +38,6 @@ class ModuleOpImpl(): ModuleOpInt {
         const val TAG = "WTWiFiDirectManager"
         val TAGKClass = ModuleOpImpl::class
     }
-}
-
-fun modOpToPipeType(modOpId: WTModOpId): PipeIdInt {
-    return when (modOpId) {
-        WTModOpId.WTToWifiD -> {
-            PipeId.ToWifi
-        }
-        WTModOpId.WTToComm -> {
-            PipeId.ToComm
-        }
-        WTModOpId.WTToActivity -> {
-            PipeId.ToActivity
-        }
-        else -> {
-            PipeId.PipeNA
-        }
-    }
-}
-
-enum class WTModOpId {
-    WTToWifiD,
-    WTToComm,
-    WTToActivity,
-    WTWifiNotifyGroupChange,
-    WTWifiNotifyIpChange,
-    WTWifiNotifyAllChange
 }
 
 enum class PipeMessageType {
@@ -95,4 +68,14 @@ enum class PipeId : PipeIdInt {
     ToIpComm,
     ToActivity,
     TOCommonData
+}
+
+sealed class WTModOp {
+    sealed class Set : WTModOp()
+    sealed class Get : WTModOp()
+    data class To(val to: PipeIdInt) : WTModOp()
+    data class OnEvent(val onEvent: WTPipeCallback) : WTModOp()
+    data class Msg(val msg: WTPipeMessage) : WTModOp()
+    data class Subscribe(val to: PipeIdInt, val onEvent: WTPipeMessage) : WTModOp()
+    object None : WTModOp()
 }

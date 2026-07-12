@@ -1,6 +1,5 @@
 package walkie.wifidirect
 
-import walkie.talkie.api.wtModule.WTModOpId
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.NetworkInfo
@@ -29,14 +28,13 @@ import walkie.talkie.api.wtdebug.wtError
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.PipeId
 import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.WTModOp
 import walkie.talkie.api.wtModule.WTModuleOp
-import walkie.talkie.api.wtModule.modOpToPipeType
 import walkie.util.api.PipeIdInt
 import walkie.util.api.PipeMessageInt
 import walkie.util.api.PipeMuxInt
 import walkie.util.api.RemoteCallId
 import walkie.util.api.RemoteCallMuxInt
-import walkie.util.generic.CallBackInterface
 import walkie.util.generic.PipeMux
 import walkie.util.generic.GenericList
 import walkie.util.generic.Mailbox
@@ -186,12 +184,10 @@ class WTWifiDirectManager(
         }
         */
 
-        subscribeToEvent(
-            modReq = ModuleOp.SubscribeEvent.CallBack(
-                opId = WTModOpId.WTToWifiD,
-                callBack = CallBackInterface { pipeId, msg ->
-                    onPipeMessage(pipeId, msg)
-                }
+        subscribe(
+            modReq = ModuleOp.Subscribe(
+                to = WTModOp.To(PipeId.ToWifi),
+                onEvent = WTModOp.OnEvent (::onPipeMessage)
             )
         )
     }
@@ -235,12 +231,14 @@ class WTWifiDirectManager(
 
         logd(TAGKClass, tag, "Entry")
 
-        sendEvent(
-            ModuleOp.SendEvent.Info(
-                opId = WTModOpId.WTToComm,
-                msg =  PipeMessage(
-                    PipeMessageType.GroupInfo,
-                    Triple(null, null, null)
+        send(
+            modReq = ModuleOp.Send(
+                to = WTModOp.To(PipeId.ToComm),
+                msg = WTModOp.Msg(
+                    PipeMessage(
+                        type = PipeMessageType.GroupInfo,
+                        data = Triple(null, null, null)
+                    )
                 )
             )
         )
@@ -476,7 +474,7 @@ class WTWifiDirectManager(
         var rndDelay = Random.nextLong(50)
 
         while (scope.isActive) {
-            notifyOfChange(p2pInfo, Triple(wtGroupIp, wtLocalIp, wtGroupServerPort))
+            checkGroupInfoChanges(p2pInfo, Triple(wtGroupIp, wtLocalIp, wtGroupServerPort))
             p2pInfo = Triple(wtGroupIp, wtLocalIp, wtGroupServerPort)
 
             internalMaintenance()
@@ -639,12 +637,14 @@ class WTWifiDirectManager(
                     "\n\tlocalIp = ${this.wtLocalIp}"
         )
 
-        sendEvent(
-            ModuleOp.SendEvent.Info(
-                opId = WTModOpId.WTToActivity,
-                msg = PipeMessage(
-                    PipeMessageType.WifiDebugInfoMessage,
-                    wtWifiDirectInfo()
+        send(
+            modReq = ModuleOp.Send(
+                to = WTModOp.To(PipeId.ToActivity),
+                msg = WTModOp.Msg(
+                    PipeMessage(
+                        type = PipeMessageType.WifiDebugInfoMessage,
+                        data = wtWifiDirectInfo()
+                    )
                 )
             )
         )
@@ -683,12 +683,14 @@ class WTWifiDirectManager(
     suspend fun mainLoopInit() {
         val tag = "mainLoopInit/${randomString(2u)}"
 
-        sendEvent(
-            ModuleOp.SendEvent.Info(
-                opId = WTModOpId.WTToActivity,
-                msg = PipeMessage(
-                    PipeMessageType.WifiDebugInfoMessage,
-                    wtWifiDirectInfo()
+        send(
+            modReq = ModuleOp.Send(
+                to = WTModOp.To(PipeId.ToActivity),
+                msg = WTModOp.Msg(
+                    PipeMessage(
+                        type = PipeMessageType.WifiDebugInfoMessage,
+                        data = wtWifiDirectInfo()
+                    )
                 )
             )
         )
@@ -697,12 +699,14 @@ class WTWifiDirectManager(
         removeGroup()
         clearAllServices()
 
-        sendEvent(
-            ModuleOp.SendEvent.Info(
-                opId = WTModOpId.WTToComm,
-                msg = PipeMessage(
-                    PipeMessageType.GroupInfo,
-                    Triple(null, null, null)
+        send(
+            modReq = ModuleOp.Send(
+                to = WTModOp.To(PipeId.ToComm),
+                msg = WTModOp.Msg(
+                    PipeMessage(
+                        type = PipeMessageType.GroupInfo,
+                        data = Triple(null, null, null)
+                    )
                 )
             )
         )
@@ -710,14 +714,14 @@ class WTWifiDirectManager(
         initServices()
     }
 
-    fun notifyOfChange(
-        oldGroupInfo: Triple<InetAddress?, InetAddress?, Int?>,
-        wtGroupInfo: Triple<InetAddress?, InetAddress?, Int?>
+    fun checkGroupInfoChanges(
+        oldInfo: Triple<InetAddress?, InetAddress?, Int?>,
+        newInfo: Triple<InetAddress?, InetAddress?, Int?>
     ) {
-        val tag = "notifyOfChange/${randomString(2u)}"
+        val tag = "checkGroupInfoChanges/${randomString(2u)}"
 
-        val (oldGroupIp, oldLocalIp, oldGroupServerPort) = oldGroupInfo
-        val (wtGroupIp, wtLocalIp, wtGroupServerPort) = wtGroupInfo
+        val (oldGroupIp, oldLocalIp, oldGroupServerPort) = oldInfo
+        val (wtGroupIp, wtLocalIp, wtGroupServerPort) = newInfo
 
         logd(
             tag, "\ngroupIp: $oldGroupIp -> $wtGroupIp" +
@@ -727,10 +731,10 @@ class WTWifiDirectManager(
                     "\nwtIsGroupOwner: $wtIsGroupOwner"
         )
 
-        if (oldGroupInfo == wtGroupInfo)
+        if (oldInfo == newInfo)
             return
 
-        if (oldGroupInfo != wtGroupInfo) {
+        if (oldInfo != newInfo) {
             var localIpAlreadyChanged = false
             if (null == wtGroupIp) {
                 logd(
@@ -738,12 +742,14 @@ class WTWifiDirectManager(
                     "Group info changed(Null): wtGroupIp: $oldGroupIp -> $wtGroupIp wtLocalIp: $oldLocalIp -> $wtLocalIp"
                 )
 
-                sendEvent(
-                    ModuleOp.SendEvent.Info(
-                        opId = WTModOpId.WTToComm,
-                        msg = PipeMessage(
-                            PipeMessageType.GroupInfo,
-                            Triple(null, null, null)
+                send(
+                    modReq = ModuleOp.Send(
+                        to = WTModOp.To(PipeId.ToComm),
+                        msg = WTModOp.Msg(
+                            PipeMessage(
+                                type = PipeMessageType.GroupInfo,
+                                data = Triple(null, null, null)
+                            )
                         )
                     )
                 )
@@ -759,32 +765,38 @@ class WTWifiDirectManager(
                     "Group info changed(Group): wtGroupIp: $oldGroupIp -> $wtGroupIp wtGroupServerPort: $oldGroupServerPort -> $wtGroupServerPort wtLocalIp: $oldLocalIp -> $wtLocalIp"
                 )
 
-                sendEvent(
-                    ModuleOp.SendEvent.Info(
-                        opId = WTModOpId.WTToComm,
-                        msg = PipeMessage(
-                            PipeMessageType.GroupInfo,
-                            Triple(null, null, null)
+                send(
+                    modReq = ModuleOp.Send(
+                        to = WTModOp.To(PipeId.ToComm),
+                        msg = WTModOp.Msg(
+                            PipeMessage(
+                                type = PipeMessageType.GroupInfo,
+                                data = Triple(null, null, null)
+                            )
                         )
                     )
                 )
 
-                sendEvent(
-                    ModuleOp.SendEvent.Info(
-                        opId = WTModOpId.WTToComm,
-                        msg = PipeMessage(
-                            PipeMessageType.GroupInfo,
-                            Triple(wtGroupOwnerName, wtGroupIp, wtGroupServerPort)
+                send(
+                    modReq = ModuleOp.Send(
+                        to = WTModOp.To(PipeId.ToComm),
+                        msg = WTModOp.Msg(
+                            PipeMessage(
+                                type = PipeMessageType.GroupInfo,
+                                data = Triple(wtGroupOwnerName, wtGroupIp, wtGroupServerPort)
+                            )
                         )
                     )
                 )
 
-                sendEvent(
-                    ModuleOp.SendEvent.Info(
-                        opId = WTModOpId.WTToComm,
-                        msg = PipeMessage(
-                            PipeMessageType.LocalIp,
-                            wtLocalIp
+                send(
+                    modReq = ModuleOp.Send(
+                        to = WTModOp.To(PipeId.ToComm),
+                        msg = WTModOp.Msg(
+                            PipeMessage(
+                                type = PipeMessageType.LocalIp,
+                                data = wtLocalIp
+                            )
                         )
                     )
                 )
@@ -802,12 +814,14 @@ class WTWifiDirectManager(
             if (wtLocalIp != oldLocalIp && !localIpAlreadyChanged) {
                 logd(tag, "Local IP info changed(IP): wtLocalIp: $oldLocalIp -> $wtLocalIp")
 
-                sendEvent(
-                    ModuleOp.SendEvent.Info(
-                        opId = WTModOpId.WTToComm,
-                        msg = PipeMessage(
-                            PipeMessageType.LocalIp,
-                            wtLocalIp
+                send(
+                    modReq = ModuleOp.Send(
+                        to = WTModOp.To(PipeId.ToComm),
+                        msg = WTModOp.Msg(
+                            PipeMessage(
+                                type = PipeMessageType.LocalIp,
+                                data = wtLocalIp
+                            )
                         )
                     )
                 )
@@ -830,12 +844,14 @@ class WTWifiDirectManager(
             removeGroup()
             wtWifi = wtWifi.reset()
 
-            sendEvent(
-                ModuleOp.SendEvent.Info(
-                    opId = WTModOpId.WTToComm,
-                    msg = PipeMessage(
-                        PipeMessageType.GroupInfo,
-                        Triple(null, null, null)
+            send(
+                modReq = ModuleOp.Send(
+                    to = WTModOp.To(PipeId.ToComm),
+                    msg = WTModOp.Msg(
+                        PipeMessage(
+                            type = PipeMessageType.GroupInfo,
+                            data = Triple(null, null, null)
+                        )
                     )
                 )
             )
@@ -1257,22 +1273,26 @@ class WTWifiDirectManager(
 
         resetData()
 
-        sendEvent(
-            ModuleOp.SendEvent.Info(
-                opId = WTModOpId.WTToActivity,
-                msg = PipeMessage(
-                    PipeMessageType.WifiDebugInfoMessage,
-                    wtWifiDirectInfo()
+        send(
+            modReq = ModuleOp.Send(
+                to = WTModOp.To(PipeId.ToActivity),
+                msg = WTModOp.Msg(
+                    PipeMessage(
+                        type = PipeMessageType.WifiDebugInfoMessage,
+                        data = wtWifiDirectInfo()
+                    )
                 )
             )
         )
 
-        sendEvent(
-            ModuleOp.SendEvent.Info(
-                opId = WTModOpId.WTToActivity,
-                msg = PipeMessage(
-                    PipeMessageType.WifiRestartChannel,
-                    null
+        send(
+            modReq = ModuleOp.Send(
+                to = WTModOp.To(PipeId.ToActivity),
+                msg = WTModOp.Msg(
+                    PipeMessage(
+                        type = PipeMessageType.WifiRestartChannel,
+                        data = null
+                    )
                 )
             )
         )
@@ -1331,39 +1351,44 @@ class WTWifiDirectManager(
         }
     }
 
-    override fun subscribeToEvent(modReq: WTModuleOp): ModuleOp.Output.Empty  {
-        if (modReq is ModuleOp.SubscribeEvent.CallBack<*, *, *>) {
-            (modReq.opId as? WTModOpId)?.let { opId ->
-                val callBack = (modReq.callBack as? CallBackInterface<PipeIdInt, PipeMessageInt<PipeMessageType, Any>>)?.let { callB ->
-                    callB::onEvent
-                } ?: ::onPipeMessage
-                pipeSubscribe(
-                    pipeId = modOpToPipeType(opId),
-                    scope = scope,
-                    autoCreate = true,
-                    onReceive = callBack
-                )
+    override fun subscribe(modReq: WTModuleOp): ModuleOp.Output.Empty  {
+        val tag = "subscribeToEvent/${randomString(2U)}"
+
+        if (modReq is ModuleOp.Subscribe) {
+            val to = (modReq.to as? WTModOp.To)?.to ?: run {
+                wtError(tag, "Invalid input: $modReq")
+                return ModuleOp.Output.Empty
             }
+            val onEvent = (modReq.onEvent as? WTModOp.OnEvent)?.onEvent ?: run {
+                wtError(tag, "Invalid input: $modReq")
+                return ModuleOp.Output.Empty
+            }
+
+            pipeSubscribe(
+                pipeId = to,
+                scope = scope,
+                autoCreate = true,
+                onReceive = onEvent
+            )
         }
 
         return ModuleOp.Output.Empty
     }
 
-    override fun sendEvent(modReq: WTModuleOp): ModuleOp.Output.Empty {
+    override fun send(modReq: WTModuleOp): ModuleOp.Output.Empty {
         val tag = "sendEvent/${randomString(2U)}"
-        if (modReq is ModuleOp.SendEvent.Info<*, *, *>) {
-            val opId = modReq.opId as? WTModOpId ?: run {
-                wtError (tag, "Invalid input opId: ${modReq.opId}")
+        if (modReq is ModuleOp.Send) {
+            val to = (modReq.to as? WTModOp.To)?.to ?: run {
+                wtError(tag, "Invalid input: $modReq")
                 return ModuleOp.Output.Empty
             }
-            val chId = modOpToPipeType(opId)
-            val msg = modReq.msg as? PipeMessageInt<PipeMessageType, Any> ?: run {
-                wtError (tag, "Invalid input modReq.msg: ${modReq.msg}")
+            val msg = (modReq.msg as? WTModOp.Msg)?.msg ?: run {
+                wtError(tag, "Invalid input: $modReq")
                 return ModuleOp.Output.Empty
             }
-            pipeSendAsync(chId, scope, msg)
-        }
 
+            pipeSendAsync(to, scope, msg)
+        }
         return ModuleOp.Output.Empty
     }
 }
