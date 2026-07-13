@@ -2,35 +2,42 @@ package walkie.talkie.api.wtModule
 
 import walkie.util.api.PipeIdInt
 import walkie.util.api.PipeMessageInt
-import walkie.util.generic.ModuleOp
 import walkie.util.generic.ModuleOpInterface
 
-interface ModuleOpInt : ModuleOpInterface<WTModuleOp>
-
+interface ModuleOpInt : ModuleOpInterface<WTModOpArg>
 typealias WTPipeMessage = PipeMessageInt<PipeMessageType, Any>
-
 typealias WTPipeCallback = suspend (PipeIdInt, PipeMessageInt<PipeMessageType, Any>) -> Unit
 
-typealias WTModuleOp = ModuleOp<WTModOp>
-
 class ModuleOpImpl(): ModuleOpInt {
-    override fun <Output> set(modReq: WTModuleOp): ModuleOp.Output<Output> {
+    override fun set(
+        propId: WTModOpArg,
+        value: WTModOpArg
+    ): WTModOpArg {
         TODO("Not yet implemented")
     }
 
-    override fun <Output> get(modReq: WTModuleOp): ModuleOp.Output<Output> {
+    override fun get(propId: WTModOpArg): WTModOpArg {
         TODO("Not yet implemented")
     }
 
-    override fun subscribe(modReq: WTModuleOp): ModuleOp.Output.Empty {
+    override fun subscribe(
+        to: WTModOpArg,
+        onEvent: WTModOpArg
+    ) {
         TODO("Not yet implemented")
     }
 
-    override fun send(modReq: WTModuleOp): ModuleOp.Output.Empty {
+    override fun send(
+        to: WTModOpArg,
+        msg: WTModOpArg
+    ) {
         TODO("Not yet implemented")
     }
 
-    override fun registerCallback(modReq: WTModuleOp): ModuleOp.Output.Empty {
+    override fun registerCallback(
+        chId: WTModOpArg,
+        callback: WTModOpArg
+    ) {
         TODO("Not yet implemented")
     }
 
@@ -38,6 +45,18 @@ class ModuleOpImpl(): ModuleOpInt {
         const val TAG = "WTWiFiDirectManager"
         val TAGKClass = ModuleOpImpl::class
     }
+}
+
+sealed class WTModOpArg {
+    sealed class To(val id: PipeIdInt): WTModOpArg() {
+        object Comm: To(PipeId.ToComm)
+        object Activity: To(PipeId.ToActivity)
+        object Wifi: To(PipeId.ToWifi)
+    }
+
+    data class OnEvent(val onEvent: WTPipeCallback) : WTModOpArg()
+    data class Msg(val msg: WTPipeMessage) : WTModOpArg()
+    object None : WTModOpArg()
 }
 
 enum class PipeMessageType {
@@ -68,14 +87,4 @@ enum class PipeId : PipeIdInt {
     ToIpComm,
     ToActivity,
     TOCommonData
-}
-
-sealed class WTModOp {
-    sealed class Set : WTModOp()
-    sealed class Get : WTModOp()
-    data class To(val to: PipeIdInt) : WTModOp()
-    data class OnEvent(val onEvent: WTPipeCallback) : WTModOp()
-    data class Msg(val msg: WTPipeMessage) : WTModOp()
-    data class Subscribe(val to: PipeIdInt, val onEvent: WTPipeMessage) : WTModOp()
-    object None : WTModOp()
 }
