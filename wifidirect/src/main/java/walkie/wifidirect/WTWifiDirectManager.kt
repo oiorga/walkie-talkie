@@ -61,7 +61,7 @@ class WTWifiDirectManager(
     val scope: CoroutineScope,
     private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl()
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) :
     ModuleOpInt by _moduleOp,
     PipeMuxInt<PipeMessageType, Any> by _pipeMux,
@@ -72,9 +72,6 @@ class WTWifiDirectManager(
         val TAGKClass = WTWifiDirectManager::class
     }
 
-    /*
-    * Transition to self-contained Wi-Fi direct manager
-    */
     private var wtWifiDirect: WTWifiDirect? = null
     private val wtWifiDirectEnv = object : WTWifiDirectEnv {
         override fun checkWifiPermissions(): Boolean {
@@ -184,7 +181,7 @@ class WTWifiDirectManager(
 
         subscribe(
             to = WTModOpArg.To.Wifi,
-            onEvent = WTModOpArg.OnEvent (::onPipeMessage)
+            onEventInfo = WTModOpArg.OnEventInfo(::onPipeMessage, scope)
         )
     }
 
@@ -1320,48 +1317,5 @@ class WTWifiDirectManager(
                 WTWifiDirectResult.Error.App.InvalidState
             }
         }
-    }
-
-    override fun subscribe(
-        to: WTModOpArg,
-        onEvent: WTModOpArg
-    ) {
-        val tag = "subscribe/${randomString(2U)}"
-
-        val to = (to as? WTModOpArg.To)?.id ?: run {
-            wtError(tag, "Invalid input: to -> $to")
-            return
-        }
-
-        val onEvent = (onEvent as? WTModOpArg.OnEvent)?.onEvent ?: run {
-            wtError(tag, "Invalid input: onEvent -> $onEvent")
-            return
-        }
-
-        pipeSubscribe(
-            pipeId = to,
-            scope = scope,
-            autoCreate = true,
-            onReceive = onEvent
-        )
-    }
-
-    override fun send(
-        to: WTModOpArg,
-        msg: WTModOpArg
-    ) {
-        val tag = "sendEvent/${randomString(2U)}"
-
-        val to = (to as? WTModOpArg.To)?.id ?: run {
-            wtError(tag, "Invalid input: to -> $to")
-            return
-        }
-
-        val msg = (msg as? WTModOpArg.Msg)?.msg ?: run {
-            wtError(tag, "Invalid msg: $msg")
-            return
-        }
-
-        pipeSendAsync(to, scope, msg)
     }
 }

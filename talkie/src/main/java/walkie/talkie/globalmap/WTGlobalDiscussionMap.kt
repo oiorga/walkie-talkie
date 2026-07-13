@@ -10,6 +10,8 @@ import walkie.chat.ChatMessageItem
 import walkie.chat.ChatMessageItemList
 import walkie.chat.Receiver
 import walkie.chat.Sender
+import walkie.talkie.api.wtModule.ModuleOpImpl
+import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.util.generic.PipeMux
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
@@ -19,6 +21,7 @@ import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.PipeId
 import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.node.NodeId
 import walkie.util.api.PipeIdInt
@@ -44,7 +47,9 @@ data class DiscussionMap(
     val scope: CoroutineScope,
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
     private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) : RemoteCallMuxInt by _remoteCallMux,
+    ModuleOpInt by _moduleOp,
     PipeMuxInt<PipeMessageType, Any> by _pipeMux
 {
     lateinit var updateUiLiveData: UpdateUiLiveData
@@ -62,7 +67,14 @@ data class DiscussionMap(
         
         logd(TAG, "init")
 
+        /*
         pipeSubscribe(PipeId.ToChat, scope, true,::onPipeMessage)
+        */
+
+        subscribe(
+            to = WTModOpArg.To.Chat,
+            onEventInfo = WTModOpArg.OnEventInfo(::onPipeMessage, scope)
+        )
     }
 
     private suspend fun addMessage(chatMessage: ChatMessageAbs) {
@@ -108,10 +120,13 @@ data class DiscussionMap(
 
         mutex.unlock()
 
-        pipeSendAsync(PipeId.TOCommonData,  scope,
-            PipeMessage(
-                PipeMessageType.UpdateChatUI,
-                chatMessage.groupId.type
+        send(
+            to = WTModOpArg.To.CommonData,
+            msg = WTModOpArg.Msg(
+                PipeMessage(
+                    PipeMessageType.UpdateChatUI,
+                    chatMessage.groupId.type
+                )
             )
         )
     }
@@ -237,10 +252,13 @@ data class DiscussionMap(
 
         commPacket.logD(tag, logF)
 
-        pipeSendAsync(PipeId.ToComm, scope,
-            PipeMessage(
-                messageType,
-                commPacket
+        send(
+            to = WTModOpArg.To.Comm,
+            msg = WTModOpArg.Msg(
+                PipeMessage(
+                    messageType,
+                    commPacket
+                )
             )
         )
     }

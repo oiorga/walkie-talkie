@@ -2,6 +2,7 @@ package walkie.util.generic
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
@@ -21,22 +22,34 @@ data class PipeMessage<T, D>(
 
 class PipeMux<T, K>() : PipeMuxInt<T, K> {
     private var _pipeMap: MutableMap<PipeIdInt, MutableSharedFlow<PipeMessageInt<T, K>>> = mutableMapOf()
+    private var _scopeMap: MutableMap<PipeIdInt, CoroutineScope> = mutableMapOf()
 
     private val subscriberMap: MutableMap<PipeIdInt, Job> = mutableMapOf()
 
-    override fun pipeMapTransfer(newPipeMap: Map<PipeIdInt, MutableSharedFlow<PipeMessageInt<T, K>>>) {
+    override fun pipeMapTransfer(newPipeMap: Map<PipeIdInt, MutableSharedFlow<PipeMessageInt<T, K>>>,
+                                 newScopeMap: Map<PipeIdInt, CoroutineScope>) {
         val tag = "pipeMapTransfer/${randomString(2u)}"
 
         val mutablePipeMap  = newPipeMap as? MutableMap<PipeIdInt, MutableSharedFlow<PipeMessageInt<T, K>>> ?: run {
             logd(tag, "PipeMux requires pipeMap to be backed by a MutableMap")
             error("PipeMux requires pipeMap to be backed by a MutableMap")
         }
+        val mutableScopeMap  = newScopeMap as? MutableMap<PipeIdInt, CoroutineScope> ?: run {
+            logd(tag, "PipeMux requires pipeMap to be backed by a MutableMap")
+            error("PipeMux requires scopeMap to be backed by a MutableMap")
+        }
         mutablePipeMap.putAll(_pipeMap)
         _pipeMap = mutablePipeMap
+        mutableScopeMap.putAll(_scopeMap)
+        _scopeMap = mutableScopeMap
+
     }
 
     override val pipeMap: MutableMap<PipeIdInt, MutableSharedFlow<PipeMessageInt<T, K>>>
         get() = _pipeMap
+
+    override val scopeMap: MutableMap<PipeIdInt, CoroutineScope>
+        get() = _scopeMap
 
     override fun pipeSubscribe(pipeId: PipeIdInt, scope: CoroutineScope, autoCreate: Boolean, onReceive: (suspend (pipeId: PipeIdInt, msg: PipeMessageInt<T, K>) -> Unit)) {
         val tag = "subscribe/${randomString(2u)}"
@@ -44,7 +57,7 @@ class PipeMux<T, K>() : PipeMuxInt<T, K> {
         synchronized(lock) {
             if (null == pipeMap[pipeId]) {
                 if (autoCreate) {
-                    pipeCreate(pipeId)
+                    pipeCreate(pipeId, scope)
                 } else {
                     logd(tag, "Pipe $pipeId is not registered")
                     error("$tag: Pipe $pipeId is not registered")
@@ -52,7 +65,7 @@ class PipeMux<T, K>() : PipeMuxInt<T, K> {
             }
 
             if (null == subscriberMap[pipeId]) {
-                val job = scope.launch {
+                val job = scopeMap[pipeId]!!.launch {
                     pipeGet(pipeId)
                         ?.onEach { msg ->
                             onReceive.invoke(
@@ -104,7 +117,11 @@ class PipeMux<T, K>() : PipeMuxInt<T, K> {
         return pipeMap[pipeId]
     }
 
-    override fun pipeCreate(pipeId: PipeIdInt) : MutableSharedFlow<PipeMessageInt<T, K>>? {
+    override fun scopeGet(pipeId: PipeIdInt) : CoroutineScope? {
+        return scopeMap[pipeId]
+    }
+
+    override fun pipeCreate(pipeId: PipeIdInt, scope: CoroutineScope) : MutableSharedFlow<PipeMessageInt<T, K>>? {
         val tag = "pipeCreate/${randomString(2u)}"
 
         synchronized(lock) {
@@ -116,39 +133,24 @@ class PipeMux<T, K>() : PipeMuxInt<T, K> {
                     onBufferOverflow = BufferOverflow.SUSPEND
                 )
             }
+            scopeMap[pipeId] = scope
         }
         return pipeMap[pipeId]
     }
 
     override fun pipeMuxAdd(pipeImpl: PipeMuxInt<T, K>) {
         synchronized(lock) {
-            pipeImpl.pipeMapTransfer(pipeMap)
+            pipeImpl.pipeMapTransfer(pipeMap, scopeMap)
         }
     }
 
     override fun pipeMuxJoin(pipeImpl: PipeMuxInt<T, K>) {
         synchronized(lock) {
-            pipeMapTransfer(pipeImpl.pipeMap)
+            pipeMapTransfer(pipeImpl.pipeMap, pipeImpl.scopeMap)
         }
     }
 
-    override fun pipeSendAsync (pipeId: PipeIdInt, scope: CoroutineScope, msg: PipeMessageInt<T, K>) {
-        val tag = "pipeSend/${randomString(2u)}"
-        val data= msg.data
-
-        logd(tag, "pipeSend: pipeId ${pipeId.toString()} data: ${if (null != data) data::class else null}  type: ${msg.type}")
-
-        val pipe = pipeMap[pipeId] ?: run {
-            logd(tag, "pipeSend: pipe for $pipeMap $pipeId -> ${pipeMap[pipeId]} does not exist")
-            throw (NoSuchElementException("${this}: pipeSend: pipe for $pipeMap $pipeId -> ${pipeMap[pipeId]} does not exist"))
-        }
-
-        scope.launch {
-            pipe.emit(msg)
-        }
-    }
-
-    override suspend fun pipeSendSync (pipeId: PipeIdInt, scope: CoroutineScope, msg: PipeMessageInt<T, K>) {
+    override suspend fun pipeSendSync (pipeId: PipeIdInt, msg: PipeMessageInt<T, K>) {
         val tag = "pipeSend/${randomString(2u)}"
         val data= msg.data
 
@@ -160,6 +162,22 @@ class PipeMux<T, K>() : PipeMuxInt<T, K> {
         }
 
         pipe.emit(msg)
+    }
+
+    override fun pipeSendAsync (pipeId: PipeIdInt, msg: PipeMessageInt<T, K>) {
+        val tag = "pipeSend/${randomString(2u)}"
+        val data= msg.data
+
+        logd(tag, "pipeSend: pipeId ${pipeId.toString()} data: ${if (null != data) data::class else null}  type: ${msg.type}")
+
+        val pipe = pipeMap[pipeId] ?: run {
+            logd(tag, "pipeSend: pipe for $pipeMap $pipeId -> ${pipeMap[pipeId]} does not exist")
+            throw (NoSuchElementException("${this}: pipeSend: pipe for $pipeMap $pipeId -> ${pipeMap[pipeId]} does not exist"))
+        }
+
+        scopeMap[pipeId]!!.launch {
+            pipe.emit(msg)
+        }
     }
 
 

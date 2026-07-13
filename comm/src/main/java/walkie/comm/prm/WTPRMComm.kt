@@ -5,6 +5,8 @@ import walkie.comm.WTCommPeerInfo
 import walkie.comm.WTIPMesh
 import walkie.comm.ip.WTIPComm
 import walkie.comm.ip.WTIPCommPacketType
+import walkie.talkie.api.wtModule.ModuleOpImpl
+import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.util.generic.PipeMux
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
@@ -12,6 +14,7 @@ import walkie.talkie.api.wtcomm.WTMedium
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.PipeId
 import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.api.DispatchEventId
 import walkie.util.api.PipeIdInt
 import walkie.util.api.PipeMessageInt
@@ -30,9 +33,11 @@ class WTPRMComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
     private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
-    private val _callBackList: EventDispatcherInt<Any> = EventDispatcher()
+    private val _callBackList: EventDispatcherInt<Any> = EventDispatcher(),
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) :
     PipeMuxInt<PipeMessageType, Any> by _pipeMux,
+    ModuleOpInt by _moduleOp,
     EventDispatcherInt<Any> by _callBackList
 {
     val wtIPComm: WTIPComm = WTIPComm(node, scope)
@@ -52,7 +57,14 @@ class WTPRMComm (
     init {
         logging(true)
 
+        /*
         pipeSubscribe(PipeId.ToPRMComm, scope, true, ::onPipeMessage)
+        */
+
+        subscribe(
+            to = WTModOpArg.To.PRMComm,
+            onEventInfo = WTModOpArg.OnEventInfo(::onPipeMessage, scope)
+        )
 
         wtMesh.registerSend { destPeer, jSon ->
             val tag = "wtMeshPRMSend/${randomString(2U)}"
@@ -158,12 +170,15 @@ class WTPRMComm (
                         logd(TAGKClass,
                             tag,
                             "$type localIpAddress: $localIpAddress")
-                        pipeSendAsync(
-                            PipeId.ToIpComm,
-                            scope,
-                            PipeMessage(
-                                PipeMessageType.LocalIp,
-                                localIpAddress)
+
+                        send(
+                            to = WTModOpArg.To.IpComm,
+                            msg = WTModOpArg.Msg(
+                                PipeMessage(
+                                    PipeMessageType.LocalIp,
+                                    localIpAddress
+                                )
+                            )
                         )
                         if (null != localIpAddress) {
                             wtMesh.addPeer(
@@ -247,11 +262,14 @@ internal fun WTPRMComm.peersUpdateSendDebugInfo() {
     directNodes().forEach { k ->
         str += "\n\tDest: ${directUnderlay(k)?.uid} ${directUnderlay(k)?.umCI}"
     }
-    pipeSendAsync(
-        PipeId.ToActivity,
-        scope,
-        PipeMessage(
-            PipeMessageType.MeshDebugInfoMessage,
-            str)
+
+    send(
+        to = WTModOpArg.To.Activity,
+        msg = WTModOpArg.Msg(
+            PipeMessage(
+                PipeMessageType.MeshDebugInfoMessage,
+                str
+            )
+        )
     )
 }

@@ -17,6 +17,8 @@ import walkie.talkie.ui.nav.wtChatUpdateUI
 import walkie.talkie.ui.screens.WTUITheme
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.BuildConfig
+import walkie.talkie.api.wtModule.ModuleOpImpl
+import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.wtdebug.WTDebugInt
 import walkie.talkie.api.wtModule.PipeId
 import walkie.talkie.api.wtModule.PipeMessageType
@@ -35,8 +37,10 @@ import walkie.wifidirect.WiFiDirectBroadcastReceiver
 class WTCommonData private constructor (
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
     private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) : RemoteCallMuxInt by _remoteCallMux,
     PipeMuxInt<PipeMessageType, Any> by _pipeMux,
+    ModuleOpInt by _moduleOp,
     WTDebugInt
 {
     companion object {

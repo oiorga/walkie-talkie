@@ -9,11 +9,14 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import walkie.comm.ip.WTIPComm.Companion.TAGKClass
+import walkie.talkie.api.wtModule.ModuleOpImpl
+import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.util.generic.PipeMux
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.PipeId
 import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.TCPClient
 import walkie.util.TCPServer
 import walkie.util.api.DispatchEventId
@@ -34,6 +37,7 @@ import java.net.InetAddress
 import java.net.Socket
 import java.util.Scanner
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
 
 /* Ugly. To revisit. To prevent coroutines to restart at onCreate on screen rotation */
 class WTIPCommStatic private constructor() {
@@ -48,9 +52,11 @@ class WTIPComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
     private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux<PipeMessageType, Any>(),
-    private val _callBackList: EventDispatcherInt<Any> = EventDispatcher()
+    private val _callBackList: EventDispatcherInt<Any> = EventDispatcher(),
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) :
     PipeMuxInt<PipeMessageType, Any> by _pipeMux,
+    ModuleOpInt by _moduleOp,
     EventDispatcherInt<Any> by _callBackList
 {
     val ipOutQueue = BlockingQueue<Triple<InetAddress, Int, ByteArray>>("ipOutQueue", 100)
@@ -72,7 +78,14 @@ class WTIPComm (
         logging(true)
         logd(tag, "init")
 
+        /*
         pipeSubscribe(PipeId.ToIpComm, scope, true,::onPipeMessage)
+        */
+
+        subscribe(
+            to = WTModOpArg.To.IpComm,
+            onEventInfo = WTModOpArg.OnEventInfo(::onPipeMessage, scope)
+        )
     }
 
     suspend fun stop() {
@@ -213,23 +226,32 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
                 /* throw (exc) */
                 return
             }
-            pipeSendAsync(PipeId.ToComm, scope,
-                PipeMessage(
-                    PipeMessageType.WifiMessage,
-                    commPacket)
+
+            send(
+                to = WTModOpArg.To.Comm,
+                msg = WTModOpArg.Msg(
+                    PipeMessage(
+                        PipeMessageType.WifiMessage,
+                        commPacket
+                    )
+                )
             )
         }
         WTIPCommPacketType.ControlMesh -> {
-            pipeSendAsync(PipeId.ToPRMComm, scope,
-                PipeMessage(
-                    PipeMessageType.ControlMesh,
-                    decodedJSon!!.jsonString)
+            send(
+                to = WTModOpArg.To.PRMComm,
+                msg = WTModOpArg.Msg(
+                    PipeMessage(
+                        PipeMessageType.ControlMesh,
+                        decodedJSon.jsonString
+                    )
+                )
             )
         }
         else -> {
             logd(TAGKClass,
                 tag,
-                "Received(2): Unknown JSon type: ${decodedJSon!!.ipCommType}")
+                "Received(2): Unknown JSon type: ${decodedJSon.ipCommType}")
         }
     }
 }
@@ -291,7 +313,7 @@ suspend fun WTIPComm.wifiServer(localIp: InetAddress? = null,
                     "$count: mainLoop serverIp(null): $serverIp / ${this@wifiServer.localServerIpAddress}"
                 ).also { count++ }
                 val cont = (null == this@wifiServer.localServerIpAddress)
-                if (cont) delay(1010)
+                if (cont) delay(1010.milliseconds)
                 return@TCPServer (cont)
             }
             logd(

@@ -25,8 +25,11 @@ import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION
 import kotlinx.coroutines.CoroutineScope
+import walkie.talkie.api.wtModule.ModuleOpImpl
+import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.wtModule.PipeId
 import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.api.PipeMuxInt
 import walkie.util.generic.PipeMessage
 import walkie.util.generic.PipeMux
@@ -39,9 +42,11 @@ import walkie.util.logging
  */
 class WiFiDirectBroadcastReceiver (
     val scope: CoroutineScope,
-    private val _channelMux: PipeMuxInt<PipeMessageType, Any> = PipeMux<PipeMessageType, Any>()
+    private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux<PipeMessageType, Any>(),
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) : BroadcastReceiver(),
-    PipeMuxInt<PipeMessageType, Any> by _channelMux
+    ModuleOpInt by _moduleOp,
+    PipeMuxInt<PipeMessageType, Any> by _pipeMux
 {
     companion object {
         const val TAG = "WiFiDirectBroadcastReceiver"
@@ -70,12 +75,14 @@ class WiFiDirectBroadcastReceiver (
             WIFI_P2P_CONNECTION_CHANGED_ACTION,
             WIFI_P2P_THIS_DEVICE_CHANGED_ACTION,
             -> {
-                pipeSendAsync(
-                    pipeId = PipeId.ToWifi,
-                    scope = scope,
-                    msg = PipeMessage(
-                        type = PipeMessageType.WifiBroadcastReceiver,
-                        data = intent)
+                send(
+                    to = WTModOpArg.To.Wifi,
+                    msg = WTModOpArg.Msg(
+                        PipeMessage(
+                            type = PipeMessageType.WifiBroadcastReceiver,
+                            data = intent
+                        )
+                    )
                 )
             }
 

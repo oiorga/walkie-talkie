@@ -3,6 +3,8 @@ package walkie.comm
 import kotlinx.coroutines.CoroutineScope
 import walkie.comm.ip.wtIPCommMain
 import walkie.comm.prm.WTPRMComm
+import walkie.talkie.api.wtModule.ModuleOpImpl
+import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.util.generic.PipeMux
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
@@ -14,6 +16,7 @@ import walkie.talkie.api.wtcomm.WTCommPacketOut
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.PipeId
 import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.api.DispatchEventId
 import walkie.util.api.PipeIdInt
 import walkie.util.api.PipeMessageInt
@@ -27,9 +30,10 @@ class WTComm (
     private val nodeId: NodeIdInt,
     val scope: CoroutineScope,
     private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
-    /* private val _remoteCallMux: WTRemoteCallMuxInt<Any, Any> = WTRemoteCallMux<Any, Any>(), */
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
+
 ) : PipeMuxInt<PipeMessageType, Any> by _pipeMux,
-    /* WTRemoteCallMuxInt<Any, Any> by _remoteCallMux, */
+    ModuleOpInt by _moduleOp,
     WTCommChatMessageIn,
     WTCommChatMessageOut,
     WTCommPacketOut,
@@ -75,22 +79,37 @@ class WTComm (
         wtPRMComm.wtIPComm.registerReceiver(PipeId.ToComm, scope, this)
         */
 
+        /*
         pipeSubscribe(PipeId.ToComm, scope, true, ::onPipeMessage)
+        */
+
+        subscribe(
+            to = WTModOpArg.To.Comm,
+            onEventInfo = WTModOpArg.OnEventInfo(::onPipeMessage, scope)
+        )
 
         wtPRMComm.registerToEvent(DispatchEventId.CBMeshNewPeer) { _ ->
-            pipeSendAsync(PipeId.TOCommonData, scope,
-                PipeMessage(
-                    PipeMessageType.UpdatePeersUI,
-                    null
+            send(
+                to = WTModOpArg.To.CommonData,
+                msg = WTModOpArg.Msg(
+                    PipeMessage(
+                        PipeMessageType.UpdatePeersUI,
+                        null
+                    )
                 )
             )
         }
         wtPRMComm.registerToEvent(DispatchEventId.CBServerPort) { serverPort ->
             logd(tag, "$this sending serverPort: $serverPort to RCToWifi")
-            pipeSendAsync(PipeId.ToWifi, scope,
-                PipeMessage(
-                    PipeMessageType.LocalServerPort,
-                    serverPort!!)
+
+            send(
+                to = WTModOpArg.To.Wifi,
+                msg = WTModOpArg.Msg(
+                    PipeMessage(
+                        PipeMessageType.LocalServerPort,
+                        serverPort!!
+                    )
+                )
             )
         }
         logd(tag, "Init Exit")
@@ -109,10 +128,14 @@ class WTComm (
     }
 
     override suspend fun chatMessageOut(commPacket: CommPacketInt) {
-        pipeSendAsync(PipeId.ToChat, scope,
-            PipeMessage(
-                PipeMessageType.CommToChatPacket,
-                commPacket)
+        send(
+            to = WTModOpArg.To.Chat,
+            msg = WTModOpArg.Msg(
+                PipeMessage(
+                    PipeMessageType.CommToChatPacket,
+                    commPacket
+                )
+            )
         )
     }
 
@@ -147,18 +170,24 @@ class WTComm (
                         chatMessageLoopback(data as CommPacketInt)
                     }
                     PipeMessageType.LocalIp -> {
-                        pipeSendAsync(PipeId.ToPRMComm, scope,
-                            PipeMessage(
-                                PipeMessageType.LocalIp,
-                                data
+                        send(
+                            to = WTModOpArg.To.PRMComm,
+                            msg = WTModOpArg.Msg(
+                                PipeMessage(
+                                    PipeMessageType.LocalIp,
+                                    data
+                                )
                             )
                         )
                     }
                     PipeMessageType.GroupInfo -> {
-                        pipeSendAsync(PipeId.ToPRMComm, scope,
-                            PipeMessage(
-                                PipeMessageType.GroupInfo,
-                                data
+                        send(
+                            to = WTModOpArg.To.PRMComm,
+                            msg = WTModOpArg.Msg(
+                                PipeMessage(
+                                    PipeMessageType.GroupInfo,
+                                    data
+                                )
                             )
                         )
                     }

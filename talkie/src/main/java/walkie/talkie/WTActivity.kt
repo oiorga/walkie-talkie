@@ -44,11 +44,14 @@ import walkie.chat.ChatMessageItemList
 import walkie.chat.Receiver
 import walkie.chat.Sender
 import walkie.comm.WTComm
+import walkie.talkie.api.wtModule.ModuleOpImpl
+import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtmisc.InfoMap
 import walkie.talkie.api.wtmisc.WTNavigation
 import walkie.talkie.api.wtModule.PipeId
 import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.generic.PipeMux
 import walkie.talkie.ui.nav.WTNavInit
 import walkie.talkie.ui.screens.customComposablesInit
@@ -68,9 +71,11 @@ import kotlin.system.exitProcess
 
 class WTActivity(
     private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
-    private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
-    ) :
+    private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
+) :
     ComponentActivity(),
+    ModuleOpInt by _moduleOp,
     PipeMuxInt<PipeMessageType, Any> by _pipeMux,
     RemoteCallMuxInt by _remoteCallMux {
 
@@ -124,6 +129,7 @@ class WTActivity(
         Logging.enable(enclosingClass = LazyListState::class, true)
         Logging.enable(enclosingClass = CoroutineScope::class, true)
         */
+        _moduleOp.
         logging(true)
     }
 
@@ -426,9 +432,16 @@ internal fun WTActivity.wtCustomInit(){
     wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCCheckWifiDPermissions, this)
     registerRemoteCall(RemoteCallId.RCRequestWifiDPermissions) { _ -> requestWifiPermissions() }
     wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermissions, this)
-
     pipeMuxJoin(wtHub)
+
+    /*
     pipeSubscribe(PipeId.ToActivity, wtScope, true,::onPipeMessage)
+    */
+
+    subscribe(
+        to = WTModOpArg.To.Activity,
+        onEventInfo = WTModOpArg.OnEventInfo(::onPipeMessage, wtScope)
+    )
 
     /* To move to App init section */
     wtHub.wtComm.start()

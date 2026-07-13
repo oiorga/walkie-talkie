@@ -14,6 +14,7 @@ import walkie.comm.WTComm
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtdebug.WTDebugInt
 import walkie.talkie.api.wtModule.PipeId
+import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.common.WTCommonData
 import walkie.talkie.globalmap.DiscussionMap
@@ -104,7 +105,15 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 CoroutineRuntime.RunJob.Supervisor,
                 CoroutineRuntime.RunDispatcher.Main)
             wtHub.wtScope = wtHub.wtRuntime.scope
+
+            /*
             wtHub.pipeSubscribe(PipeId.TOCommonData, wtHub.wtScope, true,wtHub::onPipeMessage)
+            */
+
+            wtHub.subscribe(
+                to = WTModOpArg.To.CommonData,
+                onEventInfo = WTModOpArg.OnEventInfo(wtHub::onPipeMessage, wtHub.wtScope)
+            )
         }
         1 -> {
             wifiDInit()
@@ -158,16 +167,6 @@ internal fun WalkieTalkie.wifiDInit() {
 }
 
 internal fun WalkieTalkie.customDebugInit() {
-    /*
-            /* WTActivity capable devices/running this app */
-            wtHub.wtGlobalGroupMap[ChatGroupId(groupId = "WTActivity", groupName = "WTActivity", type = ChatGroupType.WTActivity)] =
-                ChatGroupList(ChatGroupId(groupId = "WTActivity", groupName = groupId, type = ChatGroupType.WTActivity), mutableListOf())
-
-            /* Where all the unsolicited messages go to group */
-            wtHub.wtGlobalGroupMap[ChatGroupId("Bogus", ChatGroupType.Etc)] =
-                ChatGroupList(ChatGroupId("Bogus", ChatGroupType.Etc), mutableListOf())
-            */
-
     /* Peers List - testing */
     wtHub.wtGlobalGroupMap[ChatGroupId(
         groupId = "WIFI Direct Info",
