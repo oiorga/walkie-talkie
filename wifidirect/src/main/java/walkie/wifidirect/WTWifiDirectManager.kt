@@ -173,12 +173,6 @@ class WTWifiDirectManager(
     init {
         logging(true)
 
-        /*
-        pipeSubscribe(PipeId.ToWifi, scope) { pipeId, msg ->
-            onPipeMessage(pipeId, msg)
-        }
-        */
-
         subscribe(
             to = WTModOpArg.To.Wifi,
             onEventInfo = WTModOpArg.OnEventInfo(::onPipeMessage, scope)
@@ -467,7 +461,7 @@ class WTWifiDirectManager(
             checkGroupInfoChange(p2pInfo, Triple(wtGroupIp, wtLocalIp, wtGroupServerPort))
             p2pInfo = Triple(wtGroupIp, wtLocalIp, wtGroupServerPort)
 
-            internalMaintenance()
+            continuousOp()
 
             rndDelay = max(Random.nextLong(50 + rndDelay), 75)
             val event = when (val v = mainLoopInbox.await((cadence + rndDelay).milliseconds)) {
@@ -542,9 +536,6 @@ class WTWifiDirectManager(
                     thisDevice = requestDeviceInfo(),
                     groupInfo = requestGroupInfo()
                 )
-                if (null == p2pInfo) {
-                    updateP2pInfo(null)
-                }
             }
 
             WTWifiEvent.P2p.ThisDeviceChanged -> {
@@ -616,8 +607,8 @@ class WTWifiDirectManager(
         logd(tag, logStr)
     }
 
-    fun internalMaintenance() {
-        val tag = "internalMaintenance/${randomString(2u)}"
+    fun continuousOp() {
+        val tag = "continuousOp/${randomString(2u)}"
         logd(
             tag, "\n\tthisDevice: ${thisDevice?.deviceName}" +
                     "\n\tisWifiP2pEnabled: $wifiP2pEnable" +
@@ -717,7 +708,9 @@ class WTWifiDirectManager(
 
         if (oldInfo == newInfo) {
             return
-        } else if (oldInfo != newInfo) {
+        }
+
+        if (oldInfo != newInfo) {
             var localIpAlreadyChanged = false
             if (null == wtGroupIp) {
                 logd(
@@ -803,51 +796,12 @@ class WTWifiDirectManager(
         }
     }
 
-    suspend fun updateP2pInfo(wtWifiP2pInfoN: WifiP2pInfo?) {
-        val tag = "updateP2pInfo/${randomString(2u)}"
-
-        logd(tag, "Entry")
-
-        wtWifiP2pInfo?.logD(tag)
-        wtWifiP2pInfoN?.logD(tag)
-
-        if (null != wtWifiP2pInfo?.groupOwnerAddress &&
-            null == wtWifiP2pInfoN?.groupOwnerAddress
-        ) {
-            logd(tag, "Lost P2P Connection/Info")
-            removeGroup()
-            wtWifi = wtWifi.reset()
-
-            send(
-                to = WTModOpArg.To.Comm,
-                msg = WTModOpArg.Msg(
-                    PipeMessage(
-                        type = PipeMessageType.GroupInfo,
-                        data = Triple(null, null, null)
-                    )
-                )
-            )
-
-            restartChannel(true)
-        }
-
-        wtWifiP2pInfo?.logD(tag)
-    }
-
     suspend fun connectToPeers() {
         val tag = "connectToPeers/${randomString(2u)}"
 
-        logdAppend(
-            tag,
-            "\n\t\twtIsGroupOwner: $wtIsGroupOwner" +
-                    "\n\t\twtIsGroupFormed: $wtIsGroupFormed" +
-                    "\n\t\tisWifiP2pEnabled: $wifiP2pEnable" +
-                    "\n\t\tconnectingAllowed: $connectingAllowed" +
-                    "\n\t\tdirectWifiPeers: ${directWTPeers.keys}"
-        )
+        logdAppend(tag, "\n\t\tConnecting to: ${connectToDevice?.name}")
 
         connectToDevice?.let { device ->
-            logdAppend(tag, "\n\t\tConnecting to: ${device.name}")
             if (P2pConnection.Fail == connectTo(device)) {
                 /* To revisit this */
                 wtWifi.eraseP2pError()

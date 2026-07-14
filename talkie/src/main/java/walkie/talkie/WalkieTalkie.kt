@@ -106,10 +106,6 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
                 CoroutineRuntime.RunDispatcher.Main)
             wtHub.wtScope = wtHub.wtRuntime.scope
 
-            /*
-            wtHub.pipeSubscribe(PipeId.TOCommonData, wtHub.wtScope, true,wtHub::onPipeMessage)
-            */
-
             wtHub.subscribe(
                 to = WTModOpArg.To.CommonData,
                 onEventInfo = WTModOpArg.OnEventInfo(wtHub::onPipeMessage, wtHub.wtScope)

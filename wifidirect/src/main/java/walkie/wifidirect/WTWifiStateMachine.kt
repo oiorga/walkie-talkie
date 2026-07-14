@@ -34,15 +34,6 @@ interface WTWifiErrorTrackerInt {
     val description: String
 }
 
-class WTWifiErrorTrackerInfo(
-    override val op: String,
-    override val err: WTWifiDirectResult.Error,
-    override val coolingDown: Boolean,
-    override val description: String
-): WTWifiErrorTrackerInt {
-
-}
-
 class WTWifiErrorTracker(override val op: String, override val err: WTWifiDirectResult.Error): WTWifiErrorTrackerInt{
     companion object {
         const val MAX = 17
@@ -107,16 +98,8 @@ internal fun WifiP2pDevice.uniqueWifiId(): String {
     return ("${this.deviceName}.${this.deviceAddress}")
 }
 
-
 interface WTWifiDirectEnv {
     fun checkWifiPermissions(): Boolean
-}
-
-interface WTWifiCommandInt<T> {
-    val cancelConnect: T
-    val peersDiscovery: T
-    val serviceDiscovery: T
-    val advertiseLocalService: T
 }
 
 interface WTWifiEnabledInt<T> {
