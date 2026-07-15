@@ -72,7 +72,7 @@ import kotlin.system.exitProcess
 class WTActivity(
     private val _pipeMux: MessageBusInt<PipeMessageType, Any> = MessageBus(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux, _remoteCallMux)
 ) :
     ComponentActivity(),
     ModuleOpInt by _moduleOp,

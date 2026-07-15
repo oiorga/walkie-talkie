@@ -30,6 +30,7 @@ import walkie.talkie.api.wtModule.MessageBusId
 import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.talkie.api.wtModule.RemoteCallId
 import walkie.talkie.api.wtModule.WTModOpArg
+import walkie.talkie.api.wtModule.getVal
 import walkie.util.api.MessageBusIdInt
 import walkie.util.api.BusMessageInt
 import walkie.util.api.MessageBusInt
@@ -61,7 +62,7 @@ class WTWifiDirectManager(
     val scope: CoroutineScope,
     private val _pipeMux: MessageBusInt<PipeMessageType, Any> = MessageBus(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux, _remoteCallMux)
 ) :
     ModuleOpInt by _moduleOp,
     MessageBusInt<PipeMessageType, Any> by _pipeMux,
@@ -80,11 +81,13 @@ class WTWifiDirectManager(
     }
 
     fun attachChannel(channel: Channel) {
-        wtWifiDirect = WTWifiDirect(manager, channel, wtWifiDirectEnv, scope)
+        wtWifiDirect = WTWifiDirect(manager, channel, wtWifiDirectEnv)
     }
 
     fun checkWifiPermissions(): Boolean {
-        return (true == typedCall<Boolean>(RemoteCallId.RCCheckWifiDPermissions))
+        /* return (true == typedCall<Boolean>(RemoteCallId.RCCheckWifiDPermissions)) */
+        /* return (true == (get(WTModOpArg.Prop.WifiPerm) as? WTModOpArg.Out<Boolean>)?.value) */
+        return (true == getVal<Boolean>(WTModOpArg.Prop.WifiPerm))
     }
 
     fun requestWifiPermissions() {

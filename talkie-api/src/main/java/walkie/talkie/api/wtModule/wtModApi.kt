@@ -6,15 +6,21 @@ import walkie.util.api.MessageBusIdInt
 import walkie.util.api.BusMessageInt
 import walkie.util.api.MessageBusInt
 import walkie.util.api.RemoteCallIdInt
+import walkie.util.api.RemoteCallMuxInt
+import walkie.util.generic.MessageBus
 import walkie.util.generic.ModuleOpInterface
+import walkie.util.generic.RemoteCallMux
 import walkie.util.randomString
 
 interface ModuleOpInt : ModuleOpInterface<WTModOpArg>
 typealias WTPipeMessage = BusMessageInt<PipeMessageType, Any>
 
 class ModuleOpImpl(
-    private val _pipeMux: MessageBusInt<PipeMessageType, Any>):
-    MessageBusInt<PipeMessageType, Any> by _pipeMux,
+    private val _busMap: MessageBusInt<PipeMessageType, Any> = MessageBus(),
+    private val _callMap: RemoteCallMuxInt = RemoteCallMux()
+):
+    MessageBusInt<PipeMessageType, Any> by _busMap,
+    RemoteCallMuxInt by _callMap,
     ModuleOpInt
 {
     companion object {
@@ -30,7 +36,14 @@ class ModuleOpImpl(
     }
 
     override fun get(prop: WTModOpArg): WTModOpArg {
-        TODO("Not yet implemented")
+        return WTModOpArg.Data(remoteCall(
+            remoteCallId =
+                (prop as? WTModOpArg.Prop?)?.id ?: run {
+                    wtError("Invalid input: $prop")
+                    return WTModOpArg.None
+                }
+            )
+        )
     }
 
     override fun subscribe(
@@ -97,6 +110,7 @@ sealed class WTModOpArg {
 
     sealed class Prop(val id: RemoteCallIdInt): WTModOpArg() {
         object WifiPerm: Prop(RemoteCallId.RCCheckWifiDPermissions)
+        object WifiPermRequest: Prop(RemoteCallId.RCRequestWifiDPermissions)
     }
 
     data class OnEventInfo(
@@ -104,7 +118,16 @@ sealed class WTModOpArg {
         val scope: CoroutineScope
     ) : WTModOpArg()
     data class Msg(val msg: WTPipeMessage) : WTModOpArg()
+
+    data class Data<out Data>(val value: Data?): WTModOpArg()
+
     object None : WTModOpArg()
+}
+
+inline fun <reified Out> ModuleOpInt.getVal(
+    id: WTModOpArg.Prop
+): Out? {
+    return (this.get(id) as? WTModOpArg.Data<*>)?.value as? Out
 }
 
 enum class PipeMessageType {

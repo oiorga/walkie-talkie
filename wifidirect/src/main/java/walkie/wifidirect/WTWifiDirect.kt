@@ -11,7 +11,6 @@ import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest
-import kotlinx.coroutines.CoroutineScope
 import walkie.util.CallbackResult
 import walkie.util.api.RemoteCallMuxInt
 import walkie.util.awaitResult
@@ -25,7 +24,6 @@ class WTWifiDirect(
     private val manager: WifiP2pManager,
     private var channel: WifiP2pManager.Channel,
     private var env: WTWifiDirectEnv,
-    scope: CoroutineScope,
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux()
 ) :
     RemoteCallMuxInt by _remoteCallMux {
