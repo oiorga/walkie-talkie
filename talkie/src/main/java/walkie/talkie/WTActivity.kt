@@ -49,18 +49,18 @@ import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtmisc.InfoMap
 import walkie.talkie.api.wtmisc.WTNavigation
-import walkie.talkie.api.wtModule.PipeId
+import walkie.talkie.api.wtModule.MessageBusId
 import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.RemoteCallId
 import walkie.talkie.api.wtModule.WTModOpArg
-import walkie.util.generic.PipeMux
+import walkie.util.generic.MessageBus
 import walkie.talkie.ui.nav.WTNavInit
 import walkie.talkie.ui.screens.customComposablesInit
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.viewmodel.WTViewModelFactory
-import walkie.util.api.PipeIdInt
-import walkie.util.api.PipeMessageInt
-import walkie.util.api.PipeMuxInt
-import walkie.util.api.RemoteCallId
+import walkie.util.api.MessageBusIdInt
+import walkie.util.api.BusMessageInt
+import walkie.util.api.MessageBusInt
 import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.RemoteCallMux
 import walkie.util.logd
@@ -70,13 +70,13 @@ import kotlin.getValue
 import kotlin.system.exitProcess
 
 class WTActivity(
-    private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
+    private val _pipeMux: MessageBusInt<PipeMessageType, Any> = MessageBus(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) :
     ComponentActivity(),
     ModuleOpInt by _moduleOp,
-    PipeMuxInt<PipeMessageType, Any> by _pipeMux,
+    MessageBusInt<PipeMessageType, Any> by _pipeMux,
     RemoteCallMuxInt by _remoteCallMux {
 
         companion object {
@@ -250,14 +250,14 @@ class WTActivity(
 
     private val groupIdWDI = "WIFI Direct Info"
     private val info1 = InfoMap(groupIdWDI)
-    override suspend fun onPipeMessage(
-        pipeId: PipeIdInt,
-        msg: PipeMessageInt<PipeMessageType, Any>
+    override suspend fun onBusMessage(
+        busId: MessageBusIdInt,
+        msg: BusMessageInt<PipeMessageType, Any>
     ) {
         val type = msg.type
         val data = msg.data
-        when (pipeId) {
-            PipeId.ToActivity -> {
+        when (busId) {
+            MessageBusId.ToActivity -> {
                 when (type) {
                     PipeMessageType.WifiDebugInfoMessage -> {
                         val groupId = groupIdWDI
@@ -317,14 +317,14 @@ class WTActivity(
                         wtHub.wtComm.wtPRMComm.wtIPComm.stop()
                     }
                     else -> {
-                        logd(tag, "channelOnReceive channelMessageType $pipeId/$type. Not implemented.")
-                        throw (NotImplementedError("$tag: channelOnReceive channelMessageType $pipeId/$type. Not implemented."))
+                        logd(tag, "channelOnReceive channelMessageType $busId/$type. Not implemented.")
+                        throw (NotImplementedError("$tag: channelOnReceive channelMessageType $busId/$type. Not implemented."))
                     }
                 }
             }
             else -> {
-                logd(tag, "channelOnReceive channelId $pipeId not implemented.")
-                throw (NotImplementedError("$tag: channelId channelMessageType: $pipeId not implemented."))
+                logd(tag, "channelOnReceive channelId $busId not implemented.")
+                throw (NotImplementedError("$tag: channelId channelMessageType: $busId not implemented."))
             }
         }
     }
@@ -432,7 +432,7 @@ internal fun WTActivity.wtCustomInit(){
     wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCCheckWifiDPermissions, this)
     registerRemoteCall(RemoteCallId.RCRequestWifiDPermissions) { _ -> requestWifiPermissions() }
     wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermissions, this)
-    pipeMuxJoin(wtHub)
+    busJoin(wtHub)
 
     /*
     pipeSubscribe(PipeId.ToActivity, wtScope, true,::onPipeMessage)
@@ -440,7 +440,7 @@ internal fun WTActivity.wtCustomInit(){
 
     subscribe(
         to = WTModOpArg.To.Activity,
-        onEventInfo = WTModOpArg.OnEventInfo(::onPipeMessage, wtScope)
+        onEventInfo = WTModOpArg.OnEventInfo(::onBusMessage, wtScope)
     )
 
     /* To move to App init section */

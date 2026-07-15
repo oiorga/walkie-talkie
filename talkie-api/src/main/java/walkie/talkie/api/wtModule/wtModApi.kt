@@ -2,18 +2,19 @@ package walkie.talkie.api.wtModule
 
 import kotlinx.coroutines.CoroutineScope
 import walkie.talkie.api.wtdebug.wtError
-import walkie.util.api.PipeIdInt
-import walkie.util.api.PipeMessageInt
-import walkie.util.api.PipeMuxInt
+import walkie.util.api.MessageBusIdInt
+import walkie.util.api.BusMessageInt
+import walkie.util.api.MessageBusInt
+import walkie.util.api.RemoteCallIdInt
 import walkie.util.generic.ModuleOpInterface
 import walkie.util.randomString
 
 interface ModuleOpInt : ModuleOpInterface<WTModOpArg>
-typealias WTPipeMessage = PipeMessageInt<PipeMessageType, Any>
+typealias WTPipeMessage = BusMessageInt<PipeMessageType, Any>
 
 class ModuleOpImpl(
-    private val _pipeMux: PipeMuxInt<PipeMessageType, Any>):
-    PipeMuxInt<PipeMessageType, Any> by _pipeMux,
+    private val _pipeMux: MessageBusInt<PipeMessageType, Any>):
+    MessageBusInt<PipeMessageType, Any> by _pipeMux,
     ModuleOpInt
 {
     companion object {
@@ -22,13 +23,13 @@ class ModuleOpImpl(
     }
 
     override fun set(
-        propId: WTModOpArg,
+        prop: WTModOpArg,
         value: WTModOpArg
     ): WTModOpArg {
         TODO("Not yet implemented")
     }
 
-    override fun get(propId: WTModOpArg): WTModOpArg {
+    override fun get(prop: WTModOpArg): WTModOpArg {
         TODO("Not yet implemented")
     }
 
@@ -44,8 +45,8 @@ class ModuleOpImpl(
         }
 
         (onEventInfo as? WTModOpArg.OnEventInfo)?.let { eventInfo ->
-            pipeSubscribe(
-                pipeId = to,
+            busSubscribe(
+                busId = to,
                 scope = eventInfo.scope,
                 autoCreate = true,
                 onReceive = eventInfo.onEvent
@@ -72,7 +73,7 @@ class ModuleOpImpl(
             return
         }
 
-        pipeSendAsync(pipeId = to, msg = msg)
+        busSendAsync(busId = to, msg = msg)
     }
 
     override fun registerCallback(
@@ -84,17 +85,22 @@ class ModuleOpImpl(
 }
 
 sealed class WTModOpArg {
-    sealed class To(val id: PipeIdInt): WTModOpArg() {
-        object Comm: To(PipeId.ToComm)
-        object Activity: To(PipeId.ToActivity)
-        object Wifi: To(PipeId.ToWifi)
-        object CommonData: To(PipeId.TOCommonData)
-        object IpComm: To(PipeId.ToIpComm)
-        object PRMComm: To(PipeId.ToPRMComm)
-        object Chat: To(PipeId.ToChat)
+    sealed class To(val id: MessageBusIdInt): WTModOpArg() {
+        object Comm: To(MessageBusId.ToComm)
+        object Activity: To(MessageBusId.ToActivity)
+        object Wifi: To(MessageBusId.ToWifi)
+        object CommonData: To(MessageBusId.TOCommonData)
+        object IpComm: To(MessageBusId.ToIpComm)
+        object PRMComm: To(MessageBusId.ToPRMComm)
+        object Chat: To(MessageBusId.ToChat)
     }
+
+    sealed class Prop(val id: RemoteCallIdInt): WTModOpArg() {
+        object WifiPerm: Prop(RemoteCallId.RCCheckWifiDPermissions)
+    }
+
     data class OnEventInfo(
-        val onEvent: (suspend (PipeIdInt, PipeMessageInt<PipeMessageType, Any>) -> Unit),
+        val onEvent: (suspend (MessageBusIdInt, BusMessageInt<PipeMessageType, Any>) -> Unit),
         val scope: CoroutineScope
     ) : WTModOpArg()
     data class Msg(val msg: WTPipeMessage) : WTModOpArg()
@@ -120,7 +126,7 @@ enum class PipeMessageType {
     CommToChatPacket
 }
 
-enum class PipeId : PipeIdInt {
+enum class MessageBusId : MessageBusIdInt {
     PipeNA,
     ToComm,
     ToWifi,
@@ -129,4 +135,15 @@ enum class PipeId : PipeIdInt {
     ToIpComm,
     ToActivity,
     TOCommonData
+}
+
+enum class RemoteCallId : RemoteCallIdInt {
+    RCDummy0, RCDummy1, RCDummy2, RCDummy3, RCDummy4, RCDummy5, RCDummy6, RCDummy7, RCDummy8, RCDummy9,
+    RCNA,
+    RCCheckWifiDPermissions,
+    RCRequestWifiDPermissions,
+    RCChatMessageToComm,
+    RCChatMessageFromComm,
+    RCSendChatMessage,
+    RCUpdateUI
 }

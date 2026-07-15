@@ -7,21 +7,21 @@ import walkie.comm.ip.WTIPComm
 import walkie.comm.ip.WTIPCommPacketType
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
-import walkie.util.generic.PipeMux
+import walkie.util.generic.MessageBus
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.WTMedium
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtModule.PipeId
+import walkie.talkie.api.wtModule.MessageBusId
 import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.api.DispatchEventId
-import walkie.util.api.PipeIdInt
-import walkie.util.api.PipeMessageInt
-import walkie.util.api.PipeMuxInt
+import walkie.util.api.MessageBusIdInt
+import walkie.util.api.BusMessageInt
+import walkie.util.api.MessageBusInt
 import walkie.util.generic.EventDispatcher
 import walkie.util.generic.EventDispatcherInt
-import walkie.util.generic.PipeMessage
+import walkie.util.generic.BusMessage
 import walkie.util.inetToIpString
 import walkie.util.logd
 import walkie.util.logging
@@ -32,11 +32,11 @@ import java.net.InetAddress
 class WTPRMComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
+    private val _pipeMux: MessageBusInt<PipeMessageType, Any> = MessageBus(),
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) :
-    PipeMuxInt<PipeMessageType, Any> by _pipeMux,
+    MessageBusInt<PipeMessageType, Any> by _pipeMux,
     ModuleOpInt by _moduleOp,
     EventDispatcherInt<Any> by _callBackList
 {
@@ -63,7 +63,7 @@ class WTPRMComm (
 
         subscribe(
             to = WTModOpArg.To.PRMComm,
-            onEventInfo = WTModOpArg.OnEventInfo(::onPipeMessage, scope)
+            onEventInfo = WTModOpArg.OnEventInfo(::onBusMessage, scope)
         )
 
         wtMesh.registerSend { destPeer, jSon ->
@@ -145,9 +145,9 @@ class WTPRMComm (
         return success
     }
 
-    override suspend fun onPipeMessage(
-        pipeId: PipeIdInt,
-        msg: PipeMessageInt<PipeMessageType, Any>
+    override suspend fun onBusMessage(
+        busId: MessageBusIdInt,
+        msg: BusMessageInt<PipeMessageType, Any>
     ) {
         val tag = "channelOnReceive/${randomString(2u)}"
         val type = msg.type
@@ -156,11 +156,11 @@ class WTPRMComm (
         logd(
             TAGKClass,
             tag,
-            "channelId: $pipeId inputType: $type"
+            "channelId: $busId inputType: $type"
         )
 
-        when (pipeId) {
-            PipeId.ToPRMComm -> {
+        when (busId) {
+            MessageBusId.ToPRMComm -> {
                 when (type) {
                     PipeMessageType.ControlMesh -> {
                         wtMesh.addPeersJson(data as String)
@@ -174,7 +174,7 @@ class WTPRMComm (
                         send(
                             to = WTModOpArg.To.IpComm,
                             msg = WTModOpArg.Msg(
-                                PipeMessage(
+                                BusMessage(
                                     PipeMessageType.LocalIp,
                                     localIpAddress
                                 )
@@ -243,7 +243,7 @@ class WTPRMComm (
                             "Unprocessed input type $type")
                         throw (NotImplementedError(
                             "Not Implemented: " +
-                                    "\nchannelId: $pipeId " +
+                                    "\nchannelId: $busId " +
                                     "\ninputType: $type " +
                                     "\ninput: $data "
                         ))
@@ -251,7 +251,7 @@ class WTPRMComm (
                 }
             }
             else -> {
-                throw (NotImplementedError("$tag channelId: $pipeId: inputType: $type Not Implemented "))
+                throw (NotImplementedError("$tag channelId: $busId: inputType: $type Not Implemented "))
             }
         }
     }
@@ -266,7 +266,7 @@ internal fun WTPRMComm.peersUpdateSendDebugInfo() {
     send(
         to = WTModOpArg.To.Activity,
         msg = WTModOpArg.Msg(
-            PipeMessage(
+            BusMessage(
                 PipeMessageType.MeshDebugInfoMessage,
                 str
             )

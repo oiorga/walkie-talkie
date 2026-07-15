@@ -7,7 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.CoroutineScope
 import walkie.chat.ChatGroupMap
 import walkie.comm.WTComm
-import walkie.util.generic.PipeMux
+import walkie.util.generic.MessageBus
 import walkie.talkie.api.wtchat.ChatGroupIdInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
@@ -20,12 +20,12 @@ import walkie.talkie.BuildConfig
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.wtdebug.WTDebugInt
-import walkie.talkie.api.wtModule.PipeId
+import walkie.talkie.api.wtModule.MessageBusId
 import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.util.CoroutineRuntime
-import walkie.util.api.PipeIdInt
-import walkie.util.api.PipeMessageInt
-import walkie.util.api.PipeMuxInt
+import walkie.util.api.MessageBusIdInt
+import walkie.util.api.BusMessageInt
+import walkie.util.api.MessageBusInt
 import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.RemoteCallMux
 import walkie.util.logd
@@ -36,10 +36,10 @@ import walkie.wifidirect.WiFiDirectBroadcastReceiver
 
 class WTCommonData private constructor (
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
-    private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
+    private val _pipeMux: MessageBusInt<PipeMessageType, Any> = MessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) : RemoteCallMuxInt by _remoteCallMux,
-    PipeMuxInt<PipeMessageType, Any> by _pipeMux,
+    MessageBusInt<PipeMessageType, Any> by _pipeMux,
     ModuleOpInt by _moduleOp,
     WTDebugInt
 {
@@ -87,23 +87,23 @@ class WTCommonData private constructor (
         return (true == wtDebug)
     }
 
-    override suspend fun onPipeMessage(
-        pipeId: PipeIdInt,
-        msg: PipeMessageInt<PipeMessageType, Any>
+    override suspend fun onBusMessage(
+        busId: MessageBusIdInt,
+        msg: BusMessageInt<PipeMessageType, Any>
         ) {
         val tag = "channelOnReceive/${randomString(2U)}"
         val type = msg.type
         val data = msg.data
 
-        logd(tag, "channelId: $pipeId inputType: $type input: $data")
-        when (pipeId) {
-            PipeId.TOCommonData -> {
+        logd(tag, "channelId: $busId inputType: $type input: $data")
+        when (busId) {
+            MessageBusId.TOCommonData -> {
                 if (updateUI(type, data))
                     updateUiLiveData.update()
             }
             else -> {
-                logd(tag, "channelId: $pipeId no service available")
-                throw (NoSuchElementException("${this}: channelId: $pipeId no service available"))
+                logd(tag, "channelId: $busId no service available")
+                throw (NoSuchElementException("${this}: channelId: $busId no service available"))
             }
         }
     }

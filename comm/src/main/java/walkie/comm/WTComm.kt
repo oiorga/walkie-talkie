@@ -5,7 +5,7 @@ import walkie.comm.ip.wtIPCommMain
 import walkie.comm.prm.WTPRMComm
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
-import walkie.util.generic.PipeMux
+import walkie.util.generic.MessageBus
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.CommPacketInt
@@ -14,14 +14,14 @@ import walkie.talkie.api.wtcomm.WTCommChatMessageOut
 import walkie.talkie.api.wtcomm.WTCommPacketIn
 import walkie.talkie.api.wtcomm.WTCommPacketOut
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtModule.PipeId
+import walkie.talkie.api.wtModule.MessageBusId
 import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.api.DispatchEventId
-import walkie.util.api.PipeIdInt
-import walkie.util.api.PipeMessageInt
-import walkie.util.api.PipeMuxInt
-import walkie.util.generic.PipeMessage
+import walkie.util.api.MessageBusIdInt
+import walkie.util.api.BusMessageInt
+import walkie.util.api.MessageBusInt
+import walkie.util.generic.BusMessage
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -29,10 +29,10 @@ import walkie.util.randomString
 class WTComm (
     private val nodeId: NodeIdInt,
     val scope: CoroutineScope,
-    private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
+    private val _pipeMux: MessageBusInt<PipeMessageType, Any> = MessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 
-) : PipeMuxInt<PipeMessageType, Any> by _pipeMux,
+) : MessageBusInt<PipeMessageType, Any> by _pipeMux,
     ModuleOpInt by _moduleOp,
     WTCommChatMessageIn,
     WTCommChatMessageOut,
@@ -85,14 +85,14 @@ class WTComm (
 
         subscribe(
             to = WTModOpArg.To.Comm,
-            onEventInfo = WTModOpArg.OnEventInfo(::onPipeMessage, scope)
+            onEventInfo = WTModOpArg.OnEventInfo(::onBusMessage, scope)
         )
 
         wtPRMComm.registerToEvent(DispatchEventId.CBMeshNewPeer) { _ ->
             send(
                 to = WTModOpArg.To.CommonData,
                 msg = WTModOpArg.Msg(
-                    PipeMessage(
+                    BusMessage(
                         PipeMessageType.UpdatePeersUI,
                         null
                     )
@@ -105,7 +105,7 @@ class WTComm (
             send(
                 to = WTModOpArg.To.Wifi,
                 msg = WTModOpArg.Msg(
-                    PipeMessage(
+                    BusMessage(
                         PipeMessageType.LocalServerPort,
                         serverPort!!
                     )
@@ -131,7 +131,7 @@ class WTComm (
         send(
             to = WTModOpArg.To.Chat,
             msg = WTModOpArg.Msg(
-                PipeMessage(
+                BusMessage(
                     PipeMessageType.CommToChatPacket,
                     commPacket
                 )
@@ -150,15 +150,15 @@ class WTComm (
         }
     }
 
-    override suspend fun onPipeMessage(pipeId: PipeIdInt, msg: PipeMessageInt<PipeMessageType, Any>) {
+    override suspend fun onBusMessage(busId: MessageBusIdInt, msg: BusMessageInt<PipeMessageType, Any>) {
         val tag = "channelOnReceive/${randomString(2U)}"
         val type = msg.type
         val data = msg.data
         val logF = (type == PipeMessageType.ChatMessage || type == PipeMessageType.ChatMessageLoopback)
-        logd(tag, "channelOnReceive: channelId: $pipeId inputType: $type")
+        logd(tag, "channelOnReceive: channelId: $busId inputType: $type")
 
-        when (pipeId) {
-            PipeId.ToComm -> {
+        when (busId) {
+            MessageBusId.ToComm -> {
                 when (type) {
                     PipeMessageType.WifiMessage -> {
                         commPacketIn(data as CommPacketInt)
@@ -173,7 +173,7 @@ class WTComm (
                         send(
                             to = WTModOpArg.To.PRMComm,
                             msg = WTModOpArg.Msg(
-                                PipeMessage(
+                                BusMessage(
                                     PipeMessageType.LocalIp,
                                     data
                                 )
@@ -184,7 +184,7 @@ class WTComm (
                         send(
                             to = WTModOpArg.To.PRMComm,
                             msg = WTModOpArg.Msg(
-                                PipeMessage(
+                                BusMessage(
                                     PipeMessageType.GroupInfo,
                                     data
                                 )
@@ -192,12 +192,12 @@ class WTComm (
                         )
                     }
                     else -> {
-                        throw (NotImplementedError("$TAG: channelOnReceive: channelId: $pipeId: inputType: $type Not Implemented "))
+                        throw (NotImplementedError("$TAG: channelOnReceive: channelId: $busId: inputType: $type Not Implemented "))
                     }
                 }
             }
             else -> {
-                throw (NotImplementedError("$TAG: channelOnReceive: channelId: $pipeId: inputType: $type Not Implemented "))
+                throw (NotImplementedError("$TAG: channelOnReceive: channelId: $busId: inputType: $type Not Implemented "))
             }
         }
     }

@@ -13,7 +13,6 @@ import walkie.chat.ChatGroupMap
 import walkie.comm.WTComm
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtdebug.WTDebugInt
-import walkie.talkie.api.wtModule.PipeId
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.common.WTCommonData
@@ -22,7 +21,7 @@ import walkie.talkie.node.NodeId
 import walkie.talkie.playground.commSquirrelWheel
 import walkie.util.CoroutineRuntime
 import walkie.util.Logging
-import walkie.util.api.pipeMuxAdd
+import walkie.util.api.busAdd
 import walkie.util.generateBinaryRec
 import walkie.util.generic.genericListOf
 import walkie.util.logd
@@ -108,7 +107,7 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
 
             wtHub.subscribe(
                 to = WTModOpArg.To.CommonData,
-                onEventInfo = WTModOpArg.OnEventInfo(wtHub::onPipeMessage, wtHub.wtScope)
+                onEventInfo = WTModOpArg.OnEventInfo(wtHub::onBusMessage, wtHub.wtScope)
             )
         }
         1 -> {
@@ -128,7 +127,7 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTCommonData {
 
             wtHub.wtComm = WTComm(wtHub.wtSystemNodeId, wtHub.wtScope)
 
-            wtHub.pipeMuxAdd(
+            wtHub.busAdd(
                 wtHub.wtGlobalDiscussionMap,
                 wtHub.wtComm,
                 wtHub.wtWifiD,

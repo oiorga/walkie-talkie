@@ -12,23 +12,23 @@ import walkie.chat.Receiver
 import walkie.chat.Sender
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
-import walkie.util.generic.PipeMux
+import walkie.util.generic.MessageBus
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
 import walkie.talkie.api.wtchat.DiscussionAbs
 import walkie.talkie.api.wtchat.DiscussionMapAbs
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtModule.PipeId
+import walkie.talkie.api.wtModule.MessageBusId
 import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.node.NodeId
-import walkie.util.api.PipeIdInt
-import walkie.util.api.PipeMessageInt
-import walkie.util.api.PipeMuxInt
+import walkie.util.api.MessageBusIdInt
+import walkie.util.api.BusMessageInt
+import walkie.util.api.MessageBusInt
 import walkie.util.api.RemoteCallMuxInt
-import walkie.util.generic.PipeMessage
+import walkie.util.generic.BusMessage
 import walkie.util.generic.RemoteCallMux
 import walkie.util.logd
 import walkie.util.logging
@@ -46,11 +46,11 @@ data class DiscussionMap(
     private val systemNode: NodeIdInt,
     val scope: CoroutineScope,
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
-    private val _pipeMux: PipeMuxInt<PipeMessageType, Any> = PipeMux(),
+    private val _pipeMux: MessageBusInt<PipeMessageType, Any> = MessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) : RemoteCallMuxInt by _remoteCallMux,
     ModuleOpInt by _moduleOp,
-    PipeMuxInt<PipeMessageType, Any> by _pipeMux
+    MessageBusInt<PipeMessageType, Any> by _pipeMux
 {
     lateinit var updateUiLiveData: UpdateUiLiveData
 
@@ -73,7 +73,7 @@ data class DiscussionMap(
 
         subscribe(
             to = WTModOpArg.To.Chat,
-            onEventInfo = WTModOpArg.OnEventInfo(::onPipeMessage, scope)
+            onEventInfo = WTModOpArg.OnEventInfo(::onBusMessage, scope)
         )
     }
 
@@ -123,7 +123,7 @@ data class DiscussionMap(
         send(
             to = WTModOpArg.To.CommonData,
             msg = WTModOpArg.Msg(
-                PipeMessage(
+                BusMessage(
                     PipeMessageType.UpdateChatUI,
                     chatMessage.groupId.type
                 )
@@ -212,18 +212,18 @@ data class DiscussionMap(
         }
     }
 
-    override suspend fun onPipeMessage(
-        pipeId: PipeIdInt,
-        msg: PipeMessageInt<PipeMessageType, Any>
+    override suspend fun onBusMessage(
+        busId: MessageBusIdInt,
+        msg: BusMessageInt<PipeMessageType, Any>
         ) {
         val data = msg.data
-        when (pipeId) {
-            PipeId.ToChat -> {
+        when (busId) {
+            MessageBusId.ToChat -> {
                 recvFromComm(data as CommPacket)
             }
             else -> {
-                logd(TAG, "$TAG: channelOnReceive: $pipeId not handled")
-                throw (NotImplementedError("$TAG: channelOnReceive: $pipeId not handled"))
+                logd(TAG, "$TAG: channelOnReceive: $busId not handled")
+                throw (NotImplementedError("$TAG: channelOnReceive: $busId not handled"))
             }
         }
     }
@@ -255,7 +255,7 @@ data class DiscussionMap(
         send(
             to = WTModOpArg.To.Comm,
             msg = WTModOpArg.Msg(
-                PipeMessage(
+                BusMessage(
                     messageType,
                     commPacket
                 )
