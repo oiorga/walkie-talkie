@@ -429,9 +429,8 @@ internal fun WTActivity.wtCustomInit(){
     wifiBindReceiver()
 
     registerRemoteCall(RemoteCallId.RCCheckWifiDPermissions) { _ -> hasWifiPermissions() }
-    wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCCheckWifiDPermissions, this)
     registerRemoteCall(RemoteCallId.RCRequestWifiDPermissions) { _ -> requestWifiPermissions() }
-    wtHub.wtWifiD.registerRemoteCallTo(RemoteCallId.RCRequestWifiDPermissions, this)
+    remoteCallAdd( wtHub.wtWifiD)
     busJoin(wtHub)
 
     /*

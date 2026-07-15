@@ -12,7 +12,7 @@ interface BusMessageInt<T, D> {
 interface MessageBusInt<T, K> {
     val busMap: Map<MessageBusIdInt, MutableSharedFlow<BusMessageInt<T, K>>>
     val scopeMap: Map<MessageBusIdInt, CoroutineScope>
-    fun busMapTransfer(newBusMap: Map<MessageBusIdInt, MutableSharedFlow<BusMessageInt<T, K>>>, newScopeMap: Map<MessageBusIdInt, CoroutineScope>)
+    fun busMapImport(busMap: Map<MessageBusIdInt, MutableSharedFlow<BusMessageInt<T, K>>>, scopeMap: Map<MessageBusIdInt, CoroutineScope>)
     fun busSubscribe(busId: MessageBusIdInt, scope: CoroutineScope, autoCreate: Boolean = true, onReceive: suspend (MessageBusIdInt, BusMessageInt<T, K>) -> Unit)
     fun busUnsubscribe(busId: MessageBusIdInt)
     suspend fun onBusMessage (busId: MessageBusIdInt, msg: BusMessageInt<T, K>)

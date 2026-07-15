@@ -22,18 +22,32 @@ data class BusMessage<T, D>(
 class MessageBus<T, K>() : MessageBusInt<T, K> {
     private var _busMap: MutableMap<MessageBusIdInt, MutableSharedFlow<BusMessageInt<T, K>>> = mutableMapOf()
     private var _scopeMap: MutableMap<MessageBusIdInt, CoroutineScope> = mutableMapOf()
-
     private val subscriberMap: MutableMap<MessageBusIdInt, Job> = mutableMapOf()
+    override val busMap: MutableMap<MessageBusIdInt, MutableSharedFlow<BusMessageInt<T, K>>>
+        get() = _busMap
+    override val scopeMap: MutableMap<MessageBusIdInt, CoroutineScope>
+        get() = _scopeMap
+    private val lock = Any()
 
-    override fun busMapTransfer(newBusMap: Map<MessageBusIdInt, MutableSharedFlow<BusMessageInt<T, K>>>,
-                                newScopeMap: Map<MessageBusIdInt, CoroutineScope>) {
+    companion object {
+        private const val TAG = "BusMux"
+        val TAGKClass = MessageBus::class
+    }
+
+    init {
+        logging()
+        logd (TAG, "init")
+    }
+
+    override fun busMapImport(busMap: Map<MessageBusIdInt, MutableSharedFlow<BusMessageInt<T, K>>>,
+                              scopeMap: Map<MessageBusIdInt, CoroutineScope>) {
         val tag = "busMapTransfer/${randomString(2u)}"
 
-        val mutableBusMap  = newBusMap as? MutableMap<MessageBusIdInt, MutableSharedFlow<BusMessageInt<T, K>>> ?: run {
+        val mutableBusMap  = busMap as? MutableMap<MessageBusIdInt, MutableSharedFlow<BusMessageInt<T, K>>> ?: run {
             logd(tag, "BusMux requires busMap to be backed by a MutableMap")
             error("BusMux requires busMap to be backed by a MutableMap")
         }
-        val mutableScopeMap  = newScopeMap as? MutableMap<MessageBusIdInt, CoroutineScope> ?: run {
+        val mutableScopeMap  = scopeMap as? MutableMap<MessageBusIdInt, CoroutineScope> ?: run {
             logd(tag, "BusMux requires busMap to be backed by a MutableMap")
             error("BusMux requires scopeMap to be backed by a MutableMap")
         }
@@ -43,12 +57,6 @@ class MessageBus<T, K>() : MessageBusInt<T, K> {
         _scopeMap = mutableScopeMap
 
     }
-
-    override val busMap: MutableMap<MessageBusIdInt, MutableSharedFlow<BusMessageInt<T, K>>>
-        get() = _busMap
-
-    override val scopeMap: MutableMap<MessageBusIdInt, CoroutineScope>
-        get() = _scopeMap
 
     override fun busSubscribe(busId: MessageBusIdInt, scope: CoroutineScope, autoCreate: Boolean, onReceive: suspend (MessageBusIdInt, BusMessageInt<T, K>) -> Unit) {
         val tag = "subscribe/${randomString(2u)}"
@@ -100,24 +108,12 @@ class MessageBus<T, K>() : MessageBusInt<T, K> {
         }
     }
 
-    private val lock = Any()
-
-    companion object {
-        private const val TAG = "BusMux"
-        val TAGKClass = MessageBus::class
+    override fun busGet(busId: MessageBusIdInt) : MutableSharedFlow<BusMessageInt<T, K>>? = synchronized(lock) {
+        busMap[busId]
     }
 
-    init {
-        logging()
-        logd (TAG, "init")
-    }
-
-    override fun busGet(busId: MessageBusIdInt) : MutableSharedFlow<BusMessageInt<T, K>>? {
-        return busMap[busId]
-    }
-
-    override fun scopeGet(busId: MessageBusIdInt) : CoroutineScope? {
-        return scopeMap[busId]
+    override fun scopeGet(busId: MessageBusIdInt) : CoroutineScope? = synchronized(lock) {
+        scopeMap[busId]
     }
 
     override fun busCreate(busId: MessageBusIdInt, scope: CoroutineScope) : MutableSharedFlow<BusMessageInt<T, K>>? {
@@ -139,13 +135,13 @@ class MessageBus<T, K>() : MessageBusInt<T, K> {
 
     override fun busAdd(busImpl: MessageBusInt<T, K>) {
         synchronized(lock) {
-            busImpl.busMapTransfer(busMap, scopeMap)
+            busImpl.busMapImport(busMap, scopeMap)
         }
     }
 
     override fun busJoin(busImpl: MessageBusInt<T, K>) {
         synchronized(lock) {
-            busMapTransfer(busImpl.busMap, busImpl.scopeMap)
+            busMapImport(busImpl.busMap, busImpl.scopeMap)
         }
     }
 
@@ -155,7 +151,7 @@ class MessageBus<T, K>() : MessageBusInt<T, K> {
 
         logd(tag, "busSend: busId ${busId.toString()} data: ${if (null != data) data::class else null}  type: ${msg.type}")
 
-        val bus = busMap[busId] ?: run {
+        val bus = synchronized(lock) { busMap[busId] } ?: run {
             logd(tag, "busSend: bus for $busMap $busId -> ${busMap[busId]} does not exist")
             throw (NoSuchElementException("${this}: busSend: bus for $busMap $busId -> ${busMap[busId]} does not exist"))
         }
@@ -169,12 +165,14 @@ class MessageBus<T, K>() : MessageBusInt<T, K> {
 
         logd(tag, "busSend: busId ${busId.toString()} data: ${if (null != data) data::class else null}  type: ${msg.type}")
 
-        val bus = busMap[busId] ?: run {
+        val bus = synchronized(lock) { busMap[busId] } ?: run {
             logd(tag, "busSend: bus for $busMap $busId -> ${busMap[busId]} does not exist")
             throw (NoSuchElementException("${this}: busSend: bus for $busMap $busId -> ${busMap[busId]} does not exist"))
         }
 
-        scopeMap[busId]!!.launch {
+        synchronized(lock) {
+            scopeMap[busId]
+        }?.launch {
             bus.emit(msg)
         }
     }
