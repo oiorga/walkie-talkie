@@ -91,7 +91,8 @@ class WTWifiDirectManager(
     }
 
     fun requestWifiPermissions() {
-        remoteCall(RemoteCallId.RCRequestWifiDPermissions)
+        /* remoteCall(RemoteCallId.RCRequestWifiDPermissions) */
+        execute(WTModOpArg.Cmd.WifiPermRequest)
     }
 
     val deviceUid: String

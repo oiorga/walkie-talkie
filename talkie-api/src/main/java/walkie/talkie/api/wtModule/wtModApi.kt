@@ -35,6 +35,18 @@ class ModuleOpImpl(
         TODO("Not yet implemented")
     }
 
+    override fun execute(
+        cmd: WTModOpArg
+    ) {
+        remoteCall(
+            remoteCallId =
+                (cmd as? WTModOpArg.Cmd?)?.id ?: run {
+                    wtError("Invalid input: $cmd")
+                    return
+                }
+        )
+    }
+
     override fun get(prop: WTModOpArg): WTModOpArg {
         return WTModOpArg.Data(remoteCall(
             remoteCallId =
@@ -110,7 +122,10 @@ sealed class WTModOpArg {
 
     sealed class Prop(val id: RemoteCallIdInt): WTModOpArg() {
         object WifiPerm: Prop(RemoteCallId.RCCheckWifiDPermissions)
-        object WifiPermRequest: Prop(RemoteCallId.RCRequestWifiDPermissions)
+    }
+
+    sealed class Cmd(val id: RemoteCallIdInt): WTModOpArg() {
+        object WifiPermRequest: Cmd(RemoteCallId.RCRequestWifiDPermissions)
     }
 
     data class OnEventInfo(

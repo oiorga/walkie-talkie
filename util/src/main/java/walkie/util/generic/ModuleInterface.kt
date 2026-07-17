@@ -6,4 +6,5 @@ interface ModuleOpInterface<TArg> {
     fun subscribe(to: TArg, onEventInfo: TArg): Unit
     fun send(to: TArg, msg: TArg): Unit
     fun registerCallback(to: TArg, callback: TArg): Unit
+    fun execute(cmd: TArg): Unit
 }

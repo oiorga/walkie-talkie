@@ -1,17 +1,82 @@
 # Captain's log
 
+
+## 2026-07-17 - ModuleOp interface for unified inter-module communication
+
+# Commits
+
+- b388013 - Added ModuleOp capability for unified inter-module communication
+- 764c747 - Introduce generic ModuleOp dispatch abstraction
+- 939157e - Change API naming for clarity and consistency
+- 354ca20, 192aec3 - Add/modify module communication API
+- c8610ff, 2a7e95b - Change ModuleOp API by introducing specialized operation argument types
+- 52e4f56 - Add property get() support to ModuleOp
+- 50402a8 - Added ModuleOp commands and execute()
+
+
+## 2026-07-15 - Remodel RemoteCallMux into a service registry
+
+# Commits
+
+- 62f6bd0 - Remodel RemoteCallMux into a composable service registry
+
+
+## 2026-07-06 - Refactor PipeMux subscriptions and shared communication domains
+
+# Commits
+
+- fbac78c - Refactor PipeMux to use unified PipeMessage transport objects
+- bec5086, 36d38cc - Refactor PipeMux subscriptions and shared communication domains
+- 491dfee - Change messaging interfaces and naming to a generic message bus API
+- 3d77c50 - Consolidate and clean up the Pipe Id names
+
+
+## 2026-06-24 - Add WiFi error cooldown mechanism
+
+# Commits
+
+- bb217dc - Expose latest P2P error information in the debug menu
+- 576bdcf - Refactor WiFi Direct P2P action execution into reusable helper
+- 7a1cbd5 - Unify WiFi Direct error type/handling
+- 3634ae4 - Add WiFi error cooldown mechanism with tracker-based suppression
+- dace188 - Refactor BUSY error handling: unify retry/error logic and add capabiilty to filter retries for meaningful operations
+- 4bd0f4d - Add cancelConnect operation after a failed connect / group forming operation
+
+
+## 2026-06-18 - Transition to an event-driven state machine architecture for the WIFIDirect module
+
+# Commits
+
+- 33efc64, 03d8604, d2f940b, f8ce979, 2896dd6, 173fad4, 5b984d4, 5c2b609, fe80ba0, 021c344, 6456cce
+- f2c8e66, 6141708, 6b94095, 00498bc, 618868c, d50949f, 6a72595, 4d6002a, 111e575, f8ce979, 2896dd6
+- 173fad4, 173fad4, 5b984d4, 5c2b609, fe80ba0, 021c344, 6456cce, f2c8e66, 6141708, 6b94095, 00498bc
+- 618868c, d50949f, 6a72595, 4d6002a, 111e575, c327da1, 5ddd4ce, d7ce00a, d815cb6, ea4c5de, 2ee54b1
+- 8558c76, 32460cf, d8290fd, 3c408ca, 33efc64, 03d8604, f8ce979
+
+
+## 2026-06-02 - Various infrastucture refactors
+
+# Commits
+
+- 4692c84 - Add suspend-based FIFO Mailbox using Channel with bounded capacity, timeout receive
+- 1326b7b - Remove exception handling in WiFi P2P state results
+- 30100a4 - Explicit exception handling in WiFi P2P state results
+- a2f19d3 - UI Screens cleanup and auto-update on changes
+- afe07f4, bbf2d5c - Protect message handling with mutex synchronization
+
+
 ## 2026-05-29 - WifiDirect module refactor: split platform and logic layers (WIP)
 
 # Commits
 
-- 2026-05-31 - a723c16 - Refactor ChannelMux synchronization and registration
-- 2026-05-29 - 8bc9993, 698fa6b - Refactor WTWifiDirectManager
-- 2026-05-28 - db7b826, 9979679 - Split platform and logic layers
-- 2026-05-24 - d87ccc2, 456aebf - Refactor WifiDirect APIs to unified result model (Success/Data/Error)
-- 2026-05-23 - 032b4fd - Split foundation and logic layers
-- 2026-05-20 - cf10131 - Incremental refactoring and cleanup for app scope transition
-- 2026-05-21 - 304d6b0 - Refactor WiFi P2P module initialization stage
-- 2026-05-19 - 56e074e - Incremental refactoring and cleanup for app scope transition
+- a723c16 - Refactor ChannelMux synchronization and registration
+- 8bc9993, 698fa6b - Refactor WTWifiDirectManager
+- db7b826, 9979679 - Split platform and logic layers
+- d87ccc2, 456aebf - Refactor WifiDirect APIs to unified result model (Success/Data/Error)
+- 032b4fd - Split foundation and logic layers
+- cf10131 - Incremental refactoring and cleanup for app scope transition
+- 304d6b0 - Refactor WiFi P2P module initialization stage
+- 56e074e - Incremental refactoring and cleanup for app scope transition
 
 
 ## 2026-05-21 - Unify coroutine runtime scope across application modules
