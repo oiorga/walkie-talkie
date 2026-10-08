@@ -69,7 +69,6 @@ abstract class Mesh<K , V> (
 
         meshMutex.withLock {
             inPeersQ.enqueue(kToVTable)
-            val k = kToVTable.first
         }
     }
 
@@ -172,16 +171,17 @@ abstract class Mesh<K , V> (
         val tag = "processInPeers/${randomString(2u)}"
         var count = 0
         var bcastPeersNow = false
-
-        if (kToVTable[uniqueId] == null) {
-            logd(
-                TAGKClass,
-                tag,
-                "(0): Local init not ready")
-            return
-        }
+        val newPeers = mutableListOf<K>()
 
         meshMutex.withLock {
+            if (kToVTable[uniqueId] == null) {
+                logd(
+                    TAGKClass,
+                    tag,
+                    "(0): Local init not ready")
+                return
+            }
+
             while (!inPeersQ.isEmpty) {
                 val pair = inPeersQ.dequeue()
                 val node = pair.first
@@ -210,7 +210,7 @@ abstract class Mesh<K , V> (
                                 tag,
                                 "($count): Got new peer: $kToV"
                             ).also { count++ }
-                            dispatchEvent(DispatchEventId.CBMeshNewPeer, kToV.key!!)
+                            newPeers.add(kToV.key!!)
                         }
                         logd(
                             TAGKClass,
@@ -220,10 +220,15 @@ abstract class Mesh<K , V> (
                     }
                 }
             }
-            if (bcastPeersNow) {
-                logd(tag, "Got new Peer.ers now Broadcasting peers now")
-                inPeersGate.open()
-            }
+        }
+
+        newPeers.forEach { key ->
+            dispatchEvent(DispatchEventId.CBMeshNewPeer, key)
+        }
+
+        if (bcastPeersNow) {
+            logd(tag, "Got new Peer.ers now Broadcasting peers now")
+            inPeersGate.open()
         }
     }
 
