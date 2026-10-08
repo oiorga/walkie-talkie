@@ -32,7 +32,7 @@ abstract class Mesh<K , V> (
     private val kToKTable: MutableMap<K?, K> = mutableMapOf<K?, K>()
 
     private val kToVTable: MutableMap<K?, V> = mutableMapOf<K?, V>()
-    private val kAgeTable: MutableMap<K?, Long> = mutableMapOf<K?, Long>()
+    //private val kAgeTable: MutableMap<K?, Long> = mutableMapOf<K?, Long>()
     private val inPeersQ: BlockingQueue<Pair<K?, MutableMap<K?, V>>> = BlockingQueue<Pair<K?, MutableMap<K?, V>>>(name = "$TAG/inPeersQ", permits = 100)
     private val meshMutex: Mutex = Mutex()
     private var sendCall: (suspend (v: V, info: String) -> Unit)? = null
@@ -45,7 +45,6 @@ abstract class Mesh<K , V> (
         meshMutex.withLock {
             kToKTable.clear()
             kToVTable.clear()
-            kAgeTable.clear()
         }
         dispatchEvent(DispatchEventId.CBMeshResetPeers)
     }
@@ -71,7 +70,6 @@ abstract class Mesh<K , V> (
         meshMutex.withLock {
             inPeersQ.enqueue(kToVTable)
             val k = kToVTable.first
-            kAgeTable[k] = 0
         }
     }
 
@@ -124,52 +122,28 @@ abstract class Mesh<K , V> (
             if (null != k) {
                 kToKTable[k] = k
                 kToVTable[k] = v
-                kAgeTable[k] = 0L
                 dispatchEvent(DispatchEventId.CBMeshNewPeer, k)
             } else {
                 kToVTable[k] = v
-                kAgeTable[k] = 0L
             }
         }
     }
-
-    /*
-    fun getPeer(k: K?): V? {
-        return kToVTable[k]
-    }
-
-    suspend fun updatePeer(k: K?, v:V) {
-        val tag = "updatePeer/${randomString(2u)}"
-        val toReplace = kToKTable[k]
-        logd(tag, "$k -> $v")
-
-        if (null == toReplace || v != toReplace) {
-            addPeer(k, v)
-        } else {
-            if (null != k) {
-                kToKTable[k] = k
-                kToVTable[k] = v
-                kAgeTable[k] = 0L
-                dispatchEvent(walkie.glue_inc.DispatchEventId.CBMeshNewPeer, k)
-            } else {
-                kToVTable[k] = v
-                kAgeTable[k] = 0L
-            }
-        }
-    }
-    */
 
     private suspend fun broadcastPeers() {
         val tag = "broadcastPeers/${randomString(2u)}"
-
         var count = 0
 
         val uId = uniqueId ?: run {
             logd(
                 TAGKClass,
                 tag,
-                "Local init not ready: uniqueID is NULL")
+                "Local init not ready: uniqueID is NULL"
+            )
             return
+        }
+
+        val kToVTable = meshMutex.withLock {
+            this.kToVTable.toMutableMap()
         }
 
         if (kToVTable.isEmpty()) {
@@ -177,26 +151,20 @@ abstract class Mesh<K , V> (
             return
         }
 
-        meshMutex.withLock {
-            val kToVTable = this.kToVTable.toMutableMap()
+        if (null == kToVTable[null]) {
+            dispatchEvent(eventId = DispatchEventId.CBMeshGetGroupOwner)
+        }
 
-            if (null == kToVTable[null]) {
-                dispatchEvent(DispatchEventId.CBMeshGetGroupOwner)
-                /* return */
+        kToVTable.forEach { (k, v) ->
+            logd(
+                tag, "($count): " +
+                        (if (uId == k) "Skipping: " else "Sending: ") +
+                        Pair(k, kToVTable).toString()
+            )
+            if (k != uId) {
+                sendPeers(v, Pair(uId, kToVTable))
             }
-
-            kToVTable.forEach { (k, v) ->
-                logd(
-                    tag, "($count): " +
-                            (if (uId == k) "Skipping: " else "Sending: ") +
-                            Pair(k, kToVTable).toString()
-                )
-                if (k != uId) {
-                    sendPeers(v, Pair(uId, kToVTable))
-                    val vv = kAgeTable[k] ?: 0; kAgeTable[k] = vv + 1
-                }
-                count++
-            }
+            count++
         }
     }
 
