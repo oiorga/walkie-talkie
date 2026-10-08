@@ -114,6 +114,7 @@ abstract class Mesh<K , V> (
      **/
     suspend fun addPeer(k: K?, v: V) {
         val tag = "addPeer/${randomString(2u)}"
+        var newKey = false
 
         logd(tag, "$k -> $v")
 
@@ -121,10 +122,14 @@ abstract class Mesh<K , V> (
             if (null != k) {
                 kToKTable[k] = k
                 kToVTable[k] = v
-                dispatchEvent(DispatchEventId.CBMeshNewPeer, k)
+                newKey = true
             } else {
                 kToVTable[k] = v
             }
+        }
+
+        if (newKey) {
+            dispatchEvent(DispatchEventId.CBMeshNewPeer, k)
         }
     }
 
