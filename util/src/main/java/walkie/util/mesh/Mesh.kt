@@ -1,8 +1,11 @@
 package walkie.util.mesh
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import walkie.util.Gate
 import walkie.util.api.DispatchEventId
@@ -31,26 +34,19 @@ abstract class Mesh<K , V> (
     private val kToVTable: MutableMap<K?, V> = mutableMapOf<K?, V>()
     private val kAgeTable: MutableMap<K?, Long> = mutableMapOf<K?, Long>()
     private val inPeersQ: BlockingQueue<Pair<K?, MutableMap<K?, V>>> = BlockingQueue<Pair<K?, MutableMap<K?, V>>>(name = "$TAG/inPeersQ", permits = 100)
-    val sendPeersS: ((K, MutableMap<K, V>) -> Unit)? = null
-    val receivePeersS: ((K, MutableMap<K, V>) -> Unit)? = null
-    private val meshSemaphore: Semaphore = Semaphore(1, 0)
+    private val meshMutex: Mutex = Mutex()
     private var sendCall: (suspend (v: V, info: String) -> Unit)? = null
     private val inPeersGate: Gate = Gate()
-
-    fun heartBeat(value: Long = 0L): Long {
-        if (0L != value) heartbeat = value
-        return heartbeat
-    }
 
     suspend fun resetPeersInfo() {
         val tag = "resetPeersInfo/${randomString(2u)}"
         logd(tag, "resetPeersInfo")
 
-        meshSemaphore.acquire()
-        kToKTable.clear()
-        kToVTable.clear()
-        kAgeTable.clear()
-        meshSemaphore.release()
+        meshMutex.withLock {
+            kToKTable.clear()
+            kToVTable.clear()
+            kAgeTable.clear()
+        }
         dispatchEvent(DispatchEventId.CBMeshResetPeers)
     }
 
@@ -72,18 +68,11 @@ abstract class Mesh<K , V> (
 
         val kToVTable = decodeFromString(jsonString) ?: return
 
-        meshSemaphore.acquire()
-        inPeersQ.enqueue(kToVTable)
-
-        val k = kToVTable.first
-        val vv = kAgeTable[k] ?: 0
-        /* Avoid sending spam useless mesh packets to peers
-        if (vv >= 3) {
-            inPeersQSem.release()
+        meshMutex.withLock {
+            inPeersQ.enqueue(kToVTable)
+            val k = kToVTable.first
+            kAgeTable[k] = 0
         }
-        */
-        kAgeTable[k] = 0
-        meshSemaphore.release()
     }
 
     abstract fun encodeToString(kToVTable: Pair<K?, MutableMap<K?, V>>): String
@@ -114,7 +103,7 @@ abstract class Mesh<K , V> (
         var count: Long = 0
 
         scope.launch() {
-            while (true) {
+            while (isActive) {
                 logd(TAGKClass, tag,"mainLoop: $count", logF).also { count++ }
                 inPeersGate.await(heartbeat)
                 processInPeers()
@@ -131,24 +120,24 @@ abstract class Mesh<K , V> (
 
         logd(tag, "$k -> $v")
 
-        meshSemaphore.acquire()
-        if (null != k) {
-            kToKTable[k] = k
-            kToVTable[k] = v
-            kAgeTable[k] = 0L
-            dispatchEvent(DispatchEventId.CBMeshNewPeer, k)
-        } else {
-            kToVTable[k] = v
-            kAgeTable[k] = 0L
+        meshMutex.withLock {
+            if (null != k) {
+                kToKTable[k] = k
+                kToVTable[k] = v
+                kAgeTable[k] = 0L
+                dispatchEvent(DispatchEventId.CBMeshNewPeer, k)
+            } else {
+                kToVTable[k] = v
+                kAgeTable[k] = 0L
+            }
         }
-        meshSemaphore.release()
     }
 
+    /*
     fun getPeer(k: K?): V? {
         return kToVTable[k]
     }
 
-    /*
     suspend fun updatePeer(k: K?, v:V) {
         val tag = "updatePeer/${randomString(2u)}"
         val toReplace = kToKTable[k]
@@ -172,7 +161,6 @@ abstract class Mesh<K , V> (
 
     private suspend fun broadcastPeers() {
         val tag = "broadcastPeers/${randomString(2u)}"
-        val logF = false
 
         var count = 0
 
@@ -189,25 +177,27 @@ abstract class Mesh<K , V> (
             return
         }
 
-        meshSemaphore.acquire()
-        val kToVTable = this.kToVTable.toMutableMap()
+        meshMutex.withLock {
+            val kToVTable = this.kToVTable.toMutableMap()
 
-        if (null == kToVTable[null]) {
-            dispatchEvent(DispatchEventId.CBMeshGetGroupOwner)
-            /* return */
-        }
-
-        kToVTable.forEach { (k, v) ->
-            logd(tag, "($count): " +
-                    (if (uId == k) "Skipping: " else "Sending: ") +
-                    Pair(k, kToVTable).toString())
-            if (k != uId) {
-                sendPeers(v, Pair(uId, kToVTable))
-                val vv = kAgeTable[k] ?: 0; kAgeTable[k] = vv + 1
+            if (null == kToVTable[null]) {
+                dispatchEvent(DispatchEventId.CBMeshGetGroupOwner)
+                /* return */
             }
-            count++
+
+            kToVTable.forEach { (k, v) ->
+                logd(
+                    tag, "($count): " +
+                            (if (uId == k) "Skipping: " else "Sending: ") +
+                            Pair(k, kToVTable).toString()
+                )
+                if (k != uId) {
+                    sendPeers(v, Pair(uId, kToVTable))
+                    val vv = kAgeTable[k] ?: 0; kAgeTable[k] = vv + 1
+                }
+                count++
+            }
         }
-        meshSemaphore.release()
     }
 
     private suspend fun processInPeers() {
@@ -223,46 +213,50 @@ abstract class Mesh<K , V> (
             return
         }
 
-        meshSemaphore.acquire()
-        while (!inPeersQ.isEmpty) {
-            val pair = inPeersQ.dequeue() ?: continue
-            val node = pair.first
+        meshMutex.withLock {
+            while (!inPeersQ.isEmpty) {
+                val pair = inPeersQ.dequeue()
+                val node = pair.first
 
-            logd(
-                TAGKClass,
-                tag,
-                "($count): $pair").also { count++ }
+                logd(
+                    TAGKClass,
+                    tag,
+                    "($count): $pair"
+                ).also { count++ }
 
-            if (null != node && uniqueId != node) {
-                val kToVTable = pair.second
+                if (null != node && uniqueId != node) {
+                    val kToVTable = pair.second
 
-                kToVTable.forEach { kToV ->
-                    logd(
-                        TAGKClass,
-                        tag,
-                        "($count): $kToV").also { count++ }
-                    if (null != kToV.key && uniqueId != kToV.key) {
-                        if (null == this.kToVTable[kToV.key]) bcastPeersNow = true
-                        this.kToVTable[kToV.key] = kToV.value
-                        this.kToKTable[kToV.key] = node
+                    kToVTable.forEach { kToV ->
                         logd(
                             TAGKClass,
                             tag,
-                            "($count): Got new peer: $kToV").also { count++ }
-                        dispatchEvent(DispatchEventId.CBMeshNewPeer, kToV.key!!)
+                            "($count): $kToV"
+                        ).also { count++ }
+                        if (null != kToV.key && uniqueId != kToV.key) {
+                            if (null == this.kToVTable[kToV.key]) bcastPeersNow = true
+                            this.kToVTable[kToV.key] = kToV.value
+                            this.kToKTable[kToV.key] = node
+                            logd(
+                                TAGKClass,
+                                tag,
+                                "($count): Got new peer: $kToV"
+                            ).also { count++ }
+                            dispatchEvent(DispatchEventId.CBMeshNewPeer, kToV.key!!)
+                        }
+                        logd(
+                            TAGKClass,
+                            tag,
+                            "($count): ${this.kToVTable} ${this.kToKTable}"
+                        ).also { count++ }
                     }
-                    logd(
-                        TAGKClass,
-                        tag,
-                        "($count): ${this.kToVTable} ${this.kToKTable}").also { count++ }
                 }
             }
+            if (bcastPeersNow) {
+                logd(tag, "Got new Peer.ers now Broadcasting peers now")
+                inPeersGate.open()
+            }
         }
-        if (bcastPeersNow){
-            logd(tag, "Got new Peer.ers now Broadcasting peers now")
-            inPeersGate.open()
-        } 
-        meshSemaphore.release()
     }
 
     fun directUnderlay (node: K): V? {
