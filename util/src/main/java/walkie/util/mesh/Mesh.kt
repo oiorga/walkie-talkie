@@ -60,16 +60,18 @@ abstract class Mesh<K , V> (
     }
 
     abstract fun decodeFromString(input: String): Pair<K?, MutableMap<K?, V>>?
-    suspend fun addPeersJson(jsonString: String) {
+    fun addPeersJson(jsonString: String) {
         val tag = "addPeersJson/${randomString(2u)}"
-
-        logd(tag, "$kToVTable")
 
         val kToVTable = decodeFromString(jsonString) ?: return
 
-        meshMutex.withLock {
-            inPeersQ.enqueue(kToVTable)
+        inPeersQ.enqueueRetryBestEffort(kToVTable)
+
+        /*
+        if (!inPeersQ.enqueue(kToVTable)) {
+            logd(tag, "inPeersQ.enqueue failed")
         }
+        */
     }
 
     abstract fun encodeToString(kToVTable: Pair<K?, MutableMap<K?, V>>): String

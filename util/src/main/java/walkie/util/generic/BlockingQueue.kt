@@ -1,19 +1,25 @@
 package walkie.util.generic
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
 import walkie.util.`try`
 import java.util.LinkedList
+import kotlin.time.Duration.Companion.milliseconds
 
 class BlockingQueue<T> (val name: String = "BlockingQueue", private val permits: Int = 1) : GenericBlockingQueueAbs<T>(name, permits)
 
 abstract class GenericBlockingQueueAbs<T> (
     private val name: String = "GenericBlockingQueueAbs",
     private val capacity: Int = 100,
-    private val channel: Channel<T> = Channel<T>(capacity)
+    private val channel: Channel<T> = Channel<T>(capacity),
+    private val scope: CoroutineScope = MainScope()
 ) : Channel<T> by channel {
     private val logDString: String
         get() = "name: $name"
@@ -44,6 +50,54 @@ abstract class GenericBlockingQueueAbs<T> (
 
         return sendResult
     }
+
+    suspend fun enqueueRetry(element: T, retries: Int = 3, retryDelay: Long = 50L): Boolean {
+        val tag = "${this.tag}/enqueueRetry/${randomString(2U)}"
+
+        logd(TAGKClass, tag, "enqueue Enter: $logDString, retries: $retries")
+
+        if (retries < 0 ) {
+            logd(TAGKClass, tag, "enqueue Exit: $logDString, retries: $retries")
+            return false
+        }
+
+        val sendResult = channel.trySend(element).isSuccess
+
+        if (!sendResult && retries > 0) {
+            logd(TAGKClass, tag, "enqueue Exit: $logDString, retries: $retries")
+            delay(retryDelay.milliseconds)
+            return enqueueRetry(element, retries - 1, retryDelay)
+        }
+
+        logd(TAGKClass, tag, "enqueue Exit: $logDString sendResult: $sendResult")
+
+        return sendResult
+    }
+
+    fun enqueueRetryBestEffort(element: T, retries: Int = 3, retryDelay: Long = 500L) {
+        val tag = "${this.tag}/enqueueRetry/${randomString(2U)}"
+
+        logd(TAGKClass, tag, "enqueue Enter: $logDString, retries: $retries")
+
+        if (retries < 0) {
+            logd(TAGKClass, tag, "enqueue Exit: $logDString, retries: $retries")
+            return
+        }
+
+        val sendResult = channel.trySend(element).isSuccess
+
+        if (!sendResult && retries > 0) {
+            logd(TAGKClass, tag, "enqueue Exit: $logDString, retries: $retries")
+            scope.launch {
+                delay(retryDelay.milliseconds)
+                enqueueRetryBestEffort(element, retries - 1, retryDelay)
+            }
+            return
+        }
+
+        logd(TAGKClass, tag, "enqueue Exit: $logDString sendResult: $sendResult")
+    }
+
 
     suspend fun dequeue(): T {
         val tag = "${this.tag}/dequeue/${randomString(2U)}"
