@@ -4,11 +4,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.Serializable
 import walkie.util.Gate
-import walkie.util.api.DispatchEventId
+import walkie.util.api.MeshDispatchEventId
 import walkie.util.generic.BlockingQueue
 import walkie.util.generic.EventDispatcher
 import walkie.util.generic.EventDispatcherInt
@@ -32,7 +31,6 @@ abstract class Mesh<K , V> (
     private val kToKTable: MutableMap<K?, K> = mutableMapOf<K?, K>()
 
     private val kToVTable: MutableMap<K?, V> = mutableMapOf<K?, V>()
-    //private val kAgeTable: MutableMap<K?, Long> = mutableMapOf<K?, Long>()
     private val inPeersQ: BlockingQueue<Pair<K?, MutableMap<K?, V>>> = BlockingQueue<Pair<K?, MutableMap<K?, V>>>(name = "$TAG/inPeersQ", permits = 100)
     private val meshMutex: Mutex = Mutex()
     private var sendCall: (suspend (v: V, info: String) -> Unit)? = null
@@ -46,7 +44,7 @@ abstract class Mesh<K , V> (
             kToKTable.clear()
             kToVTable.clear()
         }
-        dispatchEvent(DispatchEventId.CBMeshResetPeers)
+        dispatchEvent(MeshDispatchEventId.CBMeshResetPeers)
     }
 
     init {
@@ -131,7 +129,7 @@ abstract class Mesh<K , V> (
         }
 
         if (newKey) {
-            dispatchEvent(DispatchEventId.CBMeshNewPeer, k)
+            dispatchEvent(MeshDispatchEventId.CBMeshNewPeer, k)
         }
     }
 
@@ -158,7 +156,7 @@ abstract class Mesh<K , V> (
         }
 
         if (null == kToVTable[null]) {
-            dispatchEvent(eventId = DispatchEventId.CBMeshGetGroupOwner)
+            dispatchEvent(eventId = MeshDispatchEventId.CBMeshGetGroupOwner)
         }
 
         kToVTable.forEach { (k, v) ->
@@ -230,7 +228,7 @@ abstract class Mesh<K , V> (
         }
 
         newPeers.forEach { key ->
-            dispatchEvent(DispatchEventId.CBMeshNewPeer, key)
+            dispatchEvent(MeshDispatchEventId.CBMeshNewPeer, key)
         }
 
         if (bcastPeersNow) {

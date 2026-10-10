@@ -8,6 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import walkie.comm.WTCommDispatchEventId
 import walkie.comm.ip.WTIPComm.Companion.TAGKClass
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
@@ -19,7 +20,6 @@ import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.TCPClient
 import walkie.util.TCPServer
-import walkie.util.api.DispatchEventId
 import walkie.util.api.MessageBusIdInt
 import walkie.util.api.BusMessageInt
 import walkie.util.api.MessageBusInt
@@ -267,7 +267,7 @@ suspend fun WTIPComm.wifiServer(localIp: InetAddress? = null,
     s.wifiServerS = true
 
     serverPort(WTIPComm.SERVERPORT + Random.nextInt(99))
-    dispatchEvent(DispatchEventId.CBServerPort, serverPort())
+    dispatchEvent(WTCommDispatchEventId.CBServerPort, serverPort())
 
     scope.launch(Dispatchers.Default) {
         var count: Long = 0

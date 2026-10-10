@@ -17,9 +17,9 @@ import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.MessageBusId
 import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
-import walkie.util.api.DispatchEventId
 import walkie.util.api.MessageBusIdInt
 import walkie.util.api.BusMessageInt
+import walkie.util.api.MeshDispatchEventId
 import walkie.util.api.MessageBusInt
 import walkie.util.generic.BusMessage
 import walkie.util.logd
@@ -88,7 +88,7 @@ class WTComm (
             onEventInfo = WTModOpArg.OnEventInfo(::onBusMessage, scope)
         )
 
-        wtPRMComm.registerToEvent(DispatchEventId.CBMeshNewPeer) { _ ->
+        wtPRMComm.subscribeEvent(MeshDispatchEventId.CBMeshNewPeer) { _ ->
             send(
                 to = WTModOpArg.To.CommonData,
                 msg = WTModOpArg.Msg(
@@ -99,7 +99,7 @@ class WTComm (
                 )
             )
         }
-        wtPRMComm.registerToEvent(DispatchEventId.CBServerPort) { serverPort ->
+        wtPRMComm.subscribeEvent(WTCommDispatchEventId.CBServerPort) { serverPort ->
             logd(tag, "$this sending serverPort: $serverPort to RCToWifi")
 
             send(

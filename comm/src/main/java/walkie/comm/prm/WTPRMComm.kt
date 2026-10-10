@@ -1,6 +1,7 @@
 package walkie.comm.prm
 
 import kotlinx.coroutines.CoroutineScope
+import walkie.comm.WTCommDispatchEventId
 import walkie.comm.WTCommPeerInfo
 import walkie.comm.WTIPMesh
 import walkie.comm.ip.WTIPComm
@@ -15,9 +16,9 @@ import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.MessageBusId
 import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
-import walkie.util.api.DispatchEventId
 import walkie.util.api.MessageBusIdInt
 import walkie.util.api.BusMessageInt
+import walkie.util.api.MeshDispatchEventId
 import walkie.util.api.MessageBusInt
 import walkie.util.generic.EventDispatcher
 import walkie.util.generic.EventDispatcherInt
@@ -72,30 +73,30 @@ class WTPRMComm (
             logd(TAGKClass, tag, "wtMesh sending: ${dest}/${inetToIpString(dest[0])} -> $jSon")
             wtIPComm.sendIpCommPacket(inetToIpString(dest[0]), dest[1], WTIPCommPacketType.ControlMesh, jSon)
         }
-        wtMesh.registerToEvent(DispatchEventId.CBMeshNewPeer) { newPeer ->
+        wtMesh.subscribeEvent(MeshDispatchEventId.CBMeshNewPeer) { newPeer ->
             if ((newPeer as String) !in directNodes) {
                 directNodes.add(newPeer)
-                dispatchEvent(DispatchEventId.CBMeshNewPeer)
+                dispatchEvent(MeshDispatchEventId.CBMeshNewPeer)
             }
             peersUpdateSendDebugInfo()
         }
-        wtIPComm.registerToEvent(DispatchEventId.CBServerPort) { serverPort ->
-            dispatchEvent(DispatchEventId.CBServerPort, serverPort!!)
+        wtIPComm.subscribeEvent(WTCommDispatchEventId.CBServerPort) { serverPort ->
+            dispatchEvent(WTCommDispatchEventId.CBServerPort, serverPort!!)
             peersUpdateSendDebugInfo()
         }
-        wtMesh.registerToEvent(DispatchEventId.CBMeshResetPeers) { _ ->
+        wtMesh.subscribeEvent(MeshDispatchEventId.CBMeshResetPeers) { _ ->
             directNodes.clear()
-            dispatchEvent(DispatchEventId.CBMeshResetPeers)
+            dispatchEvent(MeshDispatchEventId.CBMeshResetPeers)
             peersUpdateSendDebugInfo()
         }
-        wtMesh.registerToEvent(DispatchEventId.CBMeshLostPeer) { newPeer ->
+        wtMesh.subscribeEvent(MeshDispatchEventId.CBMeshLostPeer) { newPeer ->
             if ((newPeer as String) in directNodes) {
                 directNodes.remove(newPeer)
-                dispatchEvent(DispatchEventId.CBMeshNewPeer)
+                dispatchEvent(MeshDispatchEventId.CBMeshNewPeer)
             }
             peersUpdateSendDebugInfo()
         }
-        wtMesh.registerToEvent(DispatchEventId.CBMeshGetGroupOwner) { _ ->
+        wtMesh.subscribeEvent(MeshDispatchEventId.CBMeshGetGroupOwner) { _ ->
             val tag = "CBMeshGetGroupOwner/${randomString(2u)}"
 
             logd(tag, "Requesting GroupOwnerInfo: groupInfoCache: $groupInfoCache")
@@ -112,7 +113,7 @@ class WTPRMComm (
                     )
                 )
             }
-            dispatchEvent(DispatchEventId.CBMeshGetGroupOwner)
+            dispatchEvent(MeshDispatchEventId.CBMeshGetGroupOwner)
             peersUpdateSendDebugInfo()
         }
     }

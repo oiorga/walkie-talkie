@@ -3,7 +3,7 @@ package walkie.util.generic
 import walkie.util.api.DispatchEventIdInt
 
 interface EventDispatcherInt<T> {
-    fun registerToEvent (eventId: DispatchEventIdInt, callBack: suspend (input: T?) -> Unit)
+    fun subscribeEvent (eventId: DispatchEventIdInt, callBack: suspend (input: T?) -> Unit)
     suspend fun dispatchEvent (eventId: DispatchEventIdInt, input: T? = null)
 }
 
@@ -12,19 +12,21 @@ class EventDispatcher<T> (
 ) : EventDispatcherInt<T> {
     private val tag = "EventDispatcher"
 
-    /*
-    init {
-        Log.d (tag, "$tag init")
-    }
-    */
+    private val lock = Any()
 
     override suspend fun dispatchEvent(eventId: DispatchEventIdInt, input: T?) {
-        callBackMap[eventId]?.forEach { callBack ->
+        val callBacks = synchronized(lock) {
+            callBackMap[eventId]?.toList() ?: emptyList()
+        }
+
+        callBacks.forEach { callBack ->
             callBack(input)
         }
     }
 
-    override fun registerToEvent(eventId: DispatchEventIdInt, callBack: suspend (input : T?) -> Unit) {
-        callBackMap.getOrPut(eventId) { mutableListOf() }.add(callBack)
+    override fun subscribeEvent(eventId: DispatchEventIdInt, callBack: suspend (input : T?) -> Unit) {
+        synchronized(lock) {
+            callBackMap.getOrPut(eventId) { mutableListOf() }.add(callBack)
+        }
     }
 }

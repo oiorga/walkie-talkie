@@ -21,7 +21,6 @@ data class WTCommPeerInfo (
     override var unique: String? = null,
     override val underlyingMedium: WTMedium = WTMedium.WifiIp,
     override val umCI: List<String> = listOf(),
-    //override val connected: Boolean = false,
 ) : WTPeerInt {
     companion object {
         private const val TAG = "WTCommPeerInfo"
