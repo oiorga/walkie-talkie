@@ -59,7 +59,7 @@ class WTIPMesh(uniqueId: String, scope: CoroutineScope) : Mesh<String, WTCommPee
         logging(true)
     }
 
-    override fun encodeToString(kToVTable: Pair<String?, MutableMap<String?, WTCommPeerInfo>>): String {
+    override fun encodeToString(kToVTable: Pair<String?, Map<String?, WTCommPeerInfo>>): String {
         val json = Json { encodeDefaults = true }
         val tag = "encodeToString/${randomString(2U)}"
         var jSon: String? = null

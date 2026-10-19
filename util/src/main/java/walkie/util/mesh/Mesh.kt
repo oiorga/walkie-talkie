@@ -18,7 +18,7 @@ import walkie.util.randomString
 abstract class Mesh<K , V> (
     private var uniqueId: K,
     private var scope: CoroutineScope,
-    private var heartbeat: Long = 3000L,
+    private var heartbeat: Long = 1000L,
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher()
 ) : EventDispatcherInt<Any> by _callBackList
 {
@@ -30,7 +30,14 @@ abstract class Mesh<K , V> (
     @Serializable
     private val kToKTable: MutableMap<K?, K> = mutableMapOf<K?, K>()
 
+    private val kAgeTable: MutableMap<K?, Long> = mutableMapOf<K?, Long>()
+    @Volatile
+    private var kAgeTableSnapshot: Map<K?, Long> = emptyMap()
+
     private val kToVTable: MutableMap<K?, V> = mutableMapOf<K?, V>()
+    @Volatile
+    private var kToVTableSnapshot: Map<K?, V> = emptyMap<K?, V>()
+
     private val inPeersQ: BlockingQueue<Pair<K?, MutableMap<K?, V>>> = BlockingQueue<Pair<K?, MutableMap<K?, V>>>(name = "$TAG/inPeersQ", permits = 100)
     private val meshMutex: Mutex = Mutex()
     private var sendCall: (suspend (v: V, info: String) -> Unit)? = null
@@ -43,6 +50,9 @@ abstract class Mesh<K , V> (
         meshMutex.withLock {
             kToKTable.clear()
             kToVTable.clear()
+            kToVTableSnapshot = kToVTable.toMap()
+            kAgeTable.clear()
+            kAgeTableSnapshot = kAgeTable.toMap()
         }
         dispatchEvent(MeshDispatchEventId.CBMeshResetPeers)
     }
@@ -72,9 +82,9 @@ abstract class Mesh<K , V> (
         */
     }
 
-    abstract fun encodeToString(kToVTable: Pair<K?, MutableMap<K?, V>>): String
+    abstract fun encodeToString(kToVTable: Pair<K?, Map<K?, V>>): String
 
-    private suspend fun sendPeers(dest: V, kToVTable: Pair<K?, MutableMap<K?, V>>) {
+    private suspend fun sendPeers(dest: V, kToVTable: Pair<K?, Map<K?, V>>) {
         val tag = "sendPeers/${randomString(2u)}"
 
         logd(TAGKClass, tag, "(0): $dest -> $kToVTable")
@@ -122,10 +132,13 @@ abstract class Mesh<K , V> (
             if (null != k) {
                 kToKTable[k] = k
                 kToVTable[k] = v
+                kAgeTable[k] = 0
                 newKey = true
             } else {
                 kToVTable[k] = v
             }
+            kToVTableSnapshot = kToVTable.toMap()
+            kAgeTableSnapshot = kAgeTable.toMap()
         }
 
         if (newKey) {
@@ -147,7 +160,13 @@ abstract class Mesh<K , V> (
         }
 
         val kToVTable = meshMutex.withLock {
-            this.kToVTable.toMutableMap()
+            kAgeTable.forEach { (key, age) ->
+                if (null != key) {
+                    kAgeTable[key] = (age + heartbeat)
+                }
+            }
+            kAgeTableSnapshot = kAgeTable.toMap()
+            this.kToVTableSnapshot
         }
 
         if (kToVTable.isEmpty()) {
@@ -183,7 +202,8 @@ abstract class Mesh<K , V> (
                 logd(
                     TAGKClass,
                     tag,
-                    "(0): Local init not ready")
+                    "(0): Local init not ready"
+                )
                 return
             }
 
@@ -207,7 +227,10 @@ abstract class Mesh<K , V> (
                             "($count): $kToV"
                         ).also { count++ }
                         if (null != kToV.key && uniqueId != kToV.key) {
-                            if (null == this.kToVTable[kToV.key]) bcastPeersNow = true
+                            if (null == this.kToVTable[kToV.key]) {
+                                newPeers.add(kToV.key!!)
+                                bcastPeersNow = true
+                            }
                             this.kToVTable[kToV.key] = kToV.value
                             this.kToKTable[kToV.key] = node
                             logd(
@@ -215,16 +238,19 @@ abstract class Mesh<K , V> (
                                 tag,
                                 "($count): Got new peer: $kToV"
                             ).also { count++ }
-                            newPeers.add(kToV.key!!)
                         }
+                        this.kAgeTable[kToV.key] = 0
                         logd(
                             TAGKClass,
                             tag,
-                            "($count): ${this.kToVTable} ${this.kToKTable}"
+                            "($count): ${this.kToVTable} ${this.kToKTable} ${this.kAgeTable}"
                         ).also { count++ }
                     }
                 }
             }
+
+            this.kToVTableSnapshot = this.kToVTable.toMap()
+            this.kAgeTableSnapshot = this.kAgeTable.toMap()
         }
 
         newPeers.forEach { key ->
@@ -232,12 +258,12 @@ abstract class Mesh<K , V> (
         }
 
         if (bcastPeersNow) {
-            logd(tag, "Got new Peer.ers now Broadcasting peers now")
+            logd(tag, "Got new Peers. Broadcasting peers.")
             inPeersGate.open()
         }
     }
 
-    fun directUnderlay (node: K): V? {
-        return (kToVTable[node])
-    }
+    fun directPeer (node: K): V? = (kToVTableSnapshot[node])
+
+    fun directPeerAge (node: K): Long? = (kAgeTableSnapshot[node])
 }

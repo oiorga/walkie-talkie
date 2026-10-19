@@ -52,7 +52,7 @@ class WTPRMComm (
     }
 
     fun directUnderlay (node: String): WTCommPeerInfo? {
-        return wtMesh.directUnderlay(node)
+        return wtMesh.directPeer(node)
     }
 
     init {
@@ -124,7 +124,7 @@ class WTPRMComm (
 
     suspend fun sendCommPacket(commPacket: CommPacket): Boolean {
         val tag = "sendCommPacket/${randomString(2u)}"
-        val directUnderlay = wtMesh.directUnderlay(commPacket.receiverUId())
+        val directUnderlay = wtMesh.directPeer(commPacket.receiverUId())
         val logF = (commPacket.groupIdType == ChatGroupType.RemoteChat || commPacket.groupIdType == ChatGroupType.RemoteChatTesting)
         var success = true
 
@@ -132,8 +132,8 @@ class WTPRMComm (
         logd(tag, "${commPacket.senderUId()} -> ${commPacket.receiverUId()}/" + directUnderlay, logF)
         if (null != directUnderlay?.umCI) {
             wtIPComm.sendIpCommPacket(
-                wtMesh.directUnderlay(commPacket.receiverUId())!!.umCI[0],
-                wtMesh.directUnderlay(commPacket.receiverUId())!!.umCI[1],
+                wtMesh.directPeer(commPacket.receiverUId())!!.umCI[0],
+                wtMesh.directPeer(commPacket.receiverUId())!!.umCI[1],
                 WTIPCommPacketType.Data,
                 commPacket.toJson()
             )
