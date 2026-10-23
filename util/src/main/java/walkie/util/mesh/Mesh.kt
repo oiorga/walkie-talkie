@@ -5,7 +5,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.Serializable
 import walkie.util.Gate
 import walkie.util.api.MeshDispatchEventId
 import walkie.util.generic.BlockingQueue
@@ -18,7 +17,7 @@ import walkie.util.randomString
 abstract class Mesh<K , V> (
     private var uniqueId: K,
     private var scope: CoroutineScope,
-    private var heartbeat: Long = 1000L,
+    private var heartbeat: Long = 3000L,
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher()
 ) : EventDispatcherInt<Any> by _callBackList
 {
@@ -26,9 +25,6 @@ abstract class Mesh<K , V> (
         const val TAG = "Mesh"
         val TAGKClass = Mesh::class
     }
-
-    @Serializable
-    private val kToKTable: MutableMap<K?, K> = mutableMapOf<K?, K>()
 
     private val kAgeTable: MutableMap<K?, Long> = mutableMapOf<K?, Long>()
     @Volatile
@@ -48,7 +44,6 @@ abstract class Mesh<K , V> (
         logd(tag, "resetPeersInfo")
 
         meshMutex.withLock {
-            kToKTable.clear()
             kToVTable.clear()
             kToVTableSnapshot = kToVTable.toMap()
             kAgeTable.clear()
@@ -130,7 +125,6 @@ abstract class Mesh<K , V> (
 
         meshMutex.withLock {
             if (null != k) {
-                kToKTable[k] = k
                 kToVTable[k] = v
                 kAgeTable[k] = 0
                 newKey = true
@@ -232,7 +226,6 @@ abstract class Mesh<K , V> (
                                 bcastPeersNow = true
                             }
                             this.kToVTable[kToV.key] = kToV.value
-                            this.kToKTable[kToV.key] = node
                             logd(
                                 TAGKClass,
                                 tag,
@@ -243,7 +236,9 @@ abstract class Mesh<K , V> (
                         logd(
                             TAGKClass,
                             tag,
-                            "($count): ${this.kToVTable} ${this.kToKTable} ${this.kAgeTable}"
+                            "($count): " +
+                                    "\n\tkToVTable => ${this.kToVTable} " +
+                                    "\n\tkAgeTable =>${this.kAgeTable}"
                         ).also { count++ }
                     }
                 }
