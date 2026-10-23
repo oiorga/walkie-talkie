@@ -19,6 +19,7 @@ import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.api.MessageBusIdInt
 import walkie.util.api.BusMessageInt
 import walkie.util.api.MeshDispatchEventId
+import walkie.util.api.MeshKey
 import walkie.util.api.MessageBusInt
 import walkie.util.generic.EventDispatcher
 import walkie.util.generic.EventDispatcherInt
@@ -52,7 +53,7 @@ class WTPRMComm (
     }
 
     fun directUnderlay (node: String): WTCommPeerInfo? {
-        return wtMesh.directPeer(node)
+        return wtMesh.directPeer(MeshKey.Key(node))
     }
 
     init {
@@ -103,13 +104,12 @@ class WTPRMComm (
 
             if (null != groupInfoCache) {
                 wtMesh.addPeer(
-                    null,
+                    MeshKey.Root,
                     WTCommPeerInfo(
                         node.id(),
                         node.unique,
                         WTMedium.WifiIp,
                         umCI = listOf(groupInfoCache!!.first, groupInfoCache!!.second),
-                        //true
                     )
                 )
             }
@@ -124,16 +124,17 @@ class WTPRMComm (
 
     suspend fun sendCommPacket(commPacket: CommPacket): Boolean {
         val tag = "sendCommPacket/${randomString(2u)}"
-        val directUnderlay = wtMesh.directPeer(commPacket.receiverUId())
+        val directUnderlay = wtMesh.directPeer(MeshKey.Key(commPacket.receiverUId()))
         val logF = (commPacket.groupIdType == ChatGroupType.RemoteChat || commPacket.groupIdType == ChatGroupType.RemoteChatTesting)
         var success = true
 
         commPacket.logD(tag, logF)
         logd(tag, "${commPacket.senderUId()} -> ${commPacket.receiverUId()}/" + directUnderlay, logF)
         if (null != directUnderlay?.umCI) {
+            val directPeer = wtMesh.directPeer(MeshKey.Key(commPacket.receiverUId()))!!
             wtIPComm.sendIpCommPacket(
-                wtMesh.directPeer(commPacket.receiverUId())!!.umCI[0],
-                wtMesh.directPeer(commPacket.receiverUId())!!.umCI[1],
+                directPeer.umCI[0],
+                directPeer.umCI[1],
                 WTIPCommPacketType.Data,
                 commPacket.toJson()
             )
@@ -142,7 +143,6 @@ class WTPRMComm (
             /* throw (NullPointerException("wtMesh.directUnderlay(commPacket.receiverUId()).umCI: ${commPacket.receiverUId()} $directUnderlay")) */
             success = false
         }
-
         return success
     }
 
@@ -183,13 +183,12 @@ class WTPRMComm (
                         )
                         if (null != localIpAddress) {
                             wtMesh.addPeer(
-                                node.uid(),
+                                MeshKey.Key(node.uid()),
                                 WTCommPeerInfo(
                                     node.id(),
                                     node.unique,
                                     WTMedium.WifiIp,
                                     umCI = listOf(localIpAddress.toString(), wtIPComm.serverPort()!!.toString()),
-                                    //true
                                 )
                             )
                         } else {
@@ -222,7 +221,7 @@ class WTPRMComm (
                             )
                             */
                             wtMesh.addPeer(
-                                null,
+                                MeshKey.Root,
                                 WTCommPeerInfo(
                                     node.id(),
                                     node.unique,

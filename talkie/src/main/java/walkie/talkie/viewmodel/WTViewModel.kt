@@ -12,7 +12,6 @@ import kotlinx.coroutines.runBlocking
 import walkie.chat.ChatGroupId
 import walkie.chat.ChatMessage
 import walkie.comm.WTCommPeerInfo
-import walkie.comm.uid
 import walkie.talkie.api.wtchat.ChatGroupIdInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.DiscussionAbs
@@ -185,7 +184,7 @@ internal fun WTViewModel.openChatOnClick(
     peer: WTCommPeerInfo
 ) {
     val tag = "openChatOnClick/${randomString(2U)}"
-    val chatGroupId = ChatGroupId(peer.uid(), peer.id, type = ChatGroupType.RemoteChat)
+    val chatGroupId = ChatGroupId(peer.uid, peer.id, type = ChatGroupType.RemoteChat)
 
     logd(tag, "Entry: ${currentScreen()} dId: $nextDiscussionId")
     wtHub.wtScope.launch {

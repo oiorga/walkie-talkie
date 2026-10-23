@@ -7,6 +7,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import walkie.util.Gate
 import walkie.util.api.MeshDispatchEventId
+import walkie.util.api.MeshKey
 import walkie.util.generic.BlockingQueue
 import walkie.util.generic.EventDispatcher
 import walkie.util.generic.EventDispatcherInt
@@ -26,15 +27,15 @@ abstract class Mesh<K , V> (
         val TAGKClass = Mesh::class
     }
 
-    private val kAgeTable: MutableMap<K?, Long> = mutableMapOf<K?, Long>()
+    private val kAgeTable: MutableMap<MeshKey<K>, Long> = mutableMapOf()
     @Volatile
-    private var kAgeTableSnapshot: Map<K?, Long> = emptyMap()
+    private var kAgeTableSnapshot: Map<MeshKey<K>, Long> = emptyMap()
 
-    private val kToVTable: MutableMap<K?, V> = mutableMapOf<K?, V>()
+    private val kToVTable: MutableMap<MeshKey<K>, V> = mutableMapOf()
     @Volatile
-    private var kToVTableSnapshot: Map<K?, V> = emptyMap<K?, V>()
+    private var kToVTableSnapshot: Map<MeshKey<K>, V> = emptyMap<MeshKey<K>, V>()
 
-    private val inPeersQ: BlockingQueue<Pair<K?, MutableMap<K?, V>>> = BlockingQueue<Pair<K?, MutableMap<K?, V>>>(name = "$TAG/inPeersQ", permits = 100)
+    private val inPeersQ: BlockingQueue<Pair<MeshKey<K>, MutableMap<MeshKey<K>, V>>> = BlockingQueue<Pair<MeshKey<K>, MutableMap<MeshKey<K>, V>>>(name = "$TAG/inPeersQ", permits = 100)
     private val meshMutex: Mutex = Mutex()
     private var sendCall: (suspend (v: V, info: String) -> Unit)? = null
     private val inPeersGate: Gate = Gate()
@@ -62,7 +63,7 @@ abstract class Mesh<K , V> (
         logd(tag, "Init Exit")
     }
 
-    abstract fun decodeFromString(input: String): Pair<K?, MutableMap<K?, V>>?
+    abstract fun decodeFromString(input: String): Pair<MeshKey<K>, MutableMap<MeshKey<K>, V>>?
     fun addPeersJson(jsonString: String) {
         val tag = "addPeersJson/${randomString(2u)}"
 
@@ -77,9 +78,9 @@ abstract class Mesh<K , V> (
         */
     }
 
-    abstract fun encodeToString(kToVTable: Pair<K?, Map<K?, V>>): String
+    abstract fun encodeToString(kToVTable: Pair<MeshKey<K>, Map<MeshKey<K>, V>>): String
 
-    private suspend fun sendPeers(dest: V, kToVTable: Pair<K?, Map<K?, V>>) {
+    private suspend fun sendPeers(dest: V, kToVTable: Pair<MeshKey<K>, Map<MeshKey<K>, V>>) {
         val tag = "sendPeers/${randomString(2u)}"
 
         logd(TAGKClass, tag, "(0): $dest -> $kToVTable")
@@ -117,26 +118,20 @@ abstract class Mesh<K , V> (
     /**
      * Add first Direct Peer (Group Owner) or Self
      **/
-    suspend fun addPeer(k: K?, v: V) {
+    suspend fun addPeer(k: MeshKey<K>, v: V) {
         val tag = "addPeer/${randomString(2u)}"
-        var newKey = false
 
         logd(tag, "$k -> $v")
 
         meshMutex.withLock {
-            if (null != k) {
-                kToVTable[k] = v
-                kAgeTable[k] = 0
-                newKey = true
-            } else {
-                kToVTable[k] = v
-            }
+            kToVTable[k] = v
+            kAgeTable[k] = 0
             kToVTableSnapshot = kToVTable.toMap()
             kAgeTableSnapshot = kAgeTable.toMap()
         }
 
-        if (newKey) {
-            dispatchEvent(MeshDispatchEventId.CBMeshNewPeer, k)
+        if (k is MeshKey.Key) {
+            dispatchEvent(MeshDispatchEventId.CBMeshNewPeer, k.id)
         }
     }
 
@@ -155,9 +150,7 @@ abstract class Mesh<K , V> (
 
         val kToVTable = meshMutex.withLock {
             kAgeTable.forEach { (key, age) ->
-                if (null != key) {
-                    kAgeTable[key] = (age + heartbeat)
-                }
+                kAgeTable[key] = (age + heartbeat)
             }
             kAgeTableSnapshot = kAgeTable.toMap()
             this.kToVTableSnapshot
@@ -168,7 +161,7 @@ abstract class Mesh<K , V> (
             return
         }
 
-        if (null == kToVTable[null]) {
+        if (null == kToVTable[MeshKey.Root]) {
             dispatchEvent(eventId = MeshDispatchEventId.CBMeshGetGroupOwner)
         }
 
@@ -178,8 +171,8 @@ abstract class Mesh<K , V> (
                         (if (uId == k) "Skipping: " else "Sending: ") +
                         Pair(k, kToVTable).toString()
             )
-            if (k != uId) {
-                sendPeers(v, Pair(uId, kToVTable))
+            if (k != MeshKey.Key(uId)) {
+                sendPeers(v, Pair(MeshKey.Key(uId), kToVTable))
             }
             count++
         }
@@ -189,10 +182,10 @@ abstract class Mesh<K , V> (
         val tag = "processInPeers/${randomString(2u)}"
         var count = 0
         var bcastPeersNow = false
-        val newPeers = mutableListOf<K>()
+        val newPeers = mutableListOf<MeshKey<K>>()
 
         meshMutex.withLock {
-            if (kToVTable[uniqueId] == null) {
+            if (kToVTable[MeshKey.Key(uniqueId)] == null) {
                 logd(
                     TAGKClass,
                     tag,
@@ -211,7 +204,7 @@ abstract class Mesh<K , V> (
                     "($count): $pair"
                 ).also { count++ }
 
-                if (null != node && uniqueId != node) {
+                if (MeshKey.Key(uniqueId) != node) {
                     val kToVTable = pair.second
 
                     kToVTable.forEach { kToV ->
@@ -220,9 +213,9 @@ abstract class Mesh<K , V> (
                             tag,
                             "($count): $kToV"
                         ).also { count++ }
-                        if (null != kToV.key && uniqueId != kToV.key) {
+                        if (MeshKey.Key(uniqueId) != kToV.key) {
                             if (null == this.kToVTable[kToV.key]) {
-                                newPeers.add(kToV.key!!)
+                                newPeers.add(kToV.key)
                                 bcastPeersNow = true
                             }
                             this.kToVTable[kToV.key] = kToV.value
@@ -249,7 +242,8 @@ abstract class Mesh<K , V> (
         }
 
         newPeers.forEach { key ->
-            dispatchEvent(MeshDispatchEventId.CBMeshNewPeer, key)
+            if (key is MeshKey.Key)
+                dispatchEvent(MeshDispatchEventId.CBMeshNewPeer, key.id)
         }
 
         if (bcastPeersNow) {
@@ -258,7 +252,7 @@ abstract class Mesh<K , V> (
         }
     }
 
-    fun directPeer (node: K): V? = (kToVTableSnapshot[node])
+    fun directPeer (node: MeshKey<K>): V? = (kToVTableSnapshot[node])
 
-    fun directPeerAge (node: K): Long? = (kAgeTableSnapshot[node])
+    fun directPeerAge (node: MeshKey<K>): Long? = (kAgeTableSnapshot[node])
 }

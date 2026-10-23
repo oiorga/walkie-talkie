@@ -8,7 +8,7 @@ import walkie.talkie.api.wtcomm.WTPeerInt
 import walkie.talkie.api.wtsystem.nodeUniqueId
 import walkie.talkie.api.wtsystem.uidToId
 import walkie.talkie.api.wtsystem.uidToUnique
-import walkie.util.CoroutineRuntime
+import walkie.util.api.MeshKey
 import walkie.util.`try`
 import walkie.util.logd
 import walkie.util.logging
@@ -45,22 +45,23 @@ data class WTCommPeerInfo (
         get() = nodeUniqueId(id, unique!!)
 }
 
-fun WTCommPeerInfo.uid(): String {
-    return nodeUniqueId(id, unique!!)
-}
-
 class WTIPMesh(uniqueId: String, scope: CoroutineScope) : Mesh<String, WTCommPeerInfo>(uniqueId, scope) {
     companion object {
         const val TAG = "WTIPMesh"
         val TAGKClass = WTIPMesh::class
     }
 
+    val json = Json {
+        encodeDefaults = true
+        allowStructuredMapKeys = true
+    }
+
     init {
         logging(true)
     }
 
-    override fun encodeToString(kToVTable: Pair<String?, Map<String?, WTCommPeerInfo>>): String {
-        val json = Json { encodeDefaults = true }
+    override fun encodeToString(kToVTable: Pair<MeshKey<String>, Map<MeshKey<String>, WTCommPeerInfo>>): String {
+
         val tag = "encodeToString/${randomString(2U)}"
         var jSon: String? = null
 
@@ -69,19 +70,27 @@ class WTIPMesh(uniqueId: String, scope: CoroutineScope) : Mesh<String, WTCommPee
             jSon = json.encodeToString(kToVTable)
         }
 
-        return jSon!!
+        return checkNotNull(jSon) {
+            logd(TAGKClass, tag, "Encoding completed without producing JSON")
+            "$TAGKClass/$tag Encoding completed without producing JSON"
+        }
     }
 
-    override fun decodeFromString(input: String): Pair<String?, MutableMap<String?, WTCommPeerInfo>>? {
-        val json = Json { encodeDefaults = true }
+    override fun decodeFromString(input: String): Pair<MeshKey<String>, MutableMap<MeshKey<String>, WTCommPeerInfo>>? {
         val tag = "decodeFromString/${randomString(2U)}"
-        var kToVTable: Pair<String?, MutableMap<String?, WTCommPeerInfo>>? = null
+        var kToVTable: Pair<MeshKey<String>, MutableMap<MeshKey<String>, WTCommPeerInfo>>? = null
 
         val exc = `try`(TAGKClass, tag, throwExc = false) {
             logd(TAGKClass, tag, "Decoding input jSon to kToVTable")
-            kToVTable = json.decodeFromString<Pair<String?, MutableMap<String?, WTCommPeerInfo>>>(input)
+            kToVTable = json.decodeFromString<Pair<MeshKey<String>, MutableMap<MeshKey<String>, WTCommPeerInfo>>>(input)
         }
 
-        return if (null == exc) kToVTable!! else null
+        return if (exc == null) {
+            checkNotNull(kToVTable) {
+                "$TAGKClass/$tag: Decoding completed without producing a result"
+            }
+        } else {
+            null
+        }
     }
 }

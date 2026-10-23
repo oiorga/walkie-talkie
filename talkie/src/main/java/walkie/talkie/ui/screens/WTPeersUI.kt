@@ -27,16 +27,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import walkie.chat.ChatGroupId
 import walkie.comm.WTCommPeerInfo
-import walkie.comm.uid
-import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtmisc.WTNavigation
 import walkie.talkie.WTActivity
 import walkie.talkie.WTActivity.Companion.TAGKClass
-import walkie.talkie.node.NodeId
 import walkie.talkie.ui.nav.WTNavNode
 import walkie.talkie.ui.util.BottomBarUI
 import walkie.talkie.ui.util.LazyScreen

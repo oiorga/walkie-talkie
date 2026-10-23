@@ -1,8 +1,7 @@
 package walkie.talkie.playground
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
+
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
@@ -15,8 +14,6 @@ import walkie.chat.ChatMessageItem
 import walkie.chat.ChatMessageItemList
 import walkie.chat.Receiver
 import walkie.chat.Sender
-import walkie.comm.uid
-import walkie.talkie.WTActivity
 import walkie.talkie.WalkieTalkie
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.node.NodeId
@@ -136,7 +133,7 @@ suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: 
     logd(tag, "Entry")
 
     wtHub.wtComm.directNodesInfo().forEach { peer ->
-        val peerGId = ChatGroupId(groupId = peer.uid(), groupName = peer.id, type = ChatGroupType.RemoteChatTesting)
+        val peerGId = ChatGroupId(groupId = peer.uid, groupName = peer.id, type = ChatGroupType.RemoteChatTesting)
         val peerNodeId = NodeId.Builder().id(peer.id).unique(peer.unique!!).build()
         wtHub.wtGlobalGroupMap.addNode(
             peerGId,
@@ -154,7 +151,7 @@ suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: 
             delay ((div + delay / div).milliseconds)
             scope.launch {
                 delay((div * (1 + Random.nextLong(maxK * delay / div))).milliseconds)
-                val messagePayload = "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid()}" +
+                val messagePayload = "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid}" +
                         " $c$maxK $k " + "[" + randomString(8U) + "]"
                 val message = ChatMessage(
                     sender = Sender(wtHub.wtSystemNodeId),
@@ -176,7 +173,7 @@ suspend fun WalkieTalkie.wifiDirectIpPeersRndMsgs(scope: CoroutineScope, delay: 
             delay ((div + delay / div).milliseconds)
             scope.launch {
                 delay((div * (1 + Random.nextLong(maxK * delay / div))).milliseconds)
-                val messagePayload = "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid()} " + "" +
+                val messagePayload = "${wtHub.wtSystemNodeId.uid()} -> ${peer.uid} " + "" +
                         "[" + randomString(8U) + "]"
                 val message = ChatMessage(
                     sender = Sender(wtHub.wtSystemNodeId),
