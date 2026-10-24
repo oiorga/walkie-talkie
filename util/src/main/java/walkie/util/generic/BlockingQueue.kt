@@ -1,33 +1,29 @@
 package walkie.util.generic
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
+import walkie.util.api.BlockingQueueApi
+import walkie.util.api.BlockingQueueResult
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
-import walkie.util.`try`
-import java.util.LinkedList
 import kotlin.time.Duration.Companion.milliseconds
 
-class BlockingQueue<T> (val name: String = "BlockingQueue", private val permits: Int = 1) : GenericBlockingQueueAbs<T>(name, permits)
-
-abstract class GenericBlockingQueueAbs<T> (
-    private val name: String = "GenericBlockingQueueAbs",
-    private val capacity: Int = 100,
+class BlockingQueue<T> (
+    override val name: String = "BlockingQueue",
+    override val capacity: Int = 100,
+    override val scope: CoroutineScope,
     private val channel: Channel<T> = Channel<T>(capacity),
-    private val scope: CoroutineScope = MainScope()
-) : Channel<T> by channel {
+) : BlockingQueueApi<T> {
     private val logDString: String
         get() = "name: $name"
     val tag = name
 
     companion object {
-        const val TAG = "GenericBlockingQueueAbs"
-        val TAGKClass = GenericBlockingQueueAbs::class
+        const val TAG = "BlockingQueue"
+        val TAGKClass = BlockingQueue::class
     }
 
     init {
@@ -39,7 +35,7 @@ abstract class GenericBlockingQueueAbs<T> (
         logd(TAGKClass, tag, "$tag: name: $name")
     }
 
-    fun enqueue(element: T): Boolean {
+    override fun enqueue(element: T): Boolean {
         val tag = "${this.tag}/enqueue/${randomString(2U)}"
 
         logd(TAGKClass, tag, "enqueue Enter: $logDString")
@@ -51,30 +47,30 @@ abstract class GenericBlockingQueueAbs<T> (
         return sendResult
     }
 
-    suspend fun enqueueRetry(element: T, retries: Int = 3, retryDelay: Long = 50L): Boolean {
+    override suspend fun enqueueRetry(element: T, retries: Int, retryDelay: Long): Boolean {
         val tag = "${this.tag}/enqueueRetry/${randomString(2U)}"
 
         logd(TAGKClass, tag, "enqueue Enter: $logDString, retries: $retries")
 
-        if (retries < 0 ) {
+        if (retries < 0) {
             logd(TAGKClass, tag, "enqueue Exit: $logDString, retries: $retries")
             return false
         }
 
-        val sendResult = channel.trySend(element).isSuccess
+        repeat(retries + 1) { attempt ->
+            val attemptResult = channel.trySend(element)
 
-        if (!sendResult && retries > 0) {
-            logd(TAGKClass, tag, "enqueue Exit: $logDString, retries: $retries")
-            delay(retryDelay.milliseconds)
-            return enqueueRetry(element, retries - 1, retryDelay)
+            if (attemptResult.isSuccess) return true
+            if (attemptResult.isClosed) return false
+            if (attempt < retries) {
+                delay(retryDelay.milliseconds)
+            }
         }
 
-        logd(TAGKClass, tag, "enqueue Exit: $logDString sendResult: $sendResult")
-
-        return sendResult
+        return false
     }
 
-    fun enqueueRetryBestEffort(element: T, retries: Int = 3, retryDelay: Long = 500L) {
+    override fun enqueueRetryBestEffort(element: T, retries: Int, retryDelay: Long) {
         val tag = "${this.tag}/enqueueRetry/${randomString(2U)}"
 
         logd(TAGKClass, tag, "enqueue Enter: $logDString, retries: $retries")
@@ -84,9 +80,14 @@ abstract class GenericBlockingQueueAbs<T> (
             return
         }
 
-        val sendResult = channel.trySend(element).isSuccess
+        val attemptResult = channel.trySend(element)
 
-        if (!sendResult && retries > 0) {
+        if (attemptResult.isClosed) {
+            logd(TAGKClass, tag, "enqueue Exit: Channel closed $logDString, retries: $retries")
+            return
+        }
+
+        if (!attemptResult.isSuccess && retries > 0) {
             logd(TAGKClass, tag, "enqueue Exit: $logDString, retries: $retries")
             scope.launch {
                 delay(retryDelay.milliseconds)
@@ -95,22 +96,41 @@ abstract class GenericBlockingQueueAbs<T> (
             return
         }
 
-        logd(TAGKClass, tag, "enqueue Exit: $logDString sendResult: $sendResult")
+        logd(TAGKClass, tag, "enqueue Exit: $logDString sendResult: ${attemptResult.isSuccess}")
     }
 
+    override fun tryDequeue(): BlockingQueueResult<T> {
+        val tag = "${this.tag}/tryDequeue/${randomString(2U)}"
 
-    suspend fun dequeue(): T {
+        logd(TAGKClass, tag, "tryDequeue Enter: $logDString")
+
+        val res = channel.tryReceive()
+        logd(TAGKClass, tag, "tryDequeue res: $res")
+
+        return when {
+            res.isSuccess -> {
+                logd(TAGKClass, tag, "tryDequeue Exit Success: $logDString")
+                BlockingQueueResult.Success(res.getOrThrow())
+            }
+            res.isClosed -> {
+                logd(TAGKClass, tag, "tryDequeue Exit Queue closed: $logDString")
+                BlockingQueueResult.Closed
+            }
+            else -> {
+                BlockingQueueResult.Empty
+            }
+        }
+    }
+
+    override suspend fun dequeue(): T {
         val tag = "${this.tag}/dequeue/${randomString(2U)}"
 
-        logd(TAGKClass, tag, "dequeue Enter: logDString")
-
+        logd(TAGKClass, tag, "dequeue Enter: $logDString")
         val ret = channel.receive()
 
-        logd(TAGKClass, tag, "dequeue Exit: logDString")
-
+        logd(TAGKClass, tag, "dequeue Exit: $logDString")
         return ret
     }
-
 }
 
 /**

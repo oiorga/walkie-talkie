@@ -6,6 +6,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import walkie.util.Gate
+import walkie.util.api.BlockingQueueResult
 import walkie.util.api.MeshDispatchEventId
 import walkie.util.api.MeshKey
 import walkie.util.generic.BlockingQueue
@@ -35,7 +36,7 @@ abstract class Mesh<K , V> (
     @Volatile
     private var kToVTableSnapshot: Map<MeshKey<K>, V> = emptyMap<MeshKey<K>, V>()
 
-    private val inPeersQ: BlockingQueue<Pair<MeshKey<K>, MutableMap<MeshKey<K>, V>>> = BlockingQueue<Pair<MeshKey<K>, MutableMap<MeshKey<K>, V>>>(name = "$TAG/inPeersQ", permits = 100)
+    private val inPeersQ: BlockingQueue<Pair<MeshKey<K>, MutableMap<MeshKey<K>, V>>> = BlockingQueue<Pair<MeshKey<K>, MutableMap<MeshKey<K>, V>>>(name = "$TAG/inPeersQ", capacity = 100, scope)
     private val meshMutex: Mutex = Mutex()
     private var sendCall: (suspend (v: V, info: String) -> Unit)? = null
     private val inPeersGate: Gate = Gate()
@@ -194,8 +195,21 @@ abstract class Mesh<K , V> (
                 return
             }
 
-            while (!inPeersQ.isEmpty) {
-                val pair = inPeersQ.dequeue()
+            while (true) {
+                val pair = when (val res = inPeersQ.tryDequeue()) {
+                    is BlockingQueueResult.Success -> {
+                        res.value
+                    }
+                    else -> {
+                        logd(
+                            TAGKClass,
+                            tag,
+                            "($count): inPeersQ.dequeue failed"
+                        ).also { count++ }
+                        break
+                    }
+                }
+
                 val node = pair.first
 
                 logd(

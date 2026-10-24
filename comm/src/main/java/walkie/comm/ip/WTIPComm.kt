@@ -59,8 +59,8 @@ class WTIPComm (
     ModuleOpInt by _moduleOp,
     EventDispatcherInt<Any> by _callBackList
 {
-    val ipOutQueue = BlockingQueue<Triple<InetAddress, Int, ByteArray>>("ipOutQueue", 100)
-    val ipInQueue = BlockingQueue<String>("ipInQueue", 100)
+    val ipOutQueue = BlockingQueue<Triple<InetAddress, Int, ByteArray>>("ipOutQueue", 100, scope)
+    val ipInQueue = BlockingQueue<String>("ipInQueue", 100, scope)
 
     var wtServer: TCPServer? = null
     var localServerIpAddress: InetAddress? = null
