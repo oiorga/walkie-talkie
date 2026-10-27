@@ -129,8 +129,7 @@ class WTActivity(
         Logging.enable(enclosingClass = LazyListState::class, true)
         Logging.enable(enclosingClass = CoroutineScope::class, true)
         */
-        _moduleOp.
-        logging(true)
+        _moduleOp.logging(true)
     }
 
     private suspend fun wifiCleanUp() {

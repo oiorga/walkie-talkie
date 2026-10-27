@@ -50,18 +50,16 @@ private val WTDebugUITheme: WTUITheme = WTUITheme(
 internal fun WTActivity.WTActivityDebugUI(wtNavNode: WTNavNode? = null) {
     val tag = "WTActivityDebugUI"
     val mainVModel = this.wtVModel
-    val switchScreen: Boolean by remember { derivedStateOf { mainVModel.switchScreen() } }
+    val switchScreen: Boolean = mainVModel.switchScreen
 
     logd(tag, "$tag Entry 0 triggerUpdate: ${mainVModel.triggerUIUpdate} switchScreen: $switchScreen")
+
+    mainVModel.wtViewModelUpdate(WTNavigation.MainDebug)
 
     LaunchedEffect (switchScreen) {
         logd(TAGKClass, tag, "$tag LaunchedEffect: ${mainVModel.currentScreen()} nextScreen: ${mainVModel.nextScreen()}")
         Log.d(tag, "$tag LaunchedEffect: ${mainVModel.currentScreen()} nextScreen: ${mainVModel.nextScreen()}")
-
-        /* mainVModel.switchScreen(mainVModel.nextScreen()) */
     }
-
-    mainVModel.wtViewModelUpdate(WTNavigation.MainDebug)
 
     ScaffoldScreen(
         modifier = Modifier
@@ -137,7 +135,7 @@ internal fun WTActivity.DebugUiMainEntry(
 internal fun WTActivity.DebugMainScreen(
     mainVModel: WTViewModel,
     modifier: Modifier,
-    triggerUpdate : Boolean) {
+    triggerUpdate : Int) {
     val tag = "DebugMainScreen/${randomString(2U)}"
 
     logd(TAGKClass, tag, "Entry")

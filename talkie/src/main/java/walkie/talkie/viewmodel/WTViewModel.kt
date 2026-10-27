@@ -1,6 +1,8 @@
 package walkie.talkie.viewmodel
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -27,9 +29,15 @@ import walkie.util.randomString
 
 enum class UIMessageAction {Send, Receive}
 
-class WTViewModelFactory(private val wtHub: WTDataHub) : ViewModelProvider.Factory {
+class WTViewModelFactory(
+    private val wtHub: WTDataHub
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return WTViewModel(wtHub) as T
+        if (modelClass.isAssignableFrom(WTViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return WTViewModel(wtHub) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
 }
 
@@ -39,11 +47,12 @@ class WTViewModel (val wtHub: WTDataHub): ViewModel(), WTDebugInt {
     }
 
     /* Needed by WTMainUI */
-    var triggerUIUpdate: Boolean by mutableStateOf(false)
+    var triggerUIUpdate: Int by mutableIntStateOf(0)
         private set
     private var changed: Boolean = true
 
-    private var switchScreen: Boolean by mutableStateOf(false)
+    var switchScreen: Boolean by mutableStateOf(false)
+        private set
     private var currentScreen: WTNavigation = WTNavigation.WT
     private var nextScreen: WTNavigation = WTNavigation.WT
     lateinit var discussionMap: DiscussionMapAbs
@@ -61,7 +70,6 @@ class WTViewModel (val wtHub: WTDataHub): ViewModel(), WTDebugInt {
     init {
         logging(true)
         logd(TAG, "init()")
-        triggerUIUpdate = true
         changed = true
         currentScreen(WTNavigation.WT)
     }
@@ -86,10 +94,6 @@ class WTViewModel (val wtHub: WTDataHub): ViewModel(), WTDebugInt {
         return nextScreen
     }
 
-    fun switchScreen(): Boolean {
-        return switchScreen
-    }
-
     fun lateInit() {
         wtHub.wtVModel = this
         discussionMap = wtHub.wtGlobalDiscussionMap.discussionMap
@@ -98,13 +102,15 @@ class WTViewModel (val wtHub: WTDataHub): ViewModel(), WTDebugInt {
     
     fun changed() {
         val tag = "changed/${randomString(2U)}"
-        logd(tag, "changed: $triggerUIUpdate -> ${!triggerUIUpdate} current: ${currentScreen()} switchScreen: $switchScreen")
+        logd(tag, "changed: triggerUIUpdate -> $triggerUIUpdate current: ${currentScreen()} switchScreen: $switchScreen")
         changed = true
-        triggerUIUpdate = !triggerUIUpdate
+        triggerUIUpdate += 1
     }
     fun processMessage(message: ChatMessage, action: UIMessageAction) {
         if (UIMessageAction.Send == action) {
-            runBlocking { wtHub.sendChatMessage(message) }
+            viewModelScope.launch {
+                wtHub.sendChatMessage(message)
+            }
         }
     }
 
@@ -149,7 +155,6 @@ class WTViewModel (val wtHub: WTDataHub): ViewModel(), WTDebugInt {
             WTNavigation.RemoteChat,
             WTNavigation.RemoteChatTesting,
             WTNavigation.LocalChatTesting,
-            WTNavigation.LocalDebugItem,
             WTNavigation.LocalDebugItem -> {
                 chatDiscussionId = nextDiscussionId
                 wtHub.wtCurrentDiscussionId = chatDiscussionId!!
@@ -187,7 +192,7 @@ internal fun WTViewModel.openChatOnClick(
     val chatGroupId = ChatGroupId(peer.uid, peer.id, type = ChatGroupType.RemoteChat)
 
     logd(tag, "Entry: ${currentScreen()} dId: $nextDiscussionId")
-    wtHub.wtScope.launch {
+    viewModelScope.launch {
         wtHub.wtGlobalDiscussionMap.createDiscussion(
             chatGroupId,
             NodeId.Builder().id(peer.id).unique(peer.unique!!).build()

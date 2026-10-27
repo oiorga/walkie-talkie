@@ -57,7 +57,8 @@ val WTActivity.WTMenuUITheme: WTUITheme
 internal fun WTActivity.WTActivityMainUI(wtNavNode: WTNavNode? = null) {
     val tag = "WTActivityMain"
     val mainVModel = this.wtVModel
-    val switchScreen: Boolean by remember { derivedStateOf { mainVModel.switchScreen() } }
+    val switchScreen: Boolean = mainVModel.switchScreen
+    val uiUpdate = mainVModel.triggerUIUpdate
 
     logd(tag,"$tag: ${mainVModel.currentScreen()} nextScreen: ${mainVModel.nextScreen()} switchScreen: $switchScreen")
 
@@ -65,10 +66,7 @@ internal fun WTActivity.WTActivityMainUI(wtNavNode: WTNavNode? = null) {
 
     LaunchedEffect (switchScreen) {
         logd(TAGKClass, tag, "$tag LaunchedEffect: currentScreen: ${mainVModel.currentScreen()} nextScreen: ${mainVModel.nextScreen()}")
-        /* mainVModel.switchScreen(mainVModel.nextScreen()) */
     }
-
-    run { mainVModel.triggerUIUpdate }
 
     logd(tag, "$tag navDest: ${mainVModel.currentScreen()} nextScreen: ${mainVModel.nextScreen()}")
     ScaffoldScreen (
@@ -91,7 +89,6 @@ internal fun WTActivity.WTActivityMainUI(wtNavNode: WTNavNode? = null) {
                     .fillMaxWidth(1F)
                     .background(WTMainUITheme.bgColor),
                 mainVModel = mainVModel,
-                /* triggerUpdate = mainVModel.triggerUIUpdate */
             )
         }
     }

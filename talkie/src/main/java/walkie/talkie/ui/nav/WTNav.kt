@@ -30,20 +30,12 @@ data class WTNavNode (
     val preview: (@Composable (Modifier?) -> Unit)? = null,
     val navController: NavHostController? = null
 ) {
-    /* private var _prev: WTNavNode? = null */
     private var execOnClick: (() -> Unit)? = null
 
     companion object {
         const val TAG = "WTNavNode"
         val TAGKClass = WTNavNode::class
     }
-
-    /*
-    fun prev(prev: WTNavNode? = null): WTNavNode? {
-        if (null != prev) _prev = prev
-        return _prev
-    }
-    */
 
     init {
         logging(true)

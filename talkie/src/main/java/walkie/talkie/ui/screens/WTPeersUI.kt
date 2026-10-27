@@ -53,18 +53,16 @@ private val WTPeersUITheme: WTUITheme = WTUITheme(
 internal fun WTActivity.WTActivityPeersUI(wtNavNode: WTNavNode? = null) {
     val tag = "WTActivityPeersUI/${randomString(2u)}"
     val mainVModel = this.wtVModel
-    val switchScreen: Boolean by remember { derivedStateOf { mainVModel.switchScreen() } }
+    val switchScreen: Boolean = mainVModel.switchScreen
 
     logd(tag, "$tag Entry 0 triggerUpdate: ${mainVModel.triggerUIUpdate} switchScreen: $switchScreen")
+
+    mainVModel.wtViewModelUpdate(WTNavigation.MainPeers)
 
     LaunchedEffect (switchScreen) {
         logd(TAGKClass, tag, "$tag LaunchedEffect: ${mainVModel.currentScreen()} nextScreen: ${mainVModel.nextScreen()}")
         Log.d(tag, "$tag LaunchedEffect: ${mainVModel.currentScreen()} nextScreen: ${mainVModel.nextScreen()}")
-
-        /* mainVModel.switchScreen(mainVModel.nextScreen()) */
     }
-
-    mainVModel.wtViewModelUpdate(WTNavigation.MainPeers)
 
     ScaffoldScreen (
         modifier = Modifier.fillMaxSize(),
@@ -227,7 +225,7 @@ internal fun WTActivity.PeersMainScreen(
     mainVModel: WTViewModel,
     modifier: Modifier,
     wtUITheme: WTUITheme = WTPeersUITheme,
-    triggerUpdate : Boolean) {
+    triggerUpdate : Int) {
     val navList = mutableListOf<WTNavNode>()
     val searching: WTNavNode = WTNavNode(
         route = WTNavigation.None,
