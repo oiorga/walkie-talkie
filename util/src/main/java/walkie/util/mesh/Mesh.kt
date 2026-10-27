@@ -1,5 +1,6 @@
 package walkie.util.mesh
 
+import android.os.SystemClock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -71,12 +72,6 @@ abstract class Mesh<K , V> (
         val kToVTable = decodeFromString(jsonString) ?: return
 
         inPeersQ.enqueueRetryBestEffort(kToVTable)
-
-        /*
-        if (!inPeersQ.enqueue(kToVTable)) {
-            logd(tag, "inPeersQ.enqueue failed")
-        }
-        */
     }
 
     abstract fun encodeToString(kToVTable: Pair<MeshKey<K>, Map<MeshKey<K>, V>>): String
@@ -107,10 +102,12 @@ abstract class Mesh<K , V> (
         var count: Long = 0
 
         scope.launch() {
+            var timeStamp = SystemClock.elapsedRealtime()
             while (isActive) {
                 logd(TAGKClass, tag,"mainLoop: $count", logF).also { count++ }
                 inPeersGate.await(heartbeat)
                 processInPeers()
+                timeStamp = updatePeersAge(timeStamp)
                 broadcastPeers()
             }
         }
@@ -136,6 +133,24 @@ abstract class Mesh<K , V> (
         }
     }
 
+    private suspend fun updatePeersAge(timeStamp: Long = 0): Long {
+        val tag = "updatePeersAge/${randomString(2u)}"
+        val currentTimeStamp = SystemClock.elapsedRealtime()
+
+        val delta = if (0L == timeStamp) {
+            return currentTimeStamp
+        } else currentTimeStamp - timeStamp
+
+        meshMutex.withLock {
+            kAgeTable.forEach { (key, age) ->
+                kAgeTable[key] = age + delta
+            }
+            kAgeTableSnapshot = kAgeTable.toMap()
+        }
+
+        return currentTimeStamp
+    }
+
     private suspend fun broadcastPeers() {
         val tag = "broadcastPeers/${randomString(2u)}"
         var count = 0
@@ -150,10 +165,6 @@ abstract class Mesh<K , V> (
         }
 
         val kToVTable = meshMutex.withLock {
-            kAgeTable.forEach { (key, age) ->
-                kAgeTable[key] = (age + heartbeat)
-            }
-            kAgeTableSnapshot = kAgeTable.toMap()
             this.kToVTableSnapshot
         }
 
@@ -252,7 +263,8 @@ abstract class Mesh<K , V> (
             }
 
             this.kToVTableSnapshot = this.kToVTable.toMap()
-            this.kAgeTableSnapshot = this.kAgeTable.toMap()
+            if (bcastPeersNow)
+                this.kAgeTableSnapshot = this.kAgeTable.toMap()
         }
 
         newPeers.forEach { key ->
@@ -268,5 +280,7 @@ abstract class Mesh<K , V> (
 
     fun directPeer (node: MeshKey<K>): V? = (kToVTableSnapshot[node])
 
-    fun directPeerAge (node: MeshKey<K>): Long? = (kAgeTableSnapshot[node])
+    fun directPeerAgeMills (node: MeshKey<K>): Long? = (kAgeTableSnapshot[node])
+
+    fun directPeerAgeSeconds (node: MeshKey<K>): Long? = (kAgeTableSnapshot[node]?.div(1000L))
 }

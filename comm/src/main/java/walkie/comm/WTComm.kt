@@ -49,7 +49,7 @@ class WTComm (
     val tag = TAG
 
     private fun directNodes(): List<String> {
-        return wtPRMComm.directNodes().toList()
+        return wtPRMComm.directNodesSnapshot
     }
 
     fun directNodesInfo(): List<WTCommPeerInfo> {
@@ -59,12 +59,12 @@ class WTComm (
         directNodes().filter { peer ->
             peer != nodeId.uid()
         }.forEach { peer ->
-            val directUnderlay = wtPRMComm.directUnderlay(peer)
-            if (null != directUnderlay) {
-                directNodesList.add(directUnderlay)
+            val directPeer = wtPRMComm.directPeer(peer)
+            if (null != directPeer) {
+                directNodesList.add(directPeer)
             } else {
-                logd(tag, "$peer has directUnderlay NULL")
-                throw (NullPointerException("$peer has directUnderlay NULL"))
+                logd(tag, "$peer has directPeer NULL")
+                throw (NullPointerException("$peer has directPeer NULL"))
             }
         }
         return directNodesList

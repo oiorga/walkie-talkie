@@ -1,6 +1,9 @@
 package walkie.comm.prm
 
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import walkie.comm.WTCommDispatchEventId
 import walkie.comm.WTCommPeerInfo
 import walkie.comm.WTIPMesh
@@ -44,7 +47,15 @@ class WTPRMComm (
 {
     val wtIPComm: WTIPComm = WTIPComm(node, scope)
     private val wtMesh: Mesh<String, WTCommPeerInfo> = WTIPMesh(node.uid(), scope)
-    private val directNodes: MutableList<String> = mutableListOf()
+
+    private val prmMutex: Mutex = Mutex()
+
+    @Volatile
+    private var directNodes: List<String> = listOf()
+
+    val directNodesSnapshot: List<String>
+        get() =  directNodes
+
     private var groupInfoCache: Pair<String, String>? = null
 
     companion object {
@@ -52,8 +63,12 @@ class WTPRMComm (
         val TAGKClass = WTPRMComm::class
     }
 
-    fun directUnderlay (node: String): WTCommPeerInfo? {
+    fun directPeer (node: String): WTCommPeerInfo? {
         return wtMesh.directPeer(MeshKey.Key(node))
+    }
+
+    fun directPeerAgeSeconds (node: String): Long {
+        return wtMesh.directPeerAgeSeconds(MeshKey.Key(node)) ?: 0
     }
 
     init {
@@ -75,8 +90,15 @@ class WTPRMComm (
             wtIPComm.sendIpCommPacket(inetToIpString(dest[0]), dest[1], WTIPCommPacketType.ControlMesh, jSon)
         }
         wtMesh.subscribeEvent(MeshDispatchEventId.CBMeshNewPeer) { newPeer ->
-            if ((newPeer as String) !in directNodes) {
-                directNodes.add(newPeer)
+            val added = prmMutex.withLock {
+                if ((newPeer as String) !in directNodes) {
+                    directNodes += newPeer
+                    true
+                } else {
+                    false
+                }
+            }
+            if (added) {
                 dispatchEvent(MeshDispatchEventId.CBMeshNewPeer)
             }
             peersUpdateSendDebugInfo()
@@ -86,14 +108,23 @@ class WTPRMComm (
             peersUpdateSendDebugInfo()
         }
         wtMesh.subscribeEvent(MeshDispatchEventId.CBMeshResetPeers) { _ ->
-            directNodes.clear()
+            prmMutex.withLock {
+                directNodes = emptyList()
+            }
             dispatchEvent(MeshDispatchEventId.CBMeshResetPeers)
             peersUpdateSendDebugInfo()
         }
         wtMesh.subscribeEvent(MeshDispatchEventId.CBMeshLostPeer) { newPeer ->
-            if ((newPeer as String) in directNodes) {
-                directNodes.remove(newPeer)
-                dispatchEvent(MeshDispatchEventId.CBMeshNewPeer)
+            val removed = prmMutex.withLock {
+                if ((newPeer as String) in directNodes) {
+                    directNodes -= newPeer
+                    true
+                } else {
+                    false
+                }
+            }
+            if (removed) {
+                dispatchEvent(MeshDispatchEventId.CBMeshLostPeer)
             }
             peersUpdateSendDebugInfo()
         }
@@ -118,32 +149,28 @@ class WTPRMComm (
         }
     }
 
-    fun directNodes() : List<String> {
-        return directNodes.toList()
-    }
-
     suspend fun sendCommPacket(commPacket: CommPacket): Boolean {
         val tag = "sendCommPacket/${randomString(2u)}"
-        val directUnderlay = wtMesh.directPeer(MeshKey.Key(commPacket.receiverUId()))
-        val logF = (commPacket.groupIdType == ChatGroupType.RemoteChat || commPacket.groupIdType == ChatGroupType.RemoteChatTesting)
-        var success = true
+        val directPeer = wtMesh.directPeer(MeshKey.Key(commPacket.receiverUId()))
+        val receiverUId = commPacket.receiverUId()
+        val logF =
+            (commPacket.groupIdType == ChatGroupType.RemoteChat || commPacket.groupIdType == ChatGroupType.RemoteChatTesting)
 
         commPacket.logD(tag, logF)
-        logd(tag, "${commPacket.senderUId()} -> ${commPacket.receiverUId()}/" + directUnderlay, logF)
-        if (null != directUnderlay?.umCI) {
-            val directPeer = wtMesh.directPeer(MeshKey.Key(commPacket.receiverUId()))!!
-            wtIPComm.sendIpCommPacket(
-                directPeer.umCI[0],
-                directPeer.umCI[1],
-                WTIPCommPacketType.Data,
-                commPacket.toJson()
-            )
-        } else {
-            logd(tag, "wtMesh.directUnderlay(commPacket.receiverUId()).umCI are NULL: ${commPacket.receiverUId()} $directUnderlay")
-            /* throw (NullPointerException("wtMesh.directUnderlay(commPacket.receiverUId()).umCI: ${commPacket.receiverUId()} $directUnderlay")) */
-            success = false
+        logd(tag, "${commPacket.senderUId()} -> ${commPacket.receiverUId()}/" + directPeer, logF)
+
+        val umCI = directPeer?.umCI ?: run {
+            logd(tag, "directPeer.umCI is NULL: $receiverUId $directPeer")
+            return false
         }
-        return success
+
+        wtIPComm.sendIpCommPacket(
+            umCI[0],
+            umCI[1],
+            WTIPCommPacketType.Data,
+            commPacket.toJson()
+        )
+        return true
     }
 
     override suspend fun onBusMessage(
@@ -227,7 +254,6 @@ class WTPRMComm (
                                     node.unique,
                                     WTMedium.WifiIp,
                                     umCI = listOf(groupIpAddress.toString(), groupServerPort.toString()),
-                                    //true
                                 )
                             )
                             groupInfoCache = Pair(groupIpAddress.toString(), groupServerPort.toString())
@@ -255,21 +281,26 @@ class WTPRMComm (
             }
         }
     }
-}
 
-internal fun WTPRMComm.peersUpdateSendDebugInfo() {
-    var str = "Peers List: ${directNodes()}"
-    directNodes().forEach { k ->
-        str += "\n\tDest: ${directUnderlay(k)?.uid} ${directUnderlay(k)?.umCI}"
-    }
-
-    send(
-        to = WTModOpArg.To.Activity,
-        msg = WTModOpArg.Msg(
-            BusMessage(
-                PipeMessageType.MeshDebugInfoMessage,
-                str
+    fun WTPRMComm.peersUpdateSendDebugInfo() {
+        scope.launch {
+            var str = "Peers List:"
+            val directNodesCache = prmMutex.withLock {
+                directNodes.toList()
+            }
+            directNodesCache.forEach { k ->
+                val peer = directPeer(k)
+                str += peer?.let { "\n\t${peer.uid} ${peer.umCI} ${directPeerAgeSeconds(k)}" }
+            }
+            send(
+                to = WTModOpArg.To.Activity,
+                msg = WTModOpArg.Msg(
+                    BusMessage(
+                        PipeMessageType.MeshDebugInfoMessage,
+                        str
+                    )
+                )
             )
-        )
-    )
+        }
+    }
 }
