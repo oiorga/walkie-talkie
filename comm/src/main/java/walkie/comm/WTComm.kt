@@ -14,13 +14,13 @@ import walkie.talkie.api.wtcomm.WTCommChatMessageOut
 import walkie.talkie.api.wtcomm.WTCommPacketIn
 import walkie.talkie.api.wtcomm.WTCommPacketOut
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtModule.MessageBusId
+import walkie.talkie.api.wtModule.BusMessageId
 import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
-import walkie.util.api.MessageBusIdInt
-import walkie.util.api.BusMessageInt
+import walkie.util.api.BusMessageIdApi
+import walkie.util.api.BusMessageApi
 import walkie.util.api.MeshDispatchEventId
-import walkie.util.api.MessageBusInt
+import walkie.util.api.MessageBusApi
 import walkie.util.generic.BusMessage
 import walkie.util.logd
 import walkie.util.logging
@@ -29,10 +29,10 @@ import walkie.util.randomString
 class WTComm (
     private val nodeId: NodeIdInt,
     val scope: CoroutineScope,
-    private val _pipeMux: MessageBusInt<PipeMessageType, Any> = MessageBus(),
+    private val _pipeMux: MessageBusApi<PipeMessageType, Any> = MessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 
-) : MessageBusInt<PipeMessageType, Any> by _pipeMux,
+) : MessageBusApi<PipeMessageType, Any> by _pipeMux,
     ModuleOpInt by _moduleOp,
     WTCommChatMessageIn,
     WTCommChatMessageOut,
@@ -150,7 +150,7 @@ class WTComm (
         }
     }
 
-    override suspend fun onBusMessage(busId: MessageBusIdInt, msg: BusMessageInt<PipeMessageType, Any>) {
+    override suspend fun onBusMessage(busId: BusMessageIdApi, msg: BusMessageApi<PipeMessageType, Any>) {
         val tag = "channelOnReceive/${randomString(2U)}"
         val type = msg.type
         val data = msg.data
@@ -158,7 +158,7 @@ class WTComm (
         logd(tag, "channelOnReceive: channelId: $busId inputType: $type")
 
         when (busId) {
-            MessageBusId.ToComm -> {
+            BusMessageId.ToComm -> {
                 when (type) {
                     PipeMessageType.WifiMessage -> {
                         commPacketIn(data as CommPacketInt)

@@ -16,14 +16,14 @@ import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.WTMedium
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtModule.MessageBusId
+import walkie.talkie.api.wtModule.BusMessageId
 import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
-import walkie.util.api.MessageBusIdInt
-import walkie.util.api.BusMessageInt
+import walkie.util.api.BusMessageIdApi
+import walkie.util.api.BusMessageApi
 import walkie.util.api.MeshDispatchEventId
 import walkie.util.api.MeshKey
-import walkie.util.api.MessageBusInt
+import walkie.util.api.MessageBusApi
 import walkie.util.generic.EventDispatcher
 import walkie.util.generic.EventDispatcherInt
 import walkie.util.generic.BusMessage
@@ -37,11 +37,11 @@ import java.net.InetAddress
 class WTPRMComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _pipeMux: MessageBusInt<PipeMessageType, Any> = MessageBus(),
+    private val _pipeMux: MessageBusApi<PipeMessageType, Any> = MessageBus(),
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) :
-    MessageBusInt<PipeMessageType, Any> by _pipeMux,
+    MessageBusApi<PipeMessageType, Any> by _pipeMux,
     ModuleOpInt by _moduleOp,
     EventDispatcherInt<Any> by _callBackList
 {
@@ -174,8 +174,8 @@ class WTPRMComm (
     }
 
     override suspend fun onBusMessage(
-        busId: MessageBusIdInt,
-        msg: BusMessageInt<PipeMessageType, Any>
+        busId: BusMessageIdApi,
+        msg: BusMessageApi<PipeMessageType, Any>
     ) {
         val tag = "channelOnReceive/${randomString(2u)}"
         val type = msg.type
@@ -188,7 +188,7 @@ class WTPRMComm (
         )
 
         when (busId) {
-            MessageBusId.ToPRMComm -> {
+            BusMessageId.ToPRMComm -> {
                 when (type) {
                     PipeMessageType.ControlMesh -> {
                         wtMesh.addPeersJson(data as String)

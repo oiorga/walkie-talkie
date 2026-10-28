@@ -2,9 +2,9 @@ package walkie.talkie.api.wtModule
 
 import kotlinx.coroutines.CoroutineScope
 import walkie.talkie.api.wtdebug.wtError
-import walkie.util.api.MessageBusIdInt
-import walkie.util.api.BusMessageInt
-import walkie.util.api.MessageBusInt
+import walkie.util.api.BusMessageIdApi
+import walkie.util.api.BusMessageApi
+import walkie.util.api.MessageBusApi
 import walkie.util.api.RemoteCallIdInt
 import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.MessageBus
@@ -13,13 +13,13 @@ import walkie.util.generic.RemoteCallMux
 import walkie.util.randomString
 
 interface ModuleOpInt : ModuleOpInterface<WTModOpArg>
-typealias WTPipeMessage = BusMessageInt<PipeMessageType, Any>
+typealias WTPipeMessage = BusMessageApi<PipeMessageType, Any>
 
 class ModuleOpImpl(
-    private val _busMap: MessageBusInt<PipeMessageType, Any> = MessageBus(),
+    private val _busMap: MessageBusApi<PipeMessageType, Any> = MessageBus(),
     private val _callMap: RemoteCallMuxInt = RemoteCallMux()
 ):
-    MessageBusInt<PipeMessageType, Any> by _busMap,
+    MessageBusApi<PipeMessageType, Any> by _busMap,
     RemoteCallMuxInt by _callMap,
     ModuleOpInt
 {
@@ -110,14 +110,14 @@ class ModuleOpImpl(
 }
 
 sealed class WTModOpArg {
-    sealed class To(val id: MessageBusIdInt): WTModOpArg() {
-        object Comm: To(MessageBusId.ToComm)
-        object Activity: To(MessageBusId.ToActivity)
-        object Wifi: To(MessageBusId.ToWifi)
-        object CommonData: To(MessageBusId.TOCommonData)
-        object IpComm: To(MessageBusId.ToIpComm)
-        object PRMComm: To(MessageBusId.ToPRMComm)
-        object Chat: To(MessageBusId.ToChat)
+    sealed class To(val id: BusMessageIdApi): WTModOpArg() {
+        object Comm: To(BusMessageId.ToComm)
+        object Activity: To(BusMessageId.ToActivity)
+        object Wifi: To(BusMessageId.ToWifi)
+        object CommonData: To(BusMessageId.TOCommonData)
+        object IpComm: To(BusMessageId.ToIpComm)
+        object PRMComm: To(BusMessageId.ToPRMComm)
+        object Chat: To(BusMessageId.ToChat)
     }
 
     sealed class Prop(val id: RemoteCallIdInt): WTModOpArg() {
@@ -129,7 +129,7 @@ sealed class WTModOpArg {
     }
 
     data class OnEventInfo(
-        val onEvent: (suspend (MessageBusIdInt, BusMessageInt<PipeMessageType, Any>) -> Unit),
+        val onEvent: (suspend (BusMessageIdApi, BusMessageApi<PipeMessageType, Any>) -> Unit),
         val scope: CoroutineScope
     ) : WTModOpArg()
     data class Msg(val msg: WTPipeMessage) : WTModOpArg()
@@ -164,7 +164,7 @@ enum class PipeMessageType {
     CommToChatPacket
 }
 
-enum class MessageBusId : MessageBusIdInt {
+enum class BusMessageId : BusMessageIdApi {
     PipeNA,
     ToComm,
     ToWifi,

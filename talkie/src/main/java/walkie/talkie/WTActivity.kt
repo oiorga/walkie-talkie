@@ -49,7 +49,7 @@ import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtmisc.InfoMap
 import walkie.talkie.api.wtmisc.WTNavigation
-import walkie.talkie.api.wtModule.MessageBusId
+import walkie.talkie.api.wtModule.BusMessageId
 import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.talkie.api.wtModule.RemoteCallId
 import walkie.talkie.api.wtModule.WTModOpArg
@@ -58,9 +58,9 @@ import walkie.talkie.ui.nav.WTNavInit
 import walkie.talkie.ui.screens.customComposablesInit
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.viewmodel.WTViewModelFactory
-import walkie.util.api.MessageBusIdInt
-import walkie.util.api.BusMessageInt
-import walkie.util.api.MessageBusInt
+import walkie.util.api.BusMessageIdApi
+import walkie.util.api.BusMessageApi
+import walkie.util.api.MessageBusApi
 import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.RemoteCallMux
 import walkie.util.logd
@@ -70,13 +70,13 @@ import kotlin.getValue
 import kotlin.system.exitProcess
 
 class WTActivity(
-    private val _pipeMux: MessageBusInt<PipeMessageType, Any> = MessageBus(),
+    private val _pipeMux: MessageBusApi<PipeMessageType, Any> = MessageBus(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux, _remoteCallMux)
 ) :
     ComponentActivity(),
     ModuleOpInt by _moduleOp,
-    MessageBusInt<PipeMessageType, Any> by _pipeMux,
+    MessageBusApi<PipeMessageType, Any> by _pipeMux,
     RemoteCallMuxInt by _remoteCallMux {
 
         companion object {
@@ -250,13 +250,13 @@ class WTActivity(
     private val groupIdWDI = "WIFI Direct Info"
     private val info1 = InfoMap(groupIdWDI)
     override suspend fun onBusMessage(
-        busId: MessageBusIdInt,
-        msg: BusMessageInt<PipeMessageType, Any>
+        busId: BusMessageIdApi,
+        msg: BusMessageApi<PipeMessageType, Any>
     ) {
         val type = msg.type
         val data = msg.data
         when (busId) {
-            MessageBusId.ToActivity -> {
+            BusMessageId.ToActivity -> {
                 when (type) {
                     PipeMessageType.WifiDebugInfoMessage -> {
                         val groupId = groupIdWDI

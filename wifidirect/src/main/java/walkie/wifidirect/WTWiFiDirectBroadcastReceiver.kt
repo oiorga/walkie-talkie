@@ -29,7 +29,7 @@ import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
-import walkie.util.api.MessageBusInt
+import walkie.util.api.MessageBusApi
 import walkie.util.generic.BusMessage
 import walkie.util.generic.MessageBus
 import walkie.util.getDeclaredSimpleName
@@ -41,11 +41,11 @@ import walkie.util.logging
  */
 class WiFiDirectBroadcastReceiver (
     val scope: CoroutineScope,
-    private val _pipeMux: MessageBusInt<PipeMessageType, Any> = MessageBus<PipeMessageType, Any>(),
+    private val _pipeMux: MessageBusApi<PipeMessageType, Any> = MessageBus<PipeMessageType, Any>(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) : BroadcastReceiver(),
     ModuleOpInt by _moduleOp,
-    MessageBusInt<PipeMessageType, Any> by _pipeMux
+    MessageBusApi<PipeMessageType, Any> by _pipeMux
 {
     companion object {
         const val TAG = "WiFiDirectBroadcastReceiver"

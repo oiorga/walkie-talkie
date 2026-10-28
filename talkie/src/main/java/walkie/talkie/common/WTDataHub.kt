@@ -20,12 +20,12 @@ import walkie.talkie.BuildConfig
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.wtdebug.WTDebugInt
-import walkie.talkie.api.wtModule.MessageBusId
+import walkie.talkie.api.wtModule.BusMessageId
 import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.util.CoroutineRuntime
-import walkie.util.api.MessageBusIdInt
-import walkie.util.api.BusMessageInt
-import walkie.util.api.MessageBusInt
+import walkie.util.api.BusMessageIdApi
+import walkie.util.api.BusMessageApi
+import walkie.util.api.MessageBusApi
 import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.RemoteCallMux
 import walkie.util.logd
@@ -36,10 +36,10 @@ import walkie.wifidirect.WiFiDirectBroadcastReceiver
 
 class WTDataHub private constructor (
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
-    private val _pipeMux: MessageBusInt<PipeMessageType, Any> = MessageBus(),
+    private val _pipeMux: MessageBusApi<PipeMessageType, Any> = MessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) : RemoteCallMuxInt by _remoteCallMux,
-    MessageBusInt<PipeMessageType, Any> by _pipeMux,
+    MessageBusApi<PipeMessageType, Any> by _pipeMux,
     ModuleOpInt by _moduleOp,
     WTDebugInt
 {
@@ -88,8 +88,8 @@ class WTDataHub private constructor (
     }
 
     override suspend fun onBusMessage(
-        busId: MessageBusIdInt,
-        msg: BusMessageInt<PipeMessageType, Any>
+        busId: BusMessageIdApi,
+        msg: BusMessageApi<PipeMessageType, Any>
         ) {
         val tag = "channelOnReceive/${randomString(2U)}"
         val type = msg.type
@@ -97,7 +97,7 @@ class WTDataHub private constructor (
 
         logd(tag, "channelId: $busId inputType: $type input: $data")
         when (busId) {
-            MessageBusId.TOCommonData -> {
+            BusMessageId.TOCommonData -> {
                 if (updateUI(type, data))
                     updateUiLiveData.update()
             }

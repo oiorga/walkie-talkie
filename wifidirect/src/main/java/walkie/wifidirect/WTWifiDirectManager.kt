@@ -26,14 +26,13 @@ import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.wtdebug.wtError
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtModule.MessageBusId
+import walkie.talkie.api.wtModule.BusMessageId
 import walkie.talkie.api.wtModule.PipeMessageType
-import walkie.talkie.api.wtModule.RemoteCallId
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.talkie.api.wtModule.getVal
-import walkie.util.api.MessageBusIdInt
-import walkie.util.api.BusMessageInt
-import walkie.util.api.MessageBusInt
+import walkie.util.api.BusMessageIdApi
+import walkie.util.api.BusMessageApi
+import walkie.util.api.MessageBusApi
 import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.MessageBus
 import walkie.util.generic.GenericList
@@ -41,7 +40,6 @@ import walkie.util.generic.Mailbox
 import walkie.util.generic.MailboxData
 import walkie.util.generic.BusMessage
 import walkie.util.generic.RemoteCallMux
-import walkie.util.generic.typedCall
 import walkie.util.logd
 import walkie.util.logdAppend
 import walkie.util.logging
@@ -60,12 +58,12 @@ class WTWifiDirectManager(
     val manager: WifiP2pManager,
     val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _pipeMux: MessageBusInt<PipeMessageType, Any> = MessageBus(),
+    private val _pipeMux: MessageBusApi<PipeMessageType, Any> = MessageBus(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux, _remoteCallMux)
 ) :
     ModuleOpInt by _moduleOp,
-    MessageBusInt<PipeMessageType, Any> by _pipeMux,
+    MessageBusApi<PipeMessageType, Any> by _pipeMux,
     RemoteCallMuxInt by _remoteCallMux {
 
     companion object {
@@ -184,14 +182,14 @@ class WTWifiDirectManager(
     }
 
     override suspend fun onBusMessage(
-        busId: MessageBusIdInt,
-        msg: BusMessageInt<PipeMessageType, Any>
+        busId: BusMessageIdApi,
+        msg: BusMessageApi<PipeMessageType, Any>
     ) {
         val tag = "channelOnReceive/${randomString(2U)}"
 
         logd(tag, "channelId: $busId inputType: ${msg.type}")
         when (busId) {
-            MessageBusId.ToWifi -> {
+            BusMessageId.ToWifi -> {
                 when (msg.type) {
                     PipeMessageType.WifiBroadcastReceiver -> {
                         if (null != msg.data) {

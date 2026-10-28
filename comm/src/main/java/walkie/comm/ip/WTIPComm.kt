@@ -15,14 +15,14 @@ import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.util.generic.MessageBus
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtModule.MessageBusId
+import walkie.talkie.api.wtModule.BusMessageId
 import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.TCPClient
 import walkie.util.TCPServer
-import walkie.util.api.MessageBusIdInt
-import walkie.util.api.BusMessageInt
-import walkie.util.api.MessageBusInt
+import walkie.util.api.BusMessageIdApi
+import walkie.util.api.BusMessageApi
+import walkie.util.api.MessageBusApi
 import walkie.util.exceptionToString
 import walkie.util.generic.BlockingQueue
 import walkie.util.generic.EventDispatcher
@@ -51,11 +51,11 @@ class WTIPCommStatic private constructor() {
 class WTIPComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _pipeMux: MessageBusInt<PipeMessageType, Any> = MessageBus<PipeMessageType, Any>(),
+    private val _pipeMux: MessageBusApi<PipeMessageType, Any> = MessageBus<PipeMessageType, Any>(),
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) :
-    MessageBusInt<PipeMessageType, Any> by _pipeMux,
+    MessageBusApi<PipeMessageType, Any> by _pipeMux,
     ModuleOpInt by _moduleOp,
     EventDispatcherInt<Any> by _callBackList
 {
@@ -135,8 +135,8 @@ class WTIPComm (
     }
 
     override suspend fun onBusMessage(
-        busId: MessageBusIdInt,
-        msg: BusMessageInt<PipeMessageType, Any>
+        busId: BusMessageIdApi,
+        msg: BusMessageApi<PipeMessageType, Any>
         ) {
         val tag = "channelOnReceive/${randomString(2u)}"
         val type = msg.type
@@ -145,7 +145,7 @@ class WTIPComm (
         logd(tag, "channelId: $busId inputType: $type input: $data")
 
         when (busId) {
-            MessageBusId.ToIpComm -> {
+            BusMessageId.ToIpComm -> {
                 when (type) {
                     /*
                     WTChannelMessageType.RCStop -> {

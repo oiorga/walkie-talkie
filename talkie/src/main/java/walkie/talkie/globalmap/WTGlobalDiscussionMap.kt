@@ -19,14 +19,14 @@ import walkie.talkie.api.wtchat.DiscussionAbs
 import walkie.talkie.api.wtchat.DiscussionMapAbs
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtModule.MessageBusId
+import walkie.talkie.api.wtModule.BusMessageId
 import walkie.talkie.api.wtModule.PipeMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.node.NodeId
-import walkie.util.api.MessageBusIdInt
-import walkie.util.api.BusMessageInt
-import walkie.util.api.MessageBusInt
+import walkie.util.api.BusMessageIdApi
+import walkie.util.api.BusMessageApi
+import walkie.util.api.MessageBusApi
 import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.BusMessage
 import walkie.util.generic.RemoteCallMux
@@ -46,11 +46,11 @@ data class DiscussionMap(
     private val systemNode: NodeIdInt,
     val scope: CoroutineScope,
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
-    private val _pipeMux: MessageBusInt<PipeMessageType, Any> = MessageBus(),
+    private val _pipeMux: MessageBusApi<PipeMessageType, Any> = MessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) : RemoteCallMuxInt by _remoteCallMux,
     ModuleOpInt by _moduleOp,
-    MessageBusInt<PipeMessageType, Any> by _pipeMux
+    MessageBusApi<PipeMessageType, Any> by _pipeMux
 {
     lateinit var updateUiLiveData: UpdateUiLiveData
 
@@ -213,12 +213,12 @@ data class DiscussionMap(
     }
 
     override suspend fun onBusMessage(
-        busId: MessageBusIdInt,
-        msg: BusMessageInt<PipeMessageType, Any>
+        busId: BusMessageIdApi,
+        msg: BusMessageApi<PipeMessageType, Any>
         ) {
         val data = msg.data
         when (busId) {
-            MessageBusId.ToChat -> {
+            BusMessageId.ToChat -> {
                 recvFromComm(data as CommPacket)
             }
             else -> {
