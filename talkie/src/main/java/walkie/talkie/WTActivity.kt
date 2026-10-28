@@ -50,7 +50,7 @@ import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtmisc.InfoMap
 import walkie.talkie.api.wtmisc.WTNavigation
 import walkie.talkie.api.wtModule.BusMessageId
-import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.WTBusMessageType
 import walkie.talkie.api.wtModule.RemoteCallId
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.generic.MessageBus
@@ -70,13 +70,13 @@ import kotlin.getValue
 import kotlin.system.exitProcess
 
 class WTActivity(
-    private val _pipeMux: MessageBusApi<PipeMessageType, Any> = MessageBus(),
+    private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux, _remoteCallMux)
 ) :
     ComponentActivity(),
     ModuleOpInt by _moduleOp,
-    MessageBusApi<PipeMessageType, Any> by _pipeMux,
+    MessageBusApi<WTBusMessageType, Any> by _pipeMux,
     RemoteCallMuxInt by _remoteCallMux {
 
         companion object {
@@ -251,14 +251,14 @@ class WTActivity(
     private val info1 = InfoMap(groupIdWDI)
     override suspend fun onBusMessage(
         busId: BusMessageIdApi,
-        msg: BusMessageApi<PipeMessageType, Any>
+        msg: BusMessageApi<WTBusMessageType, Any>
     ) {
         val type = msg.type
         val data = msg.data
         when (busId) {
             BusMessageId.ToActivity -> {
                 when (type) {
-                    PipeMessageType.WifiDebugInfoMessage -> {
+                    WTBusMessageType.WifiDebugInfoMessage -> {
                         val groupId = groupIdWDI
                         if (info1["b"] != data as String) {
                             info1["b"] = data
@@ -284,7 +284,7 @@ class WTActivity(
                             wtHub.sendChatMessage(message)
                         }
                     }
-                    PipeMessageType.MeshDebugInfoMessage -> {
+                    WTBusMessageType.MeshDebugInfoMessage -> {
                         val groupId = groupIdWDI
                         if (info1["a"] != data as String) {
                             info1["a"] = data
@@ -310,7 +310,7 @@ class WTActivity(
                             wtHub.sendChatMessage(message)
                         }
                     }
-                    PipeMessageType.WifiRestartChannel -> {
+                    WTBusMessageType.WifiRestartChannel -> {
                         logd(tag, "RCWifiRestartChannel")
                         wifiRestartChannel()
                         wtHub.wtComm.wtPRMComm.wtIPComm.stop()

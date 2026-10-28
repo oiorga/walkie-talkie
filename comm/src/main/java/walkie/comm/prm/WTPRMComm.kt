@@ -17,7 +17,7 @@ import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.WTMedium
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.BusMessageId
-import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.WTBusMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
@@ -37,11 +37,11 @@ import java.net.InetAddress
 class WTPRMComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _pipeMux: MessageBusApi<PipeMessageType, Any> = MessageBus(),
+    private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) :
-    MessageBusApi<PipeMessageType, Any> by _pipeMux,
+    MessageBusApi<WTBusMessageType, Any> by _pipeMux,
     ModuleOpInt by _moduleOp,
     EventDispatcherInt<Any> by _callBackList
 {
@@ -175,7 +175,7 @@ class WTPRMComm (
 
     override suspend fun onBusMessage(
         busId: BusMessageIdApi,
-        msg: BusMessageApi<PipeMessageType, Any>
+        msg: BusMessageApi<WTBusMessageType, Any>
     ) {
         val tag = "channelOnReceive/${randomString(2u)}"
         val type = msg.type
@@ -190,10 +190,10 @@ class WTPRMComm (
         when (busId) {
             BusMessageId.ToPRMComm -> {
                 when (type) {
-                    PipeMessageType.ControlMesh -> {
+                    WTBusMessageType.ControlMesh -> {
                         wtMesh.addPeersJson(data as String)
                     }
-                    PipeMessageType.LocalIp -> {
+                    WTBusMessageType.LocalIp -> {
                         val localIpAddress = (if (null != data) data as InetAddress else null)
                         logd(TAGKClass,
                             tag,
@@ -203,7 +203,7 @@ class WTPRMComm (
                             to = WTModOpArg.To.IpComm,
                             msg = WTModOpArg.Msg(
                                 BusMessage(
-                                    PipeMessageType.LocalIp,
+                                    WTBusMessageType.LocalIp,
                                     localIpAddress
                                 )
                             )
@@ -226,10 +226,10 @@ class WTPRMComm (
                             */
                         }
                     }
-                    PipeMessageType.GroupServerPort -> {
+                    WTBusMessageType.GroupServerPort -> {
 
                     }
-                    PipeMessageType.GroupInfo -> {
+                    WTBusMessageType.GroupInfo -> {
                         val (name, ipAddress, serverPort) = data as Triple<*, *, *>
                         val groupOwnerName = (if (null != name ) name as String else null)
                         val groupIpAddress = (if (null != ipAddress ) ipAddress as InetAddress else null)
@@ -296,7 +296,7 @@ class WTPRMComm (
                 to = WTModOpArg.To.Activity,
                 msg = WTModOpArg.Msg(
                     BusMessage(
-                        PipeMessageType.MeshDebugInfoMessage,
+                        WTBusMessageType.MeshDebugInfoMessage,
                         str
                     )
                 )

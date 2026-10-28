@@ -1,4 +1,5 @@
-package walkie.util.generic
+package walkie.util.api
+
 
 interface ModuleOpInterface<TArg> {
     fun set(prop: TArg, value: TArg): TArg

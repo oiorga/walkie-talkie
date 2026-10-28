@@ -20,7 +20,7 @@ import walkie.talkie.api.wtchat.DiscussionMapAbs
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.BusMessageId
-import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.WTBusMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.node.NodeId
@@ -46,11 +46,11 @@ data class DiscussionMap(
     private val systemNode: NodeIdInt,
     val scope: CoroutineScope,
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
-    private val _pipeMux: MessageBusApi<PipeMessageType, Any> = MessageBus(),
+    private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) : RemoteCallMuxInt by _remoteCallMux,
     ModuleOpInt by _moduleOp,
-    MessageBusApi<PipeMessageType, Any> by _pipeMux
+    MessageBusApi<WTBusMessageType, Any> by _pipeMux
 {
     lateinit var updateUiLiveData: UpdateUiLiveData
 
@@ -124,7 +124,7 @@ data class DiscussionMap(
             to = WTModOpArg.To.CommonData,
             msg = WTModOpArg.Msg(
                 BusMessage(
-                    PipeMessageType.UpdateChatUI,
+                    WTBusMessageType.UpdateChatUI,
                     chatMessage.groupId.type
                 )
             )
@@ -214,7 +214,7 @@ data class DiscussionMap(
 
     override suspend fun onBusMessage(
         busId: BusMessageIdApi,
-        msg: BusMessageApi<PipeMessageType, Any>
+        msg: BusMessageApi<WTBusMessageType, Any>
         ) {
         val data = msg.data
         when (busId) {
@@ -232,7 +232,7 @@ data class DiscussionMap(
         val tag = "sendToComm/${randomString(2U)}"
         val logF = chatMessage.groupId.type == ChatGroupType.RemoteChat || chatMessage.groupId.type == ChatGroupType.RemoteChatTesting
 
-        val messageType = if (null == receiver) PipeMessageType.ChatMessageLoopback else PipeMessageType.ChatMessage
+        val messageType = if (null == receiver) WTBusMessageType.ChatMessageLoopback else WTBusMessageType.ChatMessage
         val receiverId = receiver?.node?.id() ?: chatMessage.sender.node.id()
         val receiverUnique = receiver?.node?.unique() ?: chatMessage.sender.node.unique()
 

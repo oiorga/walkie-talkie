@@ -16,7 +16,7 @@ import walkie.util.generic.MessageBus
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.BusMessageId
-import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.WTBusMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.TCPClient
 import walkie.util.TCPServer
@@ -51,11 +51,11 @@ class WTIPCommStatic private constructor() {
 class WTIPComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _pipeMux: MessageBusApi<PipeMessageType, Any> = MessageBus<PipeMessageType, Any>(),
+    private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus<WTBusMessageType, Any>(),
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) :
-    MessageBusApi<PipeMessageType, Any> by _pipeMux,
+    MessageBusApi<WTBusMessageType, Any> by _pipeMux,
     ModuleOpInt by _moduleOp,
     EventDispatcherInt<Any> by _callBackList
 {
@@ -136,7 +136,7 @@ class WTIPComm (
 
     override suspend fun onBusMessage(
         busId: BusMessageIdApi,
-        msg: BusMessageApi<PipeMessageType, Any>
+        msg: BusMessageApi<WTBusMessageType, Any>
         ) {
         val tag = "channelOnReceive/${randomString(2u)}"
         val type = msg.type
@@ -153,7 +153,7 @@ class WTIPComm (
                         /* stop() */
                     }
                     */
-                    PipeMessageType.LocalIp -> {
+                    WTBusMessageType.LocalIp -> {
                         localServerIpAddress = if (null != data) data as InetAddress else null
                         logd(
                             tag,
@@ -231,7 +231,7 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
                 to = WTModOpArg.To.Comm,
                 msg = WTModOpArg.Msg(
                     BusMessage(
-                        PipeMessageType.WifiMessage,
+                        WTBusMessageType.WifiMessage,
                         commPacket
                     )
                 )
@@ -242,7 +242,7 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
                 to = WTModOpArg.To.PRMComm,
                 msg = WTModOpArg.Msg(
                     BusMessage(
-                        PipeMessageType.ControlMesh,
+                        WTBusMessageType.ControlMesh,
                         decodedJSon.jsonString
                     )
                 )

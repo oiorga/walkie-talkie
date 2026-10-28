@@ -21,7 +21,7 @@ import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.wtdebug.WTDebugInt
 import walkie.talkie.api.wtModule.BusMessageId
-import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.WTBusMessageType
 import walkie.util.CoroutineRuntime
 import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
@@ -36,10 +36,10 @@ import walkie.wifidirect.WiFiDirectBroadcastReceiver
 
 class WTDataHub private constructor (
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
-    private val _pipeMux: MessageBusApi<PipeMessageType, Any> = MessageBus(),
+    private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) : RemoteCallMuxInt by _remoteCallMux,
-    MessageBusApi<PipeMessageType, Any> by _pipeMux,
+    MessageBusApi<WTBusMessageType, Any> by _pipeMux,
     ModuleOpInt by _moduleOp,
     WTDebugInt
 {
@@ -89,7 +89,7 @@ class WTDataHub private constructor (
 
     override suspend fun onBusMessage(
         busId: BusMessageIdApi,
-        msg: BusMessageApi<PipeMessageType, Any>
+        msg: BusMessageApi<WTBusMessageType, Any>
         ) {
         val tag = "channelOnReceive/${randomString(2U)}"
         val type = msg.type
@@ -115,12 +115,12 @@ class WTDataHub private constructor (
 }
 
 internal fun WTDataHub.updateUI(
-    uiScreenMajor: PipeMessageType,
+    uiScreenMajor: WTBusMessageType,
     uiScreenMinor: Any?
 ): Boolean {
     val tag = "updateUI/${randomString(2U)}"
     val updateUI: Boolean = when (uiScreenMajor) {
-        PipeMessageType.UpdateChatUI -> {
+        WTBusMessageType.UpdateChatUI -> {
             wtChatUpdateUI(uiScreenMinor as ChatGroupType, wtVModel?.currentScreen())
         }
         else -> {

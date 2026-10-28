@@ -27,7 +27,7 @@ import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.wtdebug.wtError
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.BusMessageId
-import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.WTBusMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.talkie.api.wtModule.getVal
 import walkie.util.api.BusMessageIdApi
@@ -58,12 +58,12 @@ class WTWifiDirectManager(
     val manager: WifiP2pManager,
     val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _pipeMux: MessageBusApi<PipeMessageType, Any> = MessageBus(),
+    private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
     private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux, _remoteCallMux)
 ) :
     ModuleOpInt by _moduleOp,
-    MessageBusApi<PipeMessageType, Any> by _pipeMux,
+    MessageBusApi<WTBusMessageType, Any> by _pipeMux,
     RemoteCallMuxInt by _remoteCallMux {
 
     companion object {
@@ -183,7 +183,7 @@ class WTWifiDirectManager(
 
     override suspend fun onBusMessage(
         busId: BusMessageIdApi,
-        msg: BusMessageApi<PipeMessageType, Any>
+        msg: BusMessageApi<WTBusMessageType, Any>
     ) {
         val tag = "channelOnReceive/${randomString(2U)}"
 
@@ -191,7 +191,7 @@ class WTWifiDirectManager(
         when (busId) {
             BusMessageId.ToWifi -> {
                 when (msg.type) {
-                    PipeMessageType.WifiBroadcastReceiver -> {
+                    WTBusMessageType.WifiBroadcastReceiver -> {
                         if (null != msg.data) {
                             processBcastReceiverMessage(msg.data as Intent)
                         } else {
@@ -199,7 +199,7 @@ class WTWifiDirectManager(
                         }
                     }
 
-                    PipeMessageType.LocalServerPort -> {
+                    WTBusMessageType.LocalServerPort -> {
                         mainLoopInbox.send(WTWifiEvent.WTWifi.LocalServerPort(msg.data as Int))
                     }
 
@@ -223,7 +223,7 @@ class WTWifiDirectManager(
             to = WTModOpArg.To.Comm,
             msg = WTModOpArg.Msg(
                 BusMessage(
-                    type = PipeMessageType.GroupInfo,
+                    type = WTBusMessageType.GroupInfo,
                     data = Triple(null, null, null)
                 )
             )
@@ -624,7 +624,7 @@ class WTWifiDirectManager(
             to = WTModOpArg.To.Activity,
             msg = WTModOpArg.Msg(
                 BusMessage(
-                    type = PipeMessageType.WifiDebugInfoMessage,
+                    type = WTBusMessageType.WifiDebugInfoMessage,
                     data = wtWifiDirectInfo()
                 )
             )
@@ -668,7 +668,7 @@ class WTWifiDirectManager(
             to = WTModOpArg.To.Activity,
             msg = WTModOpArg.Msg(
                 BusMessage(
-                    type = PipeMessageType.WifiDebugInfoMessage,
+                    type = WTBusMessageType.WifiDebugInfoMessage,
                     data = wtWifiDirectInfo()
                 )
             )
@@ -682,7 +682,7 @@ class WTWifiDirectManager(
             to = WTModOpArg.To.Comm,
             msg = WTModOpArg.Msg(
                 BusMessage(
-                    type = PipeMessageType.GroupInfo,
+                    type = WTBusMessageType.GroupInfo,
                     data = Triple(null, null, null)
                 )
             )
@@ -724,7 +724,7 @@ class WTWifiDirectManager(
                     to = WTModOpArg.To.Comm,
                     msg = WTModOpArg.Msg(
                         BusMessage(
-                            type = PipeMessageType.GroupInfo,
+                            type = WTBusMessageType.GroupInfo,
                             data = Triple(null, null, null)
                         )
                     )
@@ -746,7 +746,7 @@ class WTWifiDirectManager(
                     to = WTModOpArg.To.Comm,
                     msg = WTModOpArg.Msg(
                         BusMessage(
-                            type = PipeMessageType.GroupInfo,
+                            type = WTBusMessageType.GroupInfo,
                             data = Triple(null, null, null)
                         )
                     )
@@ -756,7 +756,7 @@ class WTWifiDirectManager(
                     to = WTModOpArg.To.Comm,
                     msg = WTModOpArg.Msg(
                         BusMessage(
-                            type = PipeMessageType.GroupInfo,
+                            type = WTBusMessageType.GroupInfo,
                             data = Triple(wtGroupOwnerName, wtGroupIp, wtGroupServerPort)
                         )
                     )
@@ -766,7 +766,7 @@ class WTWifiDirectManager(
                     to = WTModOpArg.To.Comm,
                     msg = WTModOpArg.Msg(
                         BusMessage(
-                            type = PipeMessageType.LocalIp,
+                            type = WTBusMessageType.LocalIp,
                             data = wtLocalIp
                         )
                     )
@@ -789,7 +789,7 @@ class WTWifiDirectManager(
                     to = WTModOpArg.To.Comm,
                     msg = WTModOpArg.Msg(
                         BusMessage(
-                            type = PipeMessageType.LocalIp,
+                            type = WTBusMessageType.LocalIp,
                             data = wtLocalIp
                         )
                     )
@@ -1205,7 +1205,7 @@ class WTWifiDirectManager(
             to = WTModOpArg.To.Activity,
             msg = WTModOpArg.Msg(
                 BusMessage(
-                    type = PipeMessageType.WifiDebugInfoMessage,
+                    type = WTBusMessageType.WifiDebugInfoMessage,
                     data = wtWifiDirectInfo()
                 )
             )
@@ -1215,7 +1215,7 @@ class WTWifiDirectManager(
             to = WTModOpArg.To.Activity,
             msg = WTModOpArg.Msg(
                 BusMessage(
-                    type = PipeMessageType.WifiRestartChannel,
+                    type = WTBusMessageType.WifiRestartChannel,
                     data = null
                 )
             )

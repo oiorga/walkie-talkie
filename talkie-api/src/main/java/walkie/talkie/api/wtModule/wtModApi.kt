@@ -5,21 +5,21 @@ import walkie.talkie.api.wtdebug.wtError
 import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
 import walkie.util.api.MessageBusApi
+import walkie.util.api.ModuleOpInterface
 import walkie.util.api.RemoteCallIdInt
 import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.MessageBus
-import walkie.util.generic.ModuleOpInterface
 import walkie.util.generic.RemoteCallMux
 import walkie.util.randomString
 
 interface ModuleOpInt : ModuleOpInterface<WTModOpArg>
-typealias WTPipeMessage = BusMessageApi<PipeMessageType, Any>
+typealias WTPipeMessage = BusMessageApi<WTBusMessageType, Any>
 
 class ModuleOpImpl(
-    private val _busMap: MessageBusApi<PipeMessageType, Any> = MessageBus(),
+    private val _busMap: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
     private val _callMap: RemoteCallMuxInt = RemoteCallMux()
 ):
-    MessageBusApi<PipeMessageType, Any> by _busMap,
+    MessageBusApi<WTBusMessageType, Any> by _busMap,
     RemoteCallMuxInt by _callMap,
     ModuleOpInt
 {
@@ -129,7 +129,7 @@ sealed class WTModOpArg {
     }
 
     data class OnEventInfo(
-        val onEvent: (suspend (BusMessageIdApi, BusMessageApi<PipeMessageType, Any>) -> Unit),
+        val onEvent: (suspend (BusMessageIdApi, BusMessageApi<WTBusMessageType, Any>) -> Unit),
         val scope: CoroutineScope
     ) : WTModOpArg()
     data class Msg(val msg: WTPipeMessage) : WTModOpArg()
@@ -145,7 +145,7 @@ inline fun <reified Out> ModuleOpInt.getVal(
     return (this.get(id) as? WTModOpArg.Data<*>)?.value as? Out
 }
 
-enum class PipeMessageType {
+enum class WTBusMessageType {
     PipeMessageNA,
     ControlMesh,
     ChatMessage,

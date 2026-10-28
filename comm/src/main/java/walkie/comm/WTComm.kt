@@ -15,7 +15,7 @@ import walkie.talkie.api.wtcomm.WTCommPacketIn
 import walkie.talkie.api.wtcomm.WTCommPacketOut
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.BusMessageId
-import walkie.talkie.api.wtModule.PipeMessageType
+import walkie.talkie.api.wtModule.WTBusMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
@@ -29,10 +29,10 @@ import walkie.util.randomString
 class WTComm (
     private val nodeId: NodeIdInt,
     val scope: CoroutineScope,
-    private val _pipeMux: MessageBusApi<PipeMessageType, Any> = MessageBus(),
+    private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 
-) : MessageBusApi<PipeMessageType, Any> by _pipeMux,
+) : MessageBusApi<WTBusMessageType, Any> by _pipeMux,
     ModuleOpInt by _moduleOp,
     WTCommChatMessageIn,
     WTCommChatMessageOut,
@@ -93,7 +93,7 @@ class WTComm (
                 to = WTModOpArg.To.CommonData,
                 msg = WTModOpArg.Msg(
                     BusMessage(
-                        PipeMessageType.UpdatePeersUI,
+                        WTBusMessageType.UpdatePeersUI,
                         null
                     )
                 )
@@ -106,7 +106,7 @@ class WTComm (
                 to = WTModOpArg.To.Wifi,
                 msg = WTModOpArg.Msg(
                     BusMessage(
-                        PipeMessageType.LocalServerPort,
+                        WTBusMessageType.LocalServerPort,
                         serverPort!!
                     )
                 )
@@ -132,7 +132,7 @@ class WTComm (
             to = WTModOpArg.To.Chat,
             msg = WTModOpArg.Msg(
                 BusMessage(
-                    PipeMessageType.CommToChatPacket,
+                    WTBusMessageType.CommToChatPacket,
                     commPacket
                 )
             )
@@ -150,42 +150,42 @@ class WTComm (
         }
     }
 
-    override suspend fun onBusMessage(busId: BusMessageIdApi, msg: BusMessageApi<PipeMessageType, Any>) {
+    override suspend fun onBusMessage(busId: BusMessageIdApi, msg: BusMessageApi<WTBusMessageType, Any>) {
         val tag = "channelOnReceive/${randomString(2U)}"
         val type = msg.type
         val data = msg.data
-        val logF = (type == PipeMessageType.ChatMessage || type == PipeMessageType.ChatMessageLoopback)
+        val logF = (type == WTBusMessageType.ChatMessage || type == WTBusMessageType.ChatMessageLoopback)
         logd(tag, "channelOnReceive: channelId: $busId inputType: $type")
 
         when (busId) {
             BusMessageId.ToComm -> {
                 when (type) {
-                    PipeMessageType.WifiMessage -> {
+                    WTBusMessageType.WifiMessage -> {
                         commPacketIn(data as CommPacketInt)
                     }
-                    PipeMessageType.ChatMessage -> {
+                    WTBusMessageType.ChatMessage -> {
                         commPacketOut(data as CommPacketInt)
                     }
-                    PipeMessageType.ChatMessageLoopback -> {
+                    WTBusMessageType.ChatMessageLoopback -> {
                         chatMessageLoopback(data as CommPacketInt)
                     }
-                    PipeMessageType.LocalIp -> {
+                    WTBusMessageType.LocalIp -> {
                         send(
                             to = WTModOpArg.To.PRMComm,
                             msg = WTModOpArg.Msg(
                                 BusMessage(
-                                    PipeMessageType.LocalIp,
+                                    WTBusMessageType.LocalIp,
                                     data
                                 )
                             )
                         )
                     }
-                    PipeMessageType.GroupInfo -> {
+                    WTBusMessageType.GroupInfo -> {
                         send(
                             to = WTModOpArg.To.PRMComm,
                             msg = WTModOpArg.Msg(
                                 BusMessage(
-                                    PipeMessageType.GroupInfo,
+                                    WTBusMessageType.GroupInfo,
                                     data
                                 )
                             )
