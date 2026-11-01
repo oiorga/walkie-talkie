@@ -6,10 +6,10 @@ import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
 import walkie.util.api.MessageBusApi
 import walkie.util.api.ModuleOpInterface
-import walkie.util.api.RemoteCallIdInt
-import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.MessageBus
-import walkie.util.generic.RemoteCallMux
+import walkie.util.generic.RemoteCall
+import walkie.util.generic.RemoteCallApi
+import walkie.util.generic.RemoteCallIdApi
 import walkie.util.randomString
 
 interface ModuleOpInt : ModuleOpInterface<WTModOpArg>
@@ -17,10 +17,10 @@ typealias WTPipeMessage = BusMessageApi<WTBusMessageType, Any>
 
 class ModuleOpImpl(
     private val _busMap: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
-    private val _callMap: RemoteCallMuxInt = RemoteCallMux()
+    private val _callMap: RemoteCallApi<WTRemoteCallId> = RemoteCall()
 ):
     MessageBusApi<WTBusMessageType, Any> by _busMap,
-    RemoteCallMuxInt by _callMap,
+    RemoteCallApi<WTRemoteCallId> by _callMap,
     ModuleOpInt
 {
     companion object {
@@ -120,12 +120,12 @@ sealed class WTModOpArg {
         object Chat: To(BusMessageId.ToChat)
     }
 
-    sealed class Prop(val id: RemoteCallIdInt): WTModOpArg() {
-        object WifiPerm: Prop(RemoteCallId.RCCheckWifiDPermissions)
+    sealed class Prop(val id: WTRemoteCallId): WTModOpArg() {
+        object WifiPerm: Prop(WTRemoteCallId.RCCheckWifiDPermissions)
     }
 
-    sealed class Cmd(val id: RemoteCallIdInt): WTModOpArg() {
-        object WifiPermRequest: Cmd(RemoteCallId.RCRequestWifiDPermissions)
+    sealed class Cmd(val id: WTRemoteCallId): WTModOpArg() {
+        object WifiPermRequest: Cmd(WTRemoteCallId.RCRequestWifiDPermissions)
     }
 
     data class OnEventInfo(
@@ -175,7 +175,7 @@ enum class BusMessageId : BusMessageIdApi {
     TOCommonData
 }
 
-enum class RemoteCallId : RemoteCallIdInt {
+enum class WTRemoteCallId : RemoteCallIdApi {
     RCDummy0, RCDummy1, RCDummy2, RCDummy3, RCDummy4, RCDummy5, RCDummy6, RCDummy7, RCDummy8, RCDummy9,
     RCNA,
     RCCheckWifiDPermissions,

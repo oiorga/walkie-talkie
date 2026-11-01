@@ -29,17 +29,18 @@ import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.BusMessageId
 import walkie.talkie.api.wtModule.WTBusMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
+import walkie.talkie.api.wtModule.WTRemoteCallId
 import walkie.talkie.api.wtModule.getVal
 import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
 import walkie.util.api.MessageBusApi
-import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.MessageBus
 import walkie.util.generic.GenericList
 import walkie.util.generic.Mailbox
 import walkie.util.generic.MailboxData
 import walkie.util.generic.BusMessage
-import walkie.util.generic.RemoteCallMux
+import walkie.util.generic.RemoteCall
+import walkie.util.generic.RemoteCallApi
 import walkie.util.logd
 import walkie.util.logdAppend
 import walkie.util.logging
@@ -59,12 +60,12 @@ class WTWifiDirectManager(
     val node: NodeIdInt,
     val scope: CoroutineScope,
     private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
-    private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux, _remoteCallMux)
+    private val _callMap: RemoteCallApi<WTRemoteCallId> = RemoteCall(),
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux, _callMap)
 ) :
     ModuleOpInt by _moduleOp,
     MessageBusApi<WTBusMessageType, Any> by _pipeMux,
-    RemoteCallMuxInt by _remoteCallMux {
+    RemoteCallApi<WTRemoteCallId> by _callMap {
 
     companion object {
         const val TAG = "WTWiFiDirectManager"

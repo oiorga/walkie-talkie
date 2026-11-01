@@ -22,12 +22,13 @@ import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.wtdebug.WTDebugInt
 import walkie.talkie.api.wtModule.BusMessageId
 import walkie.talkie.api.wtModule.WTBusMessageType
+import walkie.talkie.api.wtModule.WTRemoteCallId
 import walkie.util.CoroutineRuntime
 import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
 import walkie.util.api.MessageBusApi
-import walkie.util.api.RemoteCallMuxInt
-import walkie.util.generic.RemoteCallMux
+import walkie.util.generic.RemoteCall
+import walkie.util.generic.RemoteCallApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -35,10 +36,10 @@ import walkie.wifidirect.WTWifiDirectManager
 import walkie.wifidirect.WiFiDirectBroadcastReceiver
 
 class WTDataHub private constructor (
-    private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
+    private val _callMap: RemoteCallApi<WTRemoteCallId> = RemoteCall(),
     private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
-) : RemoteCallMuxInt by _remoteCallMux,
+) : RemoteCallApi<WTRemoteCallId> by _callMap,
     MessageBusApi<WTBusMessageType, Any> by _pipeMux,
     ModuleOpInt by _moduleOp,
     WTDebugInt

@@ -22,33 +22,28 @@ import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.BusMessageId
 import walkie.talkie.api.wtModule.WTBusMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
+import walkie.talkie.api.wtModule.WTRemoteCallId
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.node.NodeId
 import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
 import walkie.util.api.MessageBusApi
-import walkie.util.api.RemoteCallMuxInt
 import walkie.util.generic.BusMessage
-import walkie.util.generic.RemoteCallMux
+import walkie.util.generic.RemoteCall
+import walkie.util.generic.RemoteCallApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
 
-/**
- *
- *
- *
- *
- */
 data class DiscussionMap(
     val discussionMap: DiscussionMapAbs,
     private val groupMap: ChatGroupMap,
     private val systemNode: NodeIdInt,
     val scope: CoroutineScope,
-    private val _remoteCallMux: RemoteCallMuxInt = RemoteCallMux(),
+    private val _callMap: RemoteCallApi<WTRemoteCallId> = RemoteCall(),
     private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
-) : RemoteCallMuxInt by _remoteCallMux,
+) : RemoteCallApi<WTRemoteCallId> by _callMap,
     ModuleOpInt by _moduleOp,
     MessageBusApi<WTBusMessageType, Any> by _pipeMux
 {

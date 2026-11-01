@@ -1,16 +1,26 @@
 package walkie.util.api
 
-interface RemoteCallIdInt
+interface RemoteCallBaseIdApi
 
-interface RemoteCallMuxBaseInt<In, Out> {
-    val callMap: Map<RemoteCallIdInt, (input : In?) -> Out>
-
-    fun callMapImport (callMap: Map<RemoteCallIdInt, (input : In?) -> Out>)
-    fun registerRemoteCall (remoteCallId: RemoteCallIdInt, callBack: (input: In?) -> Out)
-    fun remoteCall (remoteCallId: RemoteCallIdInt, input: In) : Out?
-    fun remoteCall (remoteCallId: RemoteCallIdInt) : Out?
-    fun remoteCallAdd(callImpl: RemoteCallMuxBaseInt<In, Out>)
-    fun remoteCallJoin(callImpl: RemoteCallMuxBaseInt<In, Out>)
+interface RemoteCallBaseApi<CallId, RemoteHandler, CallInput, CallResult> {
+    val callMap: Map<CallId, RemoteHandler>
+    fun callMapMergeIn (callMap: Map<CallId, RemoteHandler>)
+    fun registerRemoteCall(remoteCallId: CallId, remoteHandler: RemoteHandler)
+    fun remoteCall (remoteCallId: CallId, input: CallInput) : CallResult?
+    fun remoteCall (remoteCallId: CallId) : CallResult?
+    fun remoteCallAdd(callImpl: RemoteCallBaseApi<CallId, RemoteHandler, CallInput, CallResult>)
+    fun remoteCallJoin(callImpl: RemoteCallBaseApi<CallId, RemoteHandler, CallInput, CallResult>)
 }
 
-interface RemoteCallMuxInt: RemoteCallMuxBaseInt<Any, Any>
+fun interface RemoteCallBaseHandler<CallInput, CallResult> {
+    fun execute(input: CallInput?): CallResult?
+    fun call(input: CallInput?): CallResult? = execute(input)
+}
+
+/*
+typealias RemoteRemoteCallHandler<CallInput, CallResult><CallInput, CallResult> = (CallInput) -> CallResult?
+
+interface RemoteRemoteCallHandler<CallInput, CallResult> {
+    fun <CallInput, CallResult> execute(input: CallInput): CallResult?
+}
+*/
