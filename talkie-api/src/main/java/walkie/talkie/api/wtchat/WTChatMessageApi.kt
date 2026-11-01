@@ -1,7 +1,7 @@
 package walkie.talkie.api.wtchat
 
 import android.util.Log
-import walkie.util.generic.GenericListAbs
+import walkie.util.GenericListAbs
 import walkie.talkie.api.wtcomm.CommPacketInt
 import walkie.talkie.api.wtsystem.NodeIdInt
 

@@ -22,8 +22,8 @@ import walkie.talkie.playground.commSquirrelWheel
 import walkie.util.CoroutineRuntime
 import walkie.util.Logging
 import walkie.util.api.busAdd
-import walkie.util.generateBinaryRec
-import walkie.util.generic.genericListOf
+import walkie.util.misc.generateBinaryRec
+import walkie.util.genericListOf
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString

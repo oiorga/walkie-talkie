@@ -1,11 +1,9 @@
-package walkie.util.generic
+package walkie.util
 
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.withTimeout
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 
 sealed class MailboxData<out T> {
     data class Message<T>(val value: T) : MailboxData<T>()

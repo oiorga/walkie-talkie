@@ -1,8 +1,7 @@
-package walkie.util.generic
+package walkie.util
 
 import android.os.Build
 import android.util.Log
-import kotlinx.serialization.Serializable
 
 /**
  * abstract class GenericListAbs

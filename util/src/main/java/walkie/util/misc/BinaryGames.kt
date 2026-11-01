@@ -1,7 +1,7 @@
-package walkie.util
+package walkie.util.misc
 
 import android.util.Log
-import walkie.util.generic.GenericList
+import walkie.util.GenericList
 import kotlin.math.pow
 
 fun incBinary(listIn: GenericList<Int>, base: Int = 2, length: Int = 4) : GenericList<Int> {

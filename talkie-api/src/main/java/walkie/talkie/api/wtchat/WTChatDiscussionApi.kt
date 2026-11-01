@@ -1,7 +1,7 @@
 package walkie.talkie.api.wtchat
 
-import walkie.util.generic.GenericListAbs
-import walkie.util.generic.GenericMapAbs
+import walkie.util.GenericListAbs
+import walkie.util.GenericMapAbs
 
 abstract class DiscussionAbs (
     open val discussionId: ChatGroupIdInt,

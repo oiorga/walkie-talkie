@@ -1,1 +1,0 @@
-package walkie.util.generic

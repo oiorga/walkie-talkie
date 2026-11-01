@@ -41,8 +41,8 @@
 -keep class walkie.talkie.api.wtchat.SenderInt
 -keep class walkie.talkie.api.wtcomm.CommPacket
 -keep class walkie.talkie.api.wtdebug.WTDebugInt
--keep class walkie.util.generic.GenericList
--keep class walkie.util.generic.GenericListAbs
+-keep class walkie.util.GenericList
+-keep class walkie.util.GenericListAbs
 -keep class walkie.api.wtgeneric.WTGenericIntKt
 -keep class walkie.talkie.api.wtmisc.InfoMap
 -keep class walkie.talkie.api.wtmisc.WTNavigation$Back

@@ -1,11 +1,9 @@
-package walkie.util.generic
+package walkie.util
 
 import android.util.Log
 import walkie.util.api.RemoteCallBaseApi
 import walkie.util.api.RemoteCallBaseHandler
 import walkie.util.api.RemoteCallBaseIdApi
-
-import walkie.util.logd
 
 open class RemoteCallBase<CallId, CallInput, CallResult>() :
     RemoteCallBaseApi<CallId, RemoteCallBaseHandler<*, *>, CallInput, CallResult> {
@@ -91,59 +89,3 @@ class RemoteCall<CallId>(
 
 interface RemoteCallApi<CallId>: RemoteCallBaseApi<CallId, RemoteCallBaseHandler<*, *>, Any, Any>
 interface RemoteCallIdApi: RemoteCallBaseIdApi
-
-/*
-open class RemoteCallBase<CallId, CallInput, CallResult>() :
-    RemoteCallApi<CallId, RemoteCallHandler<CallInput, CallResult>, CallInput, CallResult> {
-    private var _callMap: MutableMap<CallId, RemoteCallHandler<CallInput, CallResult>> = mutableMapOf()
-    override val callMap: Map<CallId, RemoteCallHandler<CallInput, CallResult>>
-        get() = _callMap
-
-    private val tag = "RemoteCallMux"
-    private val lock = Any()
-
-    init {
-        Log.d (tag, "$tag init")
-    }
-
-    override fun callMapImport(callMap: Map<CallId, RemoteCallHandler<CallInput, CallResult>>) {
-        TODO("Not yet implemented")
-    }
-
-    override fun registerRemoteCall(
-        remoteCallId: RemoteCallIdApi<CallId>,
-        remoteHandler: RemoteCallHandler<CallInput, CallResult>
-    ) {
-        synchronized(lock) {
-            if (null != _callMap[remoteCallId.value])
-                Log.d(tag, "$tag: register: callback $remoteCallId already exists")
-            _callMap[remoteCallId.value] = remoteHandler
-        }    }
-
-    override fun remoteCall(
-        remoteCallId: RemoteCallIdApi<CallId>,
-        input: CallInput
-    ): CallResult? = synchronized(lock) {
-            _callMap[remoteCallId.value] }?.call(input) ?: run {
-        Log.d(tag, "$tag: call: callback $remoteCallId does not exist")
-        null
-    }
-
-    override fun remoteCall(
-        remoteCallId: RemoteCallIdApi<CallId>
-    ): CallResult? = synchronized(lock) {
-        _callMap[remoteCallId.value] }?.call(null)
-        ?: run {
-            Log.d(tag, "$tag: call: callback $remoteCallId does not exist")
-            null
-        }
-
-    override fun remoteCallAdd(callImpl: RemoteCallApi<CallId, RemoteCallHandler<CallInput, CallResult>, CallInput, CallResult>) {
-        callMapImport(callImpl.callMap)
-    }
-
-    override fun remoteCallJoin(callImpl: RemoteCallApi<CallId, RemoteCallHandler<CallInput, CallResult>, CallInput, CallResult>) {
-        callImpl.callMapImport(callMap)
-    }
-}
-*/

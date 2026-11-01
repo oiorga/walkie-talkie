@@ -10,10 +10,9 @@ import walkie.util.getRuntimeSimpleName
 import walkie.util.logd
 import walkie.util.logdAppend
 import walkie.util.logging
-import walkie.util.mesh.CountDown
+import walkie.util.misc.CountDown
 import walkie.util.randomString
 import java.net.InetAddress
-import java.util.LinkedList
 import kotlin.random.Random
 
 enum class P2pConnection {

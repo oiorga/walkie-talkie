@@ -41,8 +41,8 @@
 -keep class walkie.glue.wtchat.SenderInt
 -keep class walkie.glue.wtcomm.CommPacket
 -keep class walkie.glue.wtdebug.WTDebugInt
--keep class walkie.util.generic.GenericList
--keep class walkie.util.generic.GenericListAbs
+-keep class walkie.util.GenericList
+-keep class walkie.util.GenericListAbs
 -keep class walkie.glue.wtgeneric.WTGenericIntKt
 -keep class walkie.glue.wtmisc.InfoMap
 -keep class walkie.glue.wtmisc.WTNavigation$Back

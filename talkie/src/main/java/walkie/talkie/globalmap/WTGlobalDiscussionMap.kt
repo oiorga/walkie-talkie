@@ -12,7 +12,7 @@ import walkie.chat.Receiver
 import walkie.chat.Sender
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
-import walkie.util.generic.MessageBus
+import walkie.util.MessageBus
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
 import walkie.talkie.api.wtchat.DiscussionAbs
@@ -28,9 +28,9 @@ import walkie.talkie.node.NodeId
 import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
 import walkie.util.api.MessageBusApi
-import walkie.util.generic.BusMessage
-import walkie.util.generic.RemoteCall
-import walkie.util.generic.RemoteCallApi
+import walkie.util.BusMessage
+import walkie.util.RemoteCall
+import walkie.util.RemoteCallApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString

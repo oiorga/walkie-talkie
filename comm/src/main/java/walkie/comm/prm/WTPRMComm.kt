@@ -11,7 +11,7 @@ import walkie.comm.ip.WTIPComm
 import walkie.comm.ip.WTIPCommPacketType
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
-import walkie.util.generic.MessageBus
+import walkie.util.MessageBus
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.WTMedium
@@ -24,9 +24,9 @@ import walkie.util.api.BusMessageApi
 import walkie.util.api.MeshDispatchEventId
 import walkie.util.api.MeshKey
 import walkie.util.api.MessageBusApi
-import walkie.util.generic.EventDispatcher
-import walkie.util.generic.EventDispatcherInt
-import walkie.util.generic.BusMessage
+import walkie.util.EventDispatcher
+import walkie.util.EventDispatcherInt
+import walkie.util.BusMessage
 import walkie.util.inetToIpString
 import walkie.util.logd
 import walkie.util.logging

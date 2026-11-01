@@ -53,7 +53,7 @@ import walkie.talkie.api.wtModule.BusMessageId
 import walkie.talkie.api.wtModule.WTBusMessageType
 import walkie.talkie.api.wtModule.WTRemoteCallId
 import walkie.talkie.api.wtModule.WTModOpArg
-import walkie.util.generic.MessageBus
+import walkie.util.MessageBus
 import walkie.talkie.ui.nav.WTNavInit
 import walkie.talkie.ui.screens.customComposablesInit
 import walkie.talkie.viewmodel.WTViewModel
@@ -61,8 +61,8 @@ import walkie.talkie.viewmodel.WTViewModelFactory
 import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
 import walkie.util.api.MessageBusApi
-import walkie.util.generic.RemoteCall
-import walkie.util.generic.RemoteCallApi
+import walkie.util.RemoteCall
+import walkie.util.RemoteCallApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString

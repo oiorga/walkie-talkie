@@ -1,4 +1,4 @@
-package walkie.util.generic
+package walkie.util
 
 import walkie.util.api.DispatchEventIdInt
 

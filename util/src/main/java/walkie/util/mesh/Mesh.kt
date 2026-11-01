@@ -10,9 +10,9 @@ import walkie.util.Gate
 import walkie.util.api.BlockingQueueResult
 import walkie.util.api.MeshDispatchEventId
 import walkie.util.api.MeshKey
-import walkie.util.generic.BlockingQueue
-import walkie.util.generic.EventDispatcher
-import walkie.util.generic.EventDispatcherInt
+import walkie.util.BlockingQueue
+import walkie.util.EventDispatcher
+import walkie.util.EventDispatcherInt
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString

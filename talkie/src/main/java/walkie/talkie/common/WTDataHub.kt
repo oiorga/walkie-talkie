@@ -7,7 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.CoroutineScope
 import walkie.chat.ChatGroupMap
 import walkie.comm.WTComm
-import walkie.util.generic.MessageBus
+import walkie.util.MessageBus
 import walkie.talkie.api.wtchat.ChatGroupIdInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
@@ -27,8 +27,8 @@ import walkie.util.CoroutineRuntime
 import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
 import walkie.util.api.MessageBusApi
-import walkie.util.generic.RemoteCall
-import walkie.util.generic.RemoteCallApi
+import walkie.util.RemoteCall
+import walkie.util.RemoteCallApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString

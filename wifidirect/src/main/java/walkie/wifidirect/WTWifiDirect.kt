@@ -15,8 +15,8 @@ import walkie.talkie.api.wtModule.WTRemoteCallId
 import walkie.util.CallbackResult
 import walkie.util.awaitResult
 import walkie.util.awaitValue
-import walkie.util.generic.RemoteCall
-import walkie.util.generic.RemoteCallApi
+import walkie.util.RemoteCall
+import walkie.util.RemoteCallApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString

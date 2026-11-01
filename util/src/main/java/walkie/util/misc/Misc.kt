@@ -1,8 +1,6 @@
-package walkie.util.mesh
+package walkie.util.misc
 
 import kotlin.random.Random
-import kotlin.random.nextInt
-import kotlin.random.nextLong
 
 class CountDown(val max: Int) {
     private var counter: Int = 0

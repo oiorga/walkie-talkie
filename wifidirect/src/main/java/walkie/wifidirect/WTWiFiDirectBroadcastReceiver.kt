@@ -30,8 +30,8 @@ import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.wtModule.WTBusMessageType
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.api.MessageBusApi
-import walkie.util.generic.BusMessage
-import walkie.util.generic.MessageBus
+import walkie.util.BusMessage
+import walkie.util.MessageBus
 import walkie.util.getDeclaredSimpleName
 import walkie.util.logd
 import walkie.util.logging

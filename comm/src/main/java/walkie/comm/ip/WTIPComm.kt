@@ -12,7 +12,7 @@ import walkie.comm.WTCommDispatchEventId
 import walkie.comm.ip.WTIPComm.Companion.TAGKClass
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
-import walkie.util.generic.MessageBus
+import walkie.util.MessageBus
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtModule.BusMessageId
@@ -24,10 +24,10 @@ import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
 import walkie.util.api.MessageBusApi
 import walkie.util.exceptionToString
-import walkie.util.generic.BlockingQueue
-import walkie.util.generic.EventDispatcher
-import walkie.util.generic.EventDispatcherInt
-import walkie.util.generic.BusMessage
+import walkie.util.BlockingQueue
+import walkie.util.EventDispatcher
+import walkie.util.EventDispatcherInt
+import walkie.util.BusMessage
 import walkie.util.getInetAddressByName
 import walkie.util.logd
 import walkie.util.logging

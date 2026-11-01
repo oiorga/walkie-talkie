@@ -1,4 +1,4 @@
-package walkie.util.generic
+package walkie.util
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -10,9 +10,6 @@ import kotlinx.coroutines.launch
 import walkie.util.api.BusMessageIdApi
 import walkie.util.api.MessageBusApi
 import walkie.util.api.BusMessageApi
-import walkie.util.logd
-import walkie.util.logging
-import walkie.util.randomString
 
 data class BusMessage<T, D>(
     override val type: T,

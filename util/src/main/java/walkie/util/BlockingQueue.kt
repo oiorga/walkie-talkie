@@ -1,4 +1,4 @@
-package walkie.util.generic
+package walkie.util
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
@@ -6,9 +6,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import walkie.util.api.BlockingQueueApi
 import walkie.util.api.BlockingQueueResult
-import walkie.util.logd
-import walkie.util.logging
-import walkie.util.randomString
 import kotlin.time.Duration.Companion.milliseconds
 
 class BlockingQueue<T> (
