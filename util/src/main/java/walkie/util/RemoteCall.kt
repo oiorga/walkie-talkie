@@ -1,14 +1,15 @@
 package walkie.util
 
 import android.util.Log
+import walkie.util.api.RemoteCallApi
 import walkie.util.api.RemoteCallBaseApi
-import walkie.util.api.RemoteCallBaseHandler
-import walkie.util.api.RemoteCallBaseIdApi
+import walkie.util.api.RemoteCallHandlerBaseApi
+import walkie.util.api.RemoteCallIdBaseApi
 
 open class RemoteCallBase<CallId, CallInput, CallResult>() :
-    RemoteCallBaseApi<CallId, RemoteCallBaseHandler<*, *>, CallInput, CallResult> {
-    private var _callMap: MutableMap<CallId, RemoteCallBaseHandler<*, *>> = mutableMapOf()
-    override val callMap: Map<CallId, RemoteCallBaseHandler<*, *>>
+    RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, CallInput, CallResult> {
+    private var _callMap: MutableMap<CallId, RemoteCallHandlerBaseApi<*, *>> = mutableMapOf()
+    override val callMap: Map<CallId, RemoteCallHandlerBaseApi<*, *>>
         get() = _callMap
 
     private val tag = "RemoteCallBaseMux"
@@ -18,9 +19,9 @@ open class RemoteCallBase<CallId, CallInput, CallResult>() :
         Log.d(tag, "$tag init")
     }
 
-    override fun callMapMergeIn(callMap: Map<CallId, RemoteCallBaseHandler<*, *>>) = synchronized(lock) {
+    override fun callMapMergeIn(callMap: Map<CallId, RemoteCallHandlerBaseApi<*, *>>) = synchronized(lock) {
         val mutableCallMap =
-            callMap as? MutableMap<CallId, RemoteCallBaseHandler<*, *>> ?: run {
+            callMap as? MutableMap<CallId, RemoteCallHandlerBaseApi<*, *>> ?: run {
                 logd(tag, "callMapImport requires callMap to be backed by a MutableMap")
                 error("callMapImport requires callMap to be backed by a MutableMap")
             }
@@ -30,7 +31,7 @@ open class RemoteCallBase<CallId, CallInput, CallResult>() :
 
     override fun registerRemoteCall(
         remoteCallId: CallId,
-        remoteHandler: RemoteCallBaseHandler<*, *>
+        remoteHandler: RemoteCallHandlerBaseApi<*, *>
     ) {
         synchronized(lock) {
             if (null != _callMap[remoteCallId])
@@ -43,7 +44,7 @@ open class RemoteCallBase<CallId, CallInput, CallResult>() :
         remoteCallId: CallId,
         input: CallInput
     ): CallResult? = synchronized(lock) {
-        _callMap[remoteCallId] as? RemoteCallBaseHandler<CallInput, CallResult>
+        _callMap[remoteCallId] as? RemoteCallHandlerBaseApi<CallInput, CallResult>
     }?.call(input) ?: run {
         Log.d(tag, "$tag: call: callback $remoteCallId does not exist")
         null
@@ -52,21 +53,21 @@ open class RemoteCallBase<CallId, CallInput, CallResult>() :
     override fun remoteCall(
         remoteCallId: CallId
     ): CallResult? = synchronized(lock) {
-        _callMap[remoteCallId] as? RemoteCallBaseHandler<CallInput, CallResult>
+        _callMap[remoteCallId] as? RemoteCallHandlerBaseApi<CallInput, CallResult>
     }?.call(null) ?: run {
         Log.d(tag, "$tag: call: callback $remoteCallId does not exist")
         null
     }
 
-    override fun remoteCallAdd(callImpl: RemoteCallBaseApi<CallId, RemoteCallBaseHandler<*, *>, CallInput, CallResult>) {
+    override fun remoteCallAdd(callImpl: RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, CallInput, CallResult>) {
         callMapMergeIn(callImpl.callMap)
     }
 
-    override fun remoteCallJoin(callImpl: RemoteCallBaseApi<CallId, RemoteCallBaseHandler<*, *>, CallInput, CallResult>) {
+    override fun remoteCallJoin(callImpl: RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, CallInput, CallResult>) {
         callImpl.callMapMergeIn(callMap)
     }
 
-    fun <CallId, CallInput, CallResult> RemoteCallBaseApi<CallId, RemoteCallBaseHandler<*, *>, CallInput, CallResult>.typedCall(
+    fun <CallId, CallInput, CallResult> RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, CallInput, CallResult>.typedCall(
         callId: CallId,
         input: CallInput
     ): CallResult? {
@@ -75,7 +76,7 @@ open class RemoteCallBase<CallId, CallInput, CallResult>() :
         } ?: this.remoteCall(callId))
     }
 
-    fun <CallId, CallInput, CallResult> RemoteCallBaseApi<CallId, RemoteCallBaseHandler<*, *>, CallInput, CallResult>.typedCall(
+    fun <CallId, CallInput, CallResult> RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, CallInput, CallResult>.typedCall(
         callId: CallId
     ): CallResult? {
         return this.remoteCall(callId)
@@ -83,9 +84,8 @@ open class RemoteCallBase<CallId, CallInput, CallResult>() :
 }
 
 class RemoteCall<CallId>(
-    private val remoteCallImpl: RemoteCallBaseApi<CallId, RemoteCallBaseHandler<*, *>, Any, Any> = RemoteCallBase<CallId, Any, Any>()
+    private val remoteCallImpl: RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, Any, Any> = RemoteCallBase<CallId, Any, Any>()
 ):  RemoteCallApi<CallId>,
-    RemoteCallBaseApi<CallId, RemoteCallBaseHandler<*, *>, Any, Any> by remoteCallImpl
+    RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, Any, Any> by remoteCallImpl
 
-interface RemoteCallApi<CallId>: RemoteCallBaseApi<CallId, RemoteCallBaseHandler<*, *>, Any, Any>
-interface RemoteCallIdApi: RemoteCallBaseIdApi
+

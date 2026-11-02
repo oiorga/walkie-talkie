@@ -8,8 +8,9 @@ import walkie.util.api.MessageBusApi
 import walkie.util.api.ModuleOpInterface
 import walkie.util.MessageBus
 import walkie.util.RemoteCall
-import walkie.util.RemoteCallApi
-import walkie.util.RemoteCallIdApi
+import walkie.util.api.RemoteCallApi
+import walkie.util.api.RemoteCallIdApi
+
 import walkie.util.randomString
 
 interface ModuleOpInt : ModuleOpInterface<WTModOpArg>
@@ -131,7 +132,7 @@ sealed class WTModOpArg {
         val onEvent: (suspend (BusMessageIdApi, BusMessageApi<WTBusMessageType, Any>) -> Unit),
         val scope: CoroutineScope
     ) : WTModOpArg()
-    data class Msg(val msg: WTPipeMessage) : WTModOpArg()
+    data class Msg(val msg: WTBusMessage) : WTModOpArg()
 
     data class Data<out Data>(val value: Data?): WTModOpArg()
 
@@ -144,7 +145,7 @@ inline fun <reified Out> ModuleOpInt.getVal(
     return (this.get(id) as? WTModOpArg.Data<*>)?.value as? Out
 }
 
-typealias WTPipeMessage = BusMessageApi<WTBusMessageType, Any>
+typealias WTBusMessage = BusMessageApi<WTBusMessageType, Any>
 enum class WTBusMessageType {
     PipeMessageNA,
     ControlMesh,

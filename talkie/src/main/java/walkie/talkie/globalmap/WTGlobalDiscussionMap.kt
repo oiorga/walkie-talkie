@@ -30,7 +30,7 @@ import walkie.util.api.BusMessageApi
 import walkie.util.api.MessageBusApi
 import walkie.util.BusMessage
 import walkie.util.RemoteCall
-import walkie.util.RemoteCallApi
+import walkie.util.api.RemoteCallApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
