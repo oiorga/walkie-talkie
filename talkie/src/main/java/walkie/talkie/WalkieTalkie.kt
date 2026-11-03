@@ -138,9 +138,6 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTDataHub {
         }
         2 -> {
             customDebugInit()
-
-            /* To do it properly
-            wtHub.wtComm.start() */
         }
         else -> {
             logd(

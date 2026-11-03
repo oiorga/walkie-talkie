@@ -12,22 +12,21 @@ import walkie.chat.Receiver
 import walkie.chat.Sender
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
-import walkie.util.MessageBus
+import walkie.talkie.api.WTBusMessageId
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
 import walkie.talkie.api.wtchat.DiscussionAbs
 import walkie.talkie.api.wtchat.DiscussionMapAbs
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtModule.BusMessageId
-import walkie.talkie.api.wtModule.WTBusMessageType
+import walkie.talkie.api.WTBusMessageType
+import walkie.talkie.api.WTMessageBus
+import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.talkie.api.wtModule.WTRemoteCallId
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.node.NodeId
-import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
-import walkie.util.api.MessageBusApi
 import walkie.util.BusMessage
 import walkie.util.RemoteCall
 import walkie.util.api.RemoteCallApi
@@ -41,11 +40,11 @@ data class DiscussionMap(
     private val systemNode: NodeIdInt,
     val scope: CoroutineScope,
     private val _callMap: RemoteCallApi<WTRemoteCallId> = RemoteCall(),
-    private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
+    private val _busMux: WTMessageBusApi = WTMessageBus(),
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
 ) : RemoteCallApi<WTRemoteCallId> by _callMap,
     ModuleOpInt by _moduleOp,
-    MessageBusApi<WTBusMessageType, Any> by _pipeMux
+    WTMessageBusApi by _busMux
 {
     lateinit var updateUiLiveData: UpdateUiLiveData
 
@@ -208,12 +207,12 @@ data class DiscussionMap(
     }
 
     override suspend fun onBusMessage(
-        busId: BusMessageIdApi,
+        busId: WTBusMessageId,
         msg: BusMessageApi<WTBusMessageType, Any>
         ) {
         val data = msg.data
         when (busId) {
-            BusMessageId.ToChat -> {
+            WTBusMessageId.ToChat -> {
                 recvFromComm(data as CommPacket)
             }
             else -> {

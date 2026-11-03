@@ -24,17 +24,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
+import walkie.talkie.api.WTBusMessageId
 import walkie.talkie.api.wtdebug.wtError
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtModule.BusMessageId
-import walkie.talkie.api.wtModule.WTBusMessageType
+import walkie.talkie.api.WTBusMessageType
+import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.talkie.api.wtModule.WTRemoteCallId
 import walkie.talkie.api.wtModule.getVal
-import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
-import walkie.util.api.MessageBusApi
-import walkie.util.MessageBus
+import walkie.talkie.api.WTMessageBus
 import walkie.util.GenericList
 import walkie.util.Mailbox
 import walkie.util.MailboxData
@@ -59,12 +58,12 @@ class WTWifiDirectManager(
     val manager: WifiP2pManager,
     val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
+    private val _pipeMux: WTMessageBusApi = WTMessageBus(),
     private val _callMap: RemoteCallApi<WTRemoteCallId> = RemoteCall(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux, _callMap)
 ) :
     ModuleOpInt by _moduleOp,
-    MessageBusApi<WTBusMessageType, Any> by _pipeMux,
+    WTMessageBusApi by _pipeMux,
     RemoteCallApi<WTRemoteCallId> by _callMap {
 
     companion object {
@@ -183,14 +182,14 @@ class WTWifiDirectManager(
     }
 
     override suspend fun onBusMessage(
-        busId: BusMessageIdApi,
+        busId: WTBusMessageId,
         msg: BusMessageApi<WTBusMessageType, Any>
     ) {
         val tag = "channelOnReceive/${randomString(2U)}"
 
         logd(tag, "channelId: $busId inputType: ${msg.type}")
         when (busId) {
-            BusMessageId.ToWifi -> {
+            WTBusMessageId.ToWifi -> {
                 when (msg.type) {
                     WTBusMessageType.WifiBroadcastReceiver -> {
                         if (null != msg.data) {

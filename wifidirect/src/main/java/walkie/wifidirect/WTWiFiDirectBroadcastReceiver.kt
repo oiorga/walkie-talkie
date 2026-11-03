@@ -27,11 +27,11 @@ import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION
 import kotlinx.coroutines.CoroutineScope
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
-import walkie.talkie.api.wtModule.WTBusMessageType
+import walkie.talkie.api.WTBusMessageType
+import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.wtModule.WTModOpArg
-import walkie.util.api.MessageBusApi
+import walkie.talkie.api.WTMessageBus
 import walkie.util.BusMessage
-import walkie.util.MessageBus
 import walkie.util.getDeclaredSimpleName
 import walkie.util.logd
 import walkie.util.logging
@@ -41,11 +41,11 @@ import walkie.util.logging
  */
 class WiFiDirectBroadcastReceiver (
     val scope: CoroutineScope,
-    private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus<WTBusMessageType, Any>(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
+    private val _busMux: WTMessageBusApi = WTMessageBus(),
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
 ) : BroadcastReceiver(),
     ModuleOpInt by _moduleOp,
-    MessageBusApi<WTBusMessageType, Any> by _pipeMux
+    WTMessageBusApi by _busMux
 {
     companion object {
         const val TAG = "WiFiDirectBroadcastReceiver"

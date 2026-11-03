@@ -12,17 +12,16 @@ import walkie.comm.WTCommDispatchEventId
 import walkie.comm.ip.WTIPComm.Companion.TAGKClass
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
-import walkie.util.MessageBus
+import walkie.talkie.api.WTBusMessageId
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtModule.BusMessageId
-import walkie.talkie.api.wtModule.WTBusMessageType
+import walkie.talkie.api.WTBusMessageType
+import walkie.talkie.api.WTMessageBus
+import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.TCPClient
 import walkie.util.TCPServer
-import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
-import walkie.util.api.MessageBusApi
 import walkie.util.exceptionToString
 import walkie.util.BlockingQueue
 import walkie.util.EventDispatcher
@@ -51,11 +50,11 @@ class WTIPCommStatic private constructor() {
 class WTIPComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus<WTBusMessageType, Any>(),
+    private val _busMux: WTMessageBusApi = WTMessageBus(),
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
 ) :
-    MessageBusApi<WTBusMessageType, Any> by _pipeMux,
+    WTMessageBusApi by _busMux,
     ModuleOpInt by _moduleOp,
     EventDispatcherInt<Any> by _callBackList
 {
@@ -135,7 +134,7 @@ class WTIPComm (
     }
 
     override suspend fun onBusMessage(
-        busId: BusMessageIdApi,
+        busId: WTBusMessageId,
         msg: BusMessageApi<WTBusMessageType, Any>
         ) {
         val tag = "channelOnReceive/${randomString(2u)}"
@@ -145,7 +144,7 @@ class WTIPComm (
         logd(tag, "channelId: $busId inputType: $type input: $data")
 
         when (busId) {
-            BusMessageId.ToIpComm -> {
+            WTBusMessageId.ToIpComm -> {
                 when (type) {
                     /*
                     WTChannelMessageType.RCStop -> {

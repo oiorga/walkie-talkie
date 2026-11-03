@@ -7,7 +7,7 @@ import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.CoroutineScope
 import walkie.chat.ChatGroupMap
 import walkie.comm.WTComm
-import walkie.util.MessageBus
+import walkie.talkie.BuildConfig
 import walkie.talkie.api.wtchat.ChatGroupIdInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
@@ -16,17 +16,16 @@ import walkie.talkie.globalmap.DiscussionMap
 import walkie.talkie.ui.nav.wtChatUpdateUI
 import walkie.talkie.ui.screens.WTUITheme
 import walkie.talkie.viewmodel.WTViewModel
-import walkie.talkie.BuildConfig
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
+import walkie.talkie.api.WTBusMessageApi
+import walkie.talkie.api.WTBusMessageId
 import walkie.talkie.api.wtdebug.WTDebugInt
-import walkie.talkie.api.wtModule.BusMessageId
-import walkie.talkie.api.wtModule.WTBusMessageType
+import walkie.talkie.api.WTBusMessageType
+import walkie.talkie.api.WTMessageBusApi
+import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.wtModule.WTRemoteCallId
 import walkie.util.CoroutineRuntime
-import walkie.util.api.BusMessageIdApi
-import walkie.util.api.BusMessageApi
-import walkie.util.api.MessageBusApi
 import walkie.util.RemoteCall
 import walkie.util.api.RemoteCallApi
 import walkie.util.logd
@@ -37,10 +36,10 @@ import walkie.wifidirect.WiFiDirectBroadcastReceiver
 
 class WTDataHub private constructor (
     private val _callMap: RemoteCallApi<WTRemoteCallId> = RemoteCall(),
-    private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
+    private val _pipeMux: WTMessageBusApi = WTMessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
 ) : RemoteCallApi<WTRemoteCallId> by _callMap,
-    MessageBusApi<WTBusMessageType, Any> by _pipeMux,
+    WTMessageBusApi by _pipeMux,
     ModuleOpInt by _moduleOp,
     WTDebugInt
 {
@@ -89,8 +88,8 @@ class WTDataHub private constructor (
     }
 
     override suspend fun onBusMessage(
-        busId: BusMessageIdApi,
-        msg: BusMessageApi<WTBusMessageType, Any>
+        busId: WTBusMessageId,
+        msg: WTBusMessageApi
         ) {
         val tag = "channelOnReceive/${randomString(2U)}"
         val type = msg.type
@@ -98,7 +97,7 @@ class WTDataHub private constructor (
 
         logd(tag, "channelId: $busId inputType: $type input: $data")
         when (busId) {
-            BusMessageId.TOCommonData -> {
+            WTBusMessageId.TOCommonData -> {
                 if (updateUI(type, data))
                     updateUiLiveData.update()
             }

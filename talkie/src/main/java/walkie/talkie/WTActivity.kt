@@ -46,21 +46,20 @@ import walkie.chat.Sender
 import walkie.comm.WTComm
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
+import walkie.talkie.api.WTBusMessageId
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtmisc.InfoMap
 import walkie.talkie.api.wtmisc.WTNavigation
-import walkie.talkie.api.wtModule.BusMessageId
-import walkie.talkie.api.wtModule.WTBusMessageType
+import walkie.talkie.api.WTBusMessageType
+import walkie.talkie.api.WTMessageBusApi
+import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.wtModule.WTRemoteCallId
 import walkie.talkie.api.wtModule.WTModOpArg
-import walkie.util.MessageBus
 import walkie.talkie.ui.nav.WTNavInit
 import walkie.talkie.ui.screens.customComposablesInit
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.viewmodel.WTViewModelFactory
-import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
-import walkie.util.api.MessageBusApi
 import walkie.util.RemoteCall
 import walkie.util.api.RemoteCallApi
 import walkie.util.logd
@@ -70,13 +69,13 @@ import kotlin.getValue
 import kotlin.system.exitProcess
 
 class WTActivity(
-    private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
+    private val _busMux: WTMessageBusApi = WTMessageBus(),
     private val _callMap: RemoteCallApi<WTRemoteCallId> = RemoteCall(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux, _callMap)
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux, _callMap)
 ) :
     ComponentActivity(),
     ModuleOpInt by _moduleOp,
-    MessageBusApi<WTBusMessageType, Any> by _pipeMux,
+    WTMessageBusApi by _busMux,
     RemoteCallApi<WTRemoteCallId> by _callMap {
 
         companion object {
@@ -250,13 +249,13 @@ class WTActivity(
     private val groupIdWDI = "WIFI Direct Info"
     private val info1 = InfoMap(groupIdWDI)
     override suspend fun onBusMessage(
-        busId: BusMessageIdApi,
+        busId: WTBusMessageId,
         msg: BusMessageApi<WTBusMessageType, Any>
     ) {
         val type = msg.type
         val data = msg.data
         when (busId) {
-            BusMessageId.ToActivity -> {
+            WTBusMessageId.ToActivity -> {
                 when (type) {
                     WTBusMessageType.WifiDebugInfoMessage -> {
                         val groupId = groupIdWDI

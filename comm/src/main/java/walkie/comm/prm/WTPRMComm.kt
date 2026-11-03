@@ -11,19 +11,18 @@ import walkie.comm.ip.WTIPComm
 import walkie.comm.ip.WTIPCommPacketType
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
-import walkie.util.MessageBus
+import walkie.talkie.api.WTBusMessageId
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.WTMedium
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.talkie.api.wtModule.BusMessageId
-import walkie.talkie.api.wtModule.WTBusMessageType
+import walkie.talkie.api.WTBusMessageType
+import walkie.talkie.api.WTMessageBusApi
+import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.wtModule.WTModOpArg
-import walkie.util.api.BusMessageIdApi
 import walkie.util.api.BusMessageApi
 import walkie.util.api.MeshDispatchEventId
 import walkie.util.api.MeshKey
-import walkie.util.api.MessageBusApi
 import walkie.util.EventDispatcher
 import walkie.util.EventDispatcherInt
 import walkie.util.BusMessage
@@ -37,11 +36,11 @@ import java.net.InetAddress
 class WTPRMComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _pipeMux: MessageBusApi<WTBusMessageType, Any> = MessageBus(),
+    private val _busMux: WTMessageBusApi = WTMessageBus(),
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
 ) :
-    MessageBusApi<WTBusMessageType, Any> by _pipeMux,
+    WTMessageBusApi by _busMux,
     ModuleOpInt by _moduleOp,
     EventDispatcherInt<Any> by _callBackList
 {
@@ -174,7 +173,7 @@ class WTPRMComm (
     }
 
     override suspend fun onBusMessage(
-        busId: BusMessageIdApi,
+        busId: WTBusMessageId,
         msg: BusMessageApi<WTBusMessageType, Any>
     ) {
         val tag = "channelOnReceive/${randomString(2u)}"
@@ -188,7 +187,7 @@ class WTPRMComm (
         )
 
         when (busId) {
-            BusMessageId.ToPRMComm -> {
+            WTBusMessageId.ToPRMComm -> {
                 when (type) {
                     WTBusMessageType.ControlMesh -> {
                         wtMesh.addPeersJson(data as String)
