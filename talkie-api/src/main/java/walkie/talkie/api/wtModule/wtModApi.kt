@@ -5,11 +5,12 @@ import walkie.talkie.api.WTBusMessageApi
 import walkie.talkie.api.WTBusMessageId
 import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.WTMessageBus
+import walkie.talkie.api.WTRemoteCallApi
+import walkie.talkie.api.WTRemoteCall
+import walkie.talkie.api.WTRemoteCallId
 import walkie.talkie.api.wtdebug.wtError
 import walkie.util.api.ModuleOpInterface
-import walkie.util.RemoteCall
 import walkie.util.api.RemoteCallApi
-import walkie.util.api.RemoteCallIdApi
 
 import walkie.util.randomString
 
@@ -17,7 +18,7 @@ interface ModuleOpInt : ModuleOpInterface<WTModOpArg>
 
 class ModuleOpImpl(
     private val _busMap: WTMessageBusApi = WTMessageBus(),
-    private val _callMap: RemoteCallApi<WTRemoteCallId> = RemoteCall()
+    private val _callMap: WTRemoteCallApi = WTRemoteCall()
 ):
     WTMessageBusApi by _busMap,
     RemoteCallApi<WTRemoteCallId> by _callMap,
@@ -143,15 +144,4 @@ inline fun <reified Out> ModuleOpInt.getVal(
     id: WTModOpArg.Prop
 ): Out? {
     return (this.get(id) as? WTModOpArg.Data<*>)?.value as? Out
-}
-
-enum class WTRemoteCallId : RemoteCallIdApi {
-    RCDummy0, RCDummy1, RCDummy2, RCDummy3, RCDummy4, RCDummy5, RCDummy6, RCDummy7, RCDummy8, RCDummy9,
-    RCNA,
-    RCCheckWifiDPermissions,
-    RCRequestWifiDPermissions,
-    RCChatMessageToComm,
-    RCChatMessageFromComm,
-    RCSendChatMessage,
-    RCUpdateUI
 }

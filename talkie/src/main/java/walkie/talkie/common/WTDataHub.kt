@@ -24,7 +24,8 @@ import walkie.talkie.api.wtdebug.WTDebugInt
 import walkie.talkie.api.WTBusMessageType
 import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.WTMessageBus
-import walkie.talkie.api.wtModule.WTRemoteCallId
+import walkie.talkie.api.WTRemoteCall
+import walkie.talkie.api.WTRemoteCallApi
 import walkie.util.CoroutineRuntime
 import walkie.util.RemoteCall
 import walkie.util.api.RemoteCallApi
@@ -35,10 +36,10 @@ import walkie.wifidirect.WTWifiDirectManager
 import walkie.wifidirect.WiFiDirectBroadcastReceiver
 
 class WTDataHub private constructor (
-    private val _callMap: RemoteCallApi<WTRemoteCallId> = RemoteCall(),
+    private val _callMap: WTRemoteCallApi = WTRemoteCall(),
     private val _pipeMux: WTMessageBusApi = WTMessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
-) : RemoteCallApi<WTRemoteCallId> by _callMap,
+) : WTRemoteCallApi by _callMap,
     WTMessageBusApi by _pipeMux,
     ModuleOpInt by _moduleOp,
     WTDebugInt

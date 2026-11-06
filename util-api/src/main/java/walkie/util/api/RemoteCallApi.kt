@@ -25,5 +25,5 @@ interface RemoteRemoteCallHandler<CallInput, CallResult> {
 }
 */
 
-interface RemoteCallApi<CallId>: RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, Any, Any>
-interface RemoteCallIdApi: RemoteCallIdBaseApi
+typealias RemoteCallApi<CallId> = RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, Any, Any>
+typealias RemoteCallIdApi = RemoteCallIdBaseApi

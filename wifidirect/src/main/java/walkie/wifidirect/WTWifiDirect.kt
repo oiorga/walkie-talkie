@@ -11,12 +11,9 @@ import android.net.wifi.p2p.WifiP2pInfo
 import android.net.wifi.p2p.WifiP2pManager
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest
-import walkie.talkie.api.wtModule.WTRemoteCallId
 import walkie.util.CallbackResult
 import walkie.util.awaitResult
 import walkie.util.awaitValue
-import walkie.util.RemoteCall
-import walkie.util.api.RemoteCallApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -25,8 +22,7 @@ class WTWifiDirect(
     private val manager: WifiP2pManager,
     private var channel: WifiP2pManager.Channel,
     private var env: WTWifiDirectEnv,
-    private val _callMap: RemoteCallApi<WTRemoteCallId> = RemoteCall()
-) : RemoteCallApi<WTRemoteCallId> by _callMap {
+) {
     companion object {
         const val TAG = "WTWifiDirect"
         val TAGKClass = WTWifiDirect::class

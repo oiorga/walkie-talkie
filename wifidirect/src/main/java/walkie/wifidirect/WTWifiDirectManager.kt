@@ -30,16 +30,15 @@ import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.WTBusMessageType
 import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.wtModule.WTModOpArg
-import walkie.talkie.api.wtModule.WTRemoteCallId
 import walkie.talkie.api.wtModule.getVal
 import walkie.util.api.BusMessageApi
 import walkie.talkie.api.WTMessageBus
+import walkie.talkie.api.WTRemoteCallApi
+import walkie.talkie.api.WTRemoteCall
 import walkie.util.GenericList
 import walkie.util.Mailbox
 import walkie.util.MailboxData
 import walkie.util.BusMessage
-import walkie.util.RemoteCall
-import walkie.util.api.RemoteCallApi
 import walkie.util.logd
 import walkie.util.logdAppend
 import walkie.util.logging
@@ -59,12 +58,12 @@ class WTWifiDirectManager(
     val node: NodeIdInt,
     val scope: CoroutineScope,
     private val _pipeMux: WTMessageBusApi = WTMessageBus(),
-    private val _callMap: RemoteCallApi<WTRemoteCallId> = RemoteCall(),
+    private val _callMap: WTRemoteCallApi = WTRemoteCall(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux, _callMap)
 ) :
     ModuleOpInt by _moduleOp,
     WTMessageBusApi by _pipeMux,
-    RemoteCallApi<WTRemoteCallId> by _callMap {
+    WTRemoteCallApi by _callMap {
 
     companion object {
         const val TAG = "WTWiFiDirectManager"
@@ -85,7 +84,11 @@ class WTWifiDirectManager(
     fun checkWifiPermissions(): Boolean {
         /* return (true == typedCall<Boolean>(RemoteCallId.RCCheckWifiDPermissions)) */
         /* return (true == (get(WTModOpArg.Prop.WifiPerm) as? WTModOpArg.Out<Boolean>)?.value) */
-        return (true == getVal<Boolean>(WTModOpArg.Prop.WifiPerm))
+        val hasWifiPermissions = getVal<Boolean>(WTModOpArg.Prop.WifiPerm)
+        return hasWifiPermissions ?: run {
+            wtError(TAG, "checkWifiPermissions returned NULL: Check callback register.")
+            false
+        }
     }
 
     fun requestWifiPermissions() {

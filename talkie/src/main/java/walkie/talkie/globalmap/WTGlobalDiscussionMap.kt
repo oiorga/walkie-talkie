@@ -22,8 +22,9 @@ import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.WTBusMessageType
 import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.WTMessageBusApi
+import walkie.talkie.api.WTRemoteCall
+import walkie.talkie.api.WTRemoteCallApi
 import walkie.talkie.api.wtModule.WTModOpArg
-import walkie.talkie.api.wtModule.WTRemoteCallId
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.node.NodeId
 import walkie.util.api.BusMessageApi
@@ -39,10 +40,10 @@ data class DiscussionMap(
     private val groupMap: ChatGroupMap,
     private val systemNode: NodeIdInt,
     val scope: CoroutineScope,
-    private val _callMap: RemoteCallApi<WTRemoteCallId> = RemoteCall(),
+    private val _callMap: WTRemoteCallApi = WTRemoteCall(),
     private val _busMux: WTMessageBusApi = WTMessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
-) : RemoteCallApi<WTRemoteCallId> by _callMap,
+) : WTRemoteCallApi by _callMap,
     ModuleOpInt by _moduleOp,
     WTMessageBusApi by _busMux
 {

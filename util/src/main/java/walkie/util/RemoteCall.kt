@@ -56,6 +56,7 @@ open class RemoteCallBase<CallId, CallInput, CallResult>() :
         _callMap[remoteCallId] as? RemoteCallHandlerBaseApi<CallInput, CallResult>
     }?.call(null) ?: run {
         Log.d(tag, "$tag: call: callback $remoteCallId does not exist")
+        /* error("$tag: call: callback $remoteCallId does not exist") */
         null
     }
 
@@ -83,9 +84,5 @@ open class RemoteCallBase<CallId, CallInput, CallResult>() :
     }
 }
 
-class RemoteCall<CallId>(
-    private val remoteCallImpl: RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, Any, Any> = RemoteCallBase<CallId, Any, Any>()
-):  RemoteCallApi<CallId>,
-    RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, Any, Any> by remoteCallImpl
-
+typealias RemoteCall<CallId> = RemoteCallBase<CallId, Any, Any>
 
