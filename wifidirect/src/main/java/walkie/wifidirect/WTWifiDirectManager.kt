@@ -59,7 +59,7 @@ class WTWifiDirectManager(
     val node: NodeIdInt,
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
-    private val _callMap: WTRemoteCallApi = WTRemoteCall(),
+    private val _callMap: WTRemoteCall = WTRemoteCall(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux, _callMap)
 ) :
     ModuleOpInt by _moduleOp,

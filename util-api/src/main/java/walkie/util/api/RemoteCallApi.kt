@@ -1,8 +1,8 @@
 package walkie.util.api
 
-interface RemoteCallIdBaseApi
+interface RemoteCallIdBase
 
-interface RemoteCallBaseApi<CallId, RemoteHandler, CallInput, CallResult> {
+interface RemoteCallBaseApi<CallId, RemoteHandler: RemoteCallHandlerBaseApi<*, *>, CallInput, CallResult> {
     val callMap: Map<CallId, RemoteHandler>
     fun callMapMergeIn (callMap: Map<CallId, RemoteHandler>)
     fun registerRemoteCall(remoteCallId: CallId, remoteHandler: RemoteHandler)
@@ -25,5 +25,6 @@ interface RemoteRemoteCallHandler<CallInput, CallResult> {
 }
 */
 
-typealias RemoteCallApi<CallId> = RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, Any, Any>
-typealias RemoteCallIdApi = RemoteCallIdBaseApi
+interface RemoteCallApi<CallId>: RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, Any, Any>
+interface RemoteCallHandlerApi<CallInput, CallResult>: RemoteCallHandlerBaseApi<CallInput, CallResult>
+interface RemoteCallId: RemoteCallIdBase

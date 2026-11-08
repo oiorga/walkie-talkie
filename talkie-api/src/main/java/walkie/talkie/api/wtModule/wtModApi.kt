@@ -23,10 +23,10 @@ interface ModuleOpInt: ModuleOpInterface<WTModOpArg>
 
 class ModuleOpImpl(
     private val _busMap: WTMessageBus = WTMessageBus(),
-    private val _callMap: WTRemoteCallApi = WTRemoteCall()
+    private val _callMap: WTRemoteCall = WTRemoteCall()
 ):
     WTMessageBusApi by _busMap,
-    RemoteCallApi<WTRemoteCallId> by _callMap,
+    WTRemoteCallApi by _callMap,
     ModuleOpInt
 {
     companion object {
@@ -80,7 +80,7 @@ class ModuleOpImpl(
                 busId = to,
                 scope = eventInfo.scope,
                 autoCreate = true,
-                onReceive = eventInfo.onEvent as suspend (WTMessageBusId, BusMessageBaseApi<WTBusMessageType, Any>) -> Unit
+                onReceive = eventInfo.onEvent
             )
         } ?: run {
             wtError(tag, "Invalid input: onEvent -> $onEventInfo")

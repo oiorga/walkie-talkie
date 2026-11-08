@@ -3,8 +3,9 @@ package walkie.util
 import android.util.Log
 import walkie.util.api.RemoteCallApi
 import walkie.util.api.RemoteCallBaseApi
+import walkie.util.api.RemoteCallHandlerApi
 import walkie.util.api.RemoteCallHandlerBaseApi
-import walkie.util.api.RemoteCallIdBaseApi
+import walkie.util.api.RemoteCallId
 
 open class RemoteCallBase<CallId, CallInput, CallResult>() :
     RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, CallInput, CallResult> {
@@ -84,5 +85,4 @@ open class RemoteCallBase<CallId, CallInput, CallResult>() :
     }
 }
 
-typealias RemoteCall<CallId> = RemoteCallBase<CallId, Any, Any>
-
+open class RemoteCall<CallId: RemoteCallId>: RemoteCallBase<CallId, Any, Any>(), RemoteCallApi<CallId>
