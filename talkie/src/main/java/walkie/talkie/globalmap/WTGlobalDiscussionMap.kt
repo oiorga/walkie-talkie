@@ -10,9 +10,10 @@ import walkie.chat.ChatMessageItem
 import walkie.chat.ChatMessageItemList
 import walkie.chat.Receiver
 import walkie.chat.Sender
+import walkie.talkie.api.WTBusMessage
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
-import walkie.talkie.api.WTBusMessageId
+import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
 import walkie.talkie.api.wtchat.DiscussionAbs
@@ -29,8 +30,6 @@ import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.node.NodeId
 import walkie.util.api.BusMessageApi
 import walkie.util.BusMessage
-import walkie.util.RemoteCall
-import walkie.util.api.RemoteCallApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -41,7 +40,7 @@ data class DiscussionMap(
     private val systemNode: NodeIdInt,
     val scope: CoroutineScope,
     private val _callMap: WTRemoteCallApi = WTRemoteCall(),
-    private val _busMux: WTMessageBusApi = WTMessageBus(),
+    private val _busMux: WTMessageBus = WTMessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
 ) : WTRemoteCallApi by _callMap,
     ModuleOpInt by _moduleOp,
@@ -118,7 +117,7 @@ data class DiscussionMap(
         send(
             to = WTModOpArg.To.CommonData,
             msg = WTModOpArg.Msg(
-                BusMessage(
+                WTBusMessage(
                     WTBusMessageType.UpdateChatUI,
                     chatMessage.groupId.type
                 )
@@ -208,12 +207,12 @@ data class DiscussionMap(
     }
 
     override suspend fun onBusMessage(
-        busId: WTBusMessageId,
-        msg: BusMessageApi<WTBusMessageType, Any>
+        busId: WTMessageBusId,
+        msg: WTBusMessage
         ) {
         val data = msg.data
         when (busId) {
-            WTBusMessageId.ToChat -> {
+            WTMessageBusId.ToChat -> {
                 recvFromComm(data as CommPacket)
             }
             else -> {
@@ -250,7 +249,7 @@ data class DiscussionMap(
         send(
             to = WTModOpArg.To.Comm,
             msg = WTModOpArg.Msg(
-                BusMessage(
+                WTBusMessage(
                     messageType,
                     commPacket
                 )

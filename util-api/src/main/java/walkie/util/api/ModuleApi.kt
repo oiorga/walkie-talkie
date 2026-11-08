@@ -1,5 +1,6 @@
 package walkie.util.api
 
+interface ModuleEnvironment
 
 interface ModuleOpInterface<TArg> {
     fun set(prop: TArg, value: TArg): TArg
@@ -9,3 +10,4 @@ interface ModuleOpInterface<TArg> {
     fun registerCallback(to: TArg, callback: TArg): Unit
     fun execute(cmd: TArg): Unit
 }
+

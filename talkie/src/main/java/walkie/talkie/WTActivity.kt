@@ -44,9 +44,10 @@ import walkie.chat.ChatMessageItemList
 import walkie.chat.Receiver
 import walkie.chat.Sender
 import walkie.comm.WTComm
+import walkie.talkie.api.WTBusMessage
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
-import walkie.talkie.api.WTBusMessageId
+import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtmisc.InfoMap
 import walkie.talkie.api.wtmisc.WTNavigation
@@ -69,7 +70,7 @@ import kotlin.getValue
 import kotlin.system.exitProcess
 
 class WTActivity(
-    private val _busMux: WTMessageBusApi = WTMessageBus(),
+    private val _busMux: WTMessageBus = WTMessageBus(),
     private val _callMap: WTRemoteCallApi = WTRemoteCall(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux, _callMap)
 ) :
@@ -249,13 +250,13 @@ class WTActivity(
     private val groupIdWDI = "WIFI Direct Info"
     private val info1 = InfoMap(groupIdWDI)
     override suspend fun onBusMessage(
-        busId: WTBusMessageId,
-        msg: BusMessageApi<WTBusMessageType, Any>
+        busId: WTMessageBusId,
+        msg: WTBusMessage
     ) {
         val type = msg.type
         val data = msg.data
         when (busId) {
-            WTBusMessageId.ToActivity -> {
+            WTMessageBusId.ToActivity -> {
                 when (type) {
                     WTBusMessageType.WifiDebugInfoMessage -> {
                         val groupId = groupIdWDI

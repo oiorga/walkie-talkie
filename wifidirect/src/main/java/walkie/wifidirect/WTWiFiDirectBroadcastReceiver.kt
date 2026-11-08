@@ -25,6 +25,7 @@ import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_PEERS_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION
 import kotlinx.coroutines.CoroutineScope
+import walkie.talkie.api.WTBusMessage
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.WTBusMessageType
@@ -41,7 +42,7 @@ import walkie.util.logging
  */
 class WiFiDirectBroadcastReceiver (
     val scope: CoroutineScope,
-    private val _busMux: WTMessageBusApi = WTMessageBus(),
+    private val _busMux: WTMessageBus = WTMessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
 ) : BroadcastReceiver(),
     ModuleOpInt by _moduleOp,
@@ -77,7 +78,7 @@ class WiFiDirectBroadcastReceiver (
                 send(
                     to = WTModOpArg.To.Wifi,
                     msg = WTModOpArg.Msg(
-                        BusMessage(
+                        WTBusMessage(
                             type = WTBusMessageType.WifiBroadcastReceiver,
                             data = intent
                         )

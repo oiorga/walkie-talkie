@@ -10,9 +10,11 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import walkie.comm.WTCommDispatchEventId
 import walkie.comm.ip.WTIPComm.Companion.TAGKClass
+import walkie.talkie.api.WTBusMessage
+import walkie.talkie.api.WTBusMessageApi
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
-import walkie.talkie.api.WTBusMessageId
+import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.WTBusMessageType
@@ -50,7 +52,7 @@ class WTIPCommStatic private constructor() {
 class WTIPComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _busMux: WTMessageBusApi = WTMessageBus(),
+    private val _busMux: WTMessageBus = WTMessageBus(),
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
 ) :
@@ -134,8 +136,8 @@ class WTIPComm (
     }
 
     override suspend fun onBusMessage(
-        busId: WTBusMessageId,
-        msg: BusMessageApi<WTBusMessageType, Any>
+        busId: WTMessageBusId,
+        msg: WTBusMessage
         ) {
         val tag = "channelOnReceive/${randomString(2u)}"
         val type = msg.type
@@ -144,7 +146,7 @@ class WTIPComm (
         logd(tag, "channelId: $busId inputType: $type input: $data")
 
         when (busId) {
-            WTBusMessageId.ToIpComm -> {
+            WTMessageBusId.ToIpComm -> {
                 when (type) {
                     /*
                     WTChannelMessageType.RCStop -> {
@@ -229,7 +231,7 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
             send(
                 to = WTModOpArg.To.Comm,
                 msg = WTModOpArg.Msg(
-                    BusMessage(
+                    WTBusMessage(
                         WTBusMessageType.WifiMessage,
                         commPacket
                     )
@@ -240,7 +242,7 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
             send(
                 to = WTModOpArg.To.PRMComm,
                 msg = WTModOpArg.Msg(
-                    BusMessage(
+                    WTBusMessage(
                         WTBusMessageType.ControlMesh,
                         decodedJSon.jsonString
                     )

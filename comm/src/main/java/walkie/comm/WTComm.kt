@@ -10,7 +10,7 @@ import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.talkie.api.WTBusMessage
-import walkie.talkie.api.WTBusMessageId
+import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.CommPacketInt
@@ -19,7 +19,6 @@ import walkie.talkie.api.wtcomm.WTCommChatMessageOut
 import walkie.talkie.api.wtcomm.WTCommPacketIn
 import walkie.talkie.api.wtcomm.WTCommPacketOut
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.util.api.BusMessageApi
 import walkie.util.api.MeshDispatchEventId
 import walkie.util.logd
 import walkie.util.logging
@@ -28,7 +27,7 @@ import walkie.util.randomString
 class WTComm (
     private val nodeId: NodeIdInt,
     val scope: CoroutineScope,
-    private val _busMux: WTMessageBusApi = WTMessageBus(),
+    private val _busMux: WTMessageBus = WTMessageBus(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
 
 ) : WTMessageBusApi by _busMux,
@@ -149,7 +148,7 @@ class WTComm (
         }
     }
 
-    override suspend fun onBusMessage(busId: WTBusMessageId, msg: BusMessageApi<WTBusMessageType, Any>) {
+    override suspend fun onBusMessage(busId: WTMessageBusId, msg: WTBusMessage) {
         val tag = "channelOnReceive/${randomString(2U)}"
         val type = msg.type
         val data = msg.data
@@ -157,7 +156,7 @@ class WTComm (
         logd(tag, "channelOnReceive: channelId: $busId inputType: $type")
 
         when (busId) {
-            WTBusMessageId.ToComm -> {
+            WTMessageBusId.ToComm -> {
                 when (type) {
                     WTBusMessageType.WifiMessage -> {
                         commPacketIn(data as CommPacketInt)

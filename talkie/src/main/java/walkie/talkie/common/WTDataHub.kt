@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import walkie.chat.ChatGroupMap
 import walkie.comm.WTComm
 import walkie.talkie.BuildConfig
+import walkie.talkie.api.WTBusMessage
 import walkie.talkie.api.wtchat.ChatGroupIdInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
@@ -19,7 +20,7 @@ import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.WTBusMessageApi
-import walkie.talkie.api.WTBusMessageId
+import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtdebug.WTDebugInt
 import walkie.talkie.api.WTBusMessageType
 import walkie.talkie.api.WTMessageBusApi
@@ -27,8 +28,6 @@ import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.WTRemoteCall
 import walkie.talkie.api.WTRemoteCallApi
 import walkie.util.CoroutineRuntime
-import walkie.util.RemoteCall
-import walkie.util.api.RemoteCallApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -37,10 +36,10 @@ import walkie.wifidirect.WiFiDirectBroadcastReceiver
 
 class WTDataHub private constructor (
     private val _callMap: WTRemoteCallApi = WTRemoteCall(),
-    private val _pipeMux: WTMessageBusApi = WTMessageBus(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_pipeMux)
+    private val _busMux: WTMessageBus = WTMessageBus(),
+    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
 ) : WTRemoteCallApi by _callMap,
-    WTMessageBusApi by _pipeMux,
+    WTMessageBusApi by _busMux,
     ModuleOpInt by _moduleOp,
     WTDebugInt
 {
@@ -89,8 +88,8 @@ class WTDataHub private constructor (
     }
 
     override suspend fun onBusMessage(
-        busId: WTBusMessageId,
-        msg: WTBusMessageApi
+        busId: WTMessageBusId,
+        msg: WTBusMessage
         ) {
         val tag = "channelOnReceive/${randomString(2U)}"
         val type = msg.type
@@ -98,7 +97,7 @@ class WTDataHub private constructor (
 
         logd(tag, "channelId: $busId inputType: $type input: $data")
         when (busId) {
-            WTBusMessageId.TOCommonData -> {
+            WTMessageBusId.TOCommonData -> {
                 if (updateUI(type, data))
                     updateUiLiveData.update()
             }

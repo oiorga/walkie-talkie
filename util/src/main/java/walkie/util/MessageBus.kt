@@ -9,13 +9,16 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import walkie.util.api.BusMessageApi
 import walkie.util.api.BusMessageBaseApi
+import walkie.util.api.MessageBusId
+import walkie.util.api.BusMessageType
+import walkie.util.api.MessageBusApi
 import walkie.util.api.MessageBusBaseApi
 
-open class MessageBusBase<BusId, MessageType, DataType>() : MessageBusBaseApi<BusId, MessageType, DataType> {
-    private var _busMap: MutableMap<BusId, MutableSharedFlow<BusMessageBaseApi<MessageType, DataType>>> = mutableMapOf()
+open class MessageBusBase<BusId, Message: BusMessageBaseApi<MessageType, DataType>, MessageType, DataType>() : MessageBusBaseApi<BusId, Message, MessageType, DataType> {
+    private var _busMap: MutableMap<BusId, MutableSharedFlow<Message>> = mutableMapOf()
     private var _scopeMap: MutableMap<BusId, CoroutineScope> = mutableMapOf()
     private val subscriberMap: MutableMap<BusId, Job> = mutableMapOf()
-    override val busMap: MutableMap<BusId, MutableSharedFlow<BusMessageBaseApi<MessageType, DataType>>>
+    override val busMap: MutableMap<BusId, MutableSharedFlow<Message>>
         get() = _busMap
     override val scopeMap: MutableMap<BusId, CoroutineScope>
         get() = _scopeMap
@@ -31,11 +34,11 @@ open class MessageBusBase<BusId, MessageType, DataType>() : MessageBusBaseApi<Bu
         logd (TAG, "init")
     }
 
-    override fun busMapImport(busMap: Map<BusId, MutableSharedFlow<BusMessageBaseApi<MessageType, DataType>>>,
+    override fun busMapImport(busMap: Map<BusId, MutableSharedFlow<Message>>,
                               scopeMap: Map<BusId, CoroutineScope>) {
         val tag = "busMapTransfer/${randomString(2u)}"
 
-        val mutableBusMap  = busMap as? MutableMap<BusId, MutableSharedFlow<BusMessageBaseApi<MessageType, DataType>>> ?: run {
+        val mutableBusMap  = busMap as? MutableMap<BusId, MutableSharedFlow<Message>> ?: run {
             logd(tag, "BusMux requires busMap to be backed by a MutableMap")
             error("BusMux requires busMap to be backed by a MutableMap")
         }
@@ -50,7 +53,7 @@ open class MessageBusBase<BusId, MessageType, DataType>() : MessageBusBaseApi<Bu
 
     }
 
-    override fun busSubscribe(busId: BusId, scope: CoroutineScope, autoCreate: Boolean, onReceive: suspend (BusId, BusMessageBaseApi<MessageType, DataType>) -> Unit) {
+    override fun busSubscribe(busId: BusId, scope: CoroutineScope, autoCreate: Boolean, onReceive: suspend (BusId, Message) -> Unit) {
         val tag = "subscribe/${randomString(2u)}"
 
         synchronized(lock) {
@@ -100,7 +103,7 @@ open class MessageBusBase<BusId, MessageType, DataType>() : MessageBusBaseApi<Bu
         }
     }
 
-    override fun busGet(busId: BusId) : MutableSharedFlow<BusMessageBaseApi<MessageType, DataType>>? = synchronized(lock) {
+    override fun busGet(busId: BusId) : MutableSharedFlow<Message>? = synchronized(lock) {
         busMap[busId]
     }
 
@@ -108,13 +111,13 @@ open class MessageBusBase<BusId, MessageType, DataType>() : MessageBusBaseApi<Bu
         scopeMap[busId]
     }
 
-    override fun busCreate(busId: BusId, scope: CoroutineScope) : MutableSharedFlow<BusMessageBaseApi<MessageType, DataType>>? {
+    override fun busCreate(busId: BusId, scope: CoroutineScope) : MutableSharedFlow<Message>? {
         val tag = "busCreate/${randomString(2u)}"
 
         synchronized(lock) {
             if (null == busMap[busId]) {
                 logd(tag, "Creating bus $busId")
-                busMap[busId] = MutableSharedFlow<BusMessageBaseApi<MessageType, DataType>>(
+                busMap[busId] = MutableSharedFlow<Message>(
                     replay = 10,
                     extraBufferCapacity = 100,
                     onBufferOverflow = BufferOverflow.SUSPEND
@@ -125,19 +128,19 @@ open class MessageBusBase<BusId, MessageType, DataType>() : MessageBusBaseApi<Bu
         return busMap[busId]
     }
 
-    override fun busAdd(busImpl: MessageBusBaseApi<BusId, MessageType, DataType>) {
+    override fun busAdd(busImpl: MessageBusBaseApi<BusId, Message, MessageType, DataType>) {
         synchronized(lock) {
             busImpl.busMapImport(busMap, scopeMap)
         }
     }
 
-    override fun busJoin(busImpl: MessageBusBaseApi<BusId, MessageType, DataType>) {
+    override fun busJoin(busImpl: MessageBusBaseApi<BusId, Message, MessageType, DataType>) {
         synchronized(lock) {
             busMapImport(busImpl.busMap, busImpl.scopeMap)
         }
     }
 
-    override suspend fun busSendSync (busId: BusId, msg: BusMessageBaseApi<MessageType, DataType>) {
+    override suspend fun busSendSync (busId: BusId, msg: Message) {
         val tag = "busSend/${randomString(2u)}"
         val data= msg.data
 
@@ -151,7 +154,7 @@ open class MessageBusBase<BusId, MessageType, DataType>() : MessageBusBaseApi<Bu
         bus.emit(msg)
     }
 
-    override fun busSendAsync (busId: BusId, msg: BusMessageBaseApi<MessageType, DataType>) {
+    override fun busSendAsync (busId: BusId, msg: Message) {
         val tag = "busSend/${randomString(2u)}"
         val data= msg.data
 
@@ -169,19 +172,17 @@ open class MessageBusBase<BusId, MessageType, DataType>() : MessageBusBaseApi<Bu
         }
     }
 
-    override suspend fun onBusMessage(busId: BusId, msg: BusMessageBaseApi<MessageType, DataType>) {
-        val tag = "busOnReceive/${randomString(2u)}"
+    override suspend fun onBusMessage(busId: BusId, msg: Message) {
+        val tag = "onBusMessage/${randomString(2u)}"
 
         logd(tag, "${this.toString()} busOnReceive busId: $busId ${msg.type} ${msg.data}. Not implemented.")
         throw (NotImplementedError("$tag: $this busOnReceive(busId: $busId. Not implemented."))
     }
 }
 
-open class BusMessage<MessageType, DataType>(
+open class BusMessage<MessageType: BusMessageType, DataType>(
     override val type: MessageType,
     override val data: DataType?
-) : BusMessageApi<MessageType, DataType> {
+) : BusMessageApi<MessageType, DataType>
 
-}
-
-typealias MessageBus<BusId, MessageType, DataType> = MessageBusBase<BusId, MessageType, DataType>
+open class MessageBus<BusId: MessageBusId, Message: BusMessageApi<MessageType, DataType>, MessageType: BusMessageType, DataType>(): MessageBusBase<BusId, Message, MessageType, DataType>(), MessageBusApi<BusId, Message, MessageType, DataType>

@@ -9,9 +9,10 @@ import walkie.comm.WTCommPeerInfo
 import walkie.comm.WTIPMesh
 import walkie.comm.ip.WTIPComm
 import walkie.comm.ip.WTIPCommPacketType
+import walkie.talkie.api.WTBusMessage
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
-import walkie.talkie.api.WTBusMessageId
+import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.WTMedium
@@ -36,7 +37,7 @@ import java.net.InetAddress
 class WTPRMComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
-    private val _busMux: WTMessageBusApi = WTMessageBus(),
+    private val _busMux: WTMessageBus = WTMessageBus(),
     private val _callBackList: EventDispatcherInt<Any> = EventDispatcher(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
 ) :
@@ -173,8 +174,8 @@ class WTPRMComm (
     }
 
     override suspend fun onBusMessage(
-        busId: WTBusMessageId,
-        msg: BusMessageApi<WTBusMessageType, Any>
+        busId: WTMessageBusId,
+        msg: WTBusMessage
     ) {
         val tag = "channelOnReceive/${randomString(2u)}"
         val type = msg.type
@@ -187,7 +188,7 @@ class WTPRMComm (
         )
 
         when (busId) {
-            WTBusMessageId.ToPRMComm -> {
+            WTMessageBusId.ToPRMComm -> {
                 when (type) {
                     WTBusMessageType.ControlMesh -> {
                         wtMesh.addPeersJson(data as String)
@@ -201,7 +202,7 @@ class WTPRMComm (
                         send(
                             to = WTModOpArg.To.IpComm,
                             msg = WTModOpArg.Msg(
-                                BusMessage(
+                                WTBusMessage(
                                     WTBusMessageType.LocalIp,
                                     localIpAddress
                                 )
@@ -294,7 +295,7 @@ class WTPRMComm (
             send(
                 to = WTModOpArg.To.Activity,
                 msg = WTModOpArg.Msg(
-                    BusMessage(
+                    WTBusMessage(
                         WTBusMessageType.MeshDebugInfoMessage,
                         str
                     )
