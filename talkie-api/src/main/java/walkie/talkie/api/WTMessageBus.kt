@@ -1,6 +1,5 @@
 package walkie.talkie.api
 
-import walkie.util.BusMessage
 import walkie.util.MessageBus
 import walkie.util.api.BusMessageApi
 import walkie.util.api.MessageBusId

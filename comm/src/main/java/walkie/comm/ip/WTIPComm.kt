@@ -207,7 +207,7 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
 
     logd(TAGKClass, tag,"Received(0): $jSon ")
 
-    var exc  =  `try`(TAGKClass, tag, throwExc = false) { decodedJSon = Json.decodeFromString<WTIPPacketComm>(jSon) }
+    var exc  =  `try`(TAGKClass, tag, rethrowException = false) { decodedJSon = Json.decodeFromString<WTIPPacketComm>(jSon) }
     if (null != exc) {
         logd (tag, "Exception while decoding input jSon")
         throw (exc)
@@ -220,7 +220,7 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
         WTIPCommPacketType.Data -> {
             var commPacket: CommPacket? = null
             logd(TAGKClass, tag,"Decoding input Json CommPacket")
-            exc = `try`(TAGKClass, tag, throwExc = false) { commPacket = Json.decodeFromString<CommPacket>(decodedJSon!!.jsonString) }
+            exc = `try`(TAGKClass, tag, rethrowException = false) { commPacket = Json.decodeFromString<CommPacket>(decodedJSon!!.jsonString) }
             if (null != exc) {
                 logd (tag, "Exception while decoding encoded input jSon")
                 /* Hiding a bug/crash */

@@ -1,8 +1,10 @@
 package walkie.util
 
+import java.io.PrintWriter
+import java.io.StringWriter
 import kotlin.reflect.KClass
 
-inline fun <reified T> T.`try`(enclosingClass: KClass<*>? = null, tag: String? = null, throwExc: Boolean = true, tryCode: () -> Unit): Throwable? {
+inline fun <reified T> T.`try`(enclosingClass: KClass<*>? = T::class, tag: String? = null, rethrowException: Boolean = true, crossinline tryCode: () -> Unit): Exception? {
     val inTag = "wtTry/${tag ?: ""}/${randomString(2U)}"
     var exception: Exception? = null
 
@@ -10,7 +12,7 @@ inline fun <reified T> T.`try`(enclosingClass: KClass<*>? = null, tag: String? =
     try {
         tryCode.invoke()
     } catch (e: Exception) {
-        if (throwExc) {
+        if (rethrowException) {
             logd(enclosingClass, inTag, "${getDeclaredSimpleName(enclosingClass)} throwing exception: \n${exceptionToString(e)}")
             throw (e)
         }
@@ -22,10 +24,18 @@ inline fun <reified T> T.`try`(enclosingClass: KClass<*>? = null, tag: String? =
 
 fun exceptionToString (e: Exception?): String {
      val ret: String = if (null == e) "null"
-     else (" ConnectException: ${e.toString()}" +
-           "\n ConnectException Message: ${e.message}" +
-           "\n ConnectException Localized Message: ${e.localizedMessage}" +
-           "\n ConnectException Cause: ${e.cause}" +
-           "\n ConnectException Cause Message: ${e.cause?.message}")
+     else {
+         val sTrace = StringWriter()
+         PrintWriter(sTrace).use { e.printStackTrace(it) }
+         val stackTrace = sTrace.toString()
+         (
+          " Exception: ${e.toString()}" +
+          "\n Exception Type: ${e::class.qualifiedName}" +
+          "\n Message: ${e.message}" +
+          "\n Localized Message: ${e.localizedMessage}" +
+          "\n Cause: ${e.cause.toString()}" +
+          "\n Cause Message: ${e.cause?.message}" +
+          "\n Stack Trace: $stackTrace")
+     }
     return ret
 }

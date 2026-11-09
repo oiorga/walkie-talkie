@@ -80,7 +80,7 @@ class WTIPMesh(uniqueId: String, scope: CoroutineScope) : Mesh<String, WTCommPee
         val tag = "decodeFromString/${randomString(2U)}"
         var kToVTable: Pair<MeshKey<String>, MutableMap<MeshKey<String>, WTCommPeerInfo>>? = null
 
-        val exc = `try`(TAGKClass, tag, throwExc = false) {
+        val exc = `try`(TAGKClass, tag, rethrowException = false) {
             logd(TAGKClass, tag, "Decoding input jSon to kToVTable")
             kToVTable = json.decodeFromString<Pair<MeshKey<String>, MutableMap<MeshKey<String>, WTCommPeerInfo>>>(input)
         }
