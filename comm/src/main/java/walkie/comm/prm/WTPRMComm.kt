@@ -21,12 +21,10 @@ import walkie.talkie.api.WTBusMessageType
 import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.wtModule.WTModOpArg
-import walkie.util.api.BusMessageApi
 import walkie.util.api.MeshDispatchEventId
 import walkie.util.api.MeshKey
 import walkie.util.EventDispatcher
-import walkie.util.EventDispatcherInt
-import walkie.util.BusMessage
+import walkie.util.api.EventDispatcherApi
 import walkie.util.inetToIpString
 import walkie.util.logd
 import walkie.util.logging
@@ -38,12 +36,12 @@ class WTPRMComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
-    private val _callBackList: EventDispatcherInt<Any> = EventDispatcher(),
+    private val _dispatchEvent: EventDispatcherApi<Any> = EventDispatcher(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
 ) :
     WTMessageBusApi by _busMux,
     ModuleOpInt by _moduleOp,
-    EventDispatcherInt<Any> by _callBackList
+    EventDispatcherApi<Any> by _dispatchEvent
 {
     val wtIPComm: WTIPComm = WTIPComm(node, scope)
     private val wtMesh: Mesh<String, WTCommPeerInfo> = WTIPMesh(node.uid(), scope)
@@ -89,7 +87,7 @@ class WTPRMComm (
             logd(TAGKClass, tag, "wtMesh sending: ${dest}/${inetToIpString(dest[0])} -> $jSon")
             wtIPComm.sendIpCommPacket(inetToIpString(dest[0]), dest[1], WTIPCommPacketType.ControlMesh, jSon)
         }
-        wtMesh.subscribeEvent(MeshDispatchEventId.CBMeshNewPeer) { newPeer ->
+        wtMesh.subscribeEvent(MeshDispatchEventId.DEMeshNewPeer) { newPeer ->
             val added = prmMutex.withLock {
                 if ((newPeer as String) !in directNodes) {
                     directNodes += newPeer
@@ -99,22 +97,22 @@ class WTPRMComm (
                 }
             }
             if (added) {
-                dispatchEvent(MeshDispatchEventId.CBMeshNewPeer)
+                dispatchEvent(MeshDispatchEventId.DEMeshNewPeer)
             }
             peersUpdateSendDebugInfo()
         }
-        wtIPComm.subscribeEvent(WTCommDispatchEventId.CBServerPort) { serverPort ->
-            dispatchEvent(WTCommDispatchEventId.CBServerPort, serverPort!!)
+        wtIPComm.subscribeEvent(WTCommDispatchEventId.DEServerPort) { serverPort ->
+            dispatchEvent(WTCommDispatchEventId.DEServerPort, serverPort!!)
             peersUpdateSendDebugInfo()
         }
-        wtMesh.subscribeEvent(MeshDispatchEventId.CBMeshResetPeers) { _ ->
+        wtMesh.subscribeEvent(MeshDispatchEventId.DEMeshResetPeers) { _ ->
             prmMutex.withLock {
                 directNodes = emptyList()
             }
-            dispatchEvent(MeshDispatchEventId.CBMeshResetPeers)
+            dispatchEvent(MeshDispatchEventId.DEMeshResetPeers)
             peersUpdateSendDebugInfo()
         }
-        wtMesh.subscribeEvent(MeshDispatchEventId.CBMeshLostPeer) { newPeer ->
+        wtMesh.subscribeEvent(MeshDispatchEventId.DEMeshLostPeer) { newPeer ->
             val removed = prmMutex.withLock {
                 if ((newPeer as String) in directNodes) {
                     directNodes -= newPeer
@@ -124,11 +122,11 @@ class WTPRMComm (
                 }
             }
             if (removed) {
-                dispatchEvent(MeshDispatchEventId.CBMeshLostPeer)
+                dispatchEvent(MeshDispatchEventId.DEMeshLostPeer)
             }
             peersUpdateSendDebugInfo()
         }
-        wtMesh.subscribeEvent(MeshDispatchEventId.CBMeshGetGroupOwner) { _ ->
+        wtMesh.subscribeEvent(MeshDispatchEventId.DEMeshGetGroupOwner) { _ ->
             val tag = "CBMeshGetGroupOwner/${randomString(2u)}"
 
             logd(tag, "Requesting GroupOwnerInfo: groupInfoCache: $groupInfoCache")
@@ -144,7 +142,7 @@ class WTPRMComm (
                     )
                 )
             }
-            dispatchEvent(MeshDispatchEventId.CBMeshGetGroupOwner)
+            dispatchEvent(MeshDispatchEventId.DEMeshGetGroupOwner)
             peersUpdateSendDebugInfo()
         }
     }

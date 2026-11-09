@@ -86,7 +86,7 @@ class WTComm (
             onEventInfo = WTModOpArg.OnEventInfo(::onBusMessage, scope)
         )
 
-        wtPRMComm.subscribeEvent(MeshDispatchEventId.CBMeshNewPeer) { _ ->
+        wtPRMComm.subscribeEvent(MeshDispatchEventId.DEMeshNewPeer) { _ ->
             send(
                 to = WTModOpArg.To.CommonData,
                 msg = WTModOpArg.Msg(
@@ -97,7 +97,7 @@ class WTComm (
                 )
             )
         }
-        wtPRMComm.subscribeEvent(WTCommDispatchEventId.CBServerPort) { serverPort ->
+        wtPRMComm.subscribeEvent(WTCommDispatchEventId.DEServerPort) { serverPort ->
             logd(tag, "$this sending serverPort: $serverPort to RCToWifi")
 
             send(

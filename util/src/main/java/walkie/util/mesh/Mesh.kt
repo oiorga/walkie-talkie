@@ -12,7 +12,7 @@ import walkie.util.api.MeshDispatchEventId
 import walkie.util.api.MeshKey
 import walkie.util.BlockingQueue
 import walkie.util.EventDispatcher
-import walkie.util.EventDispatcherInt
+import walkie.util.api.EventDispatcherApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -21,8 +21,8 @@ abstract class Mesh<K , V> (
     private var uniqueId: K,
     private var scope: CoroutineScope,
     private var heartbeat: Long = 3000L,
-    private val _callBackList: EventDispatcherInt<Any> = EventDispatcher()
-) : EventDispatcherInt<Any> by _callBackList
+    private val _dispatchEvent: EventDispatcherApi<Any> = EventDispatcher()
+) : EventDispatcherApi<Any> by _dispatchEvent
 {
     companion object {
         const val TAG = "Mesh"
@@ -52,7 +52,7 @@ abstract class Mesh<K , V> (
             kAgeTable.clear()
             kAgeTableSnapshot = kAgeTable.toMap()
         }
-        dispatchEvent(MeshDispatchEventId.CBMeshResetPeers)
+        dispatchEvent(MeshDispatchEventId.DEMeshResetPeers)
     }
 
     init {
@@ -129,7 +129,7 @@ abstract class Mesh<K , V> (
         }
 
         if (k is MeshKey.Key) {
-            dispatchEvent(MeshDispatchEventId.CBMeshNewPeer, k.id)
+            dispatchEvent(MeshDispatchEventId.DEMeshNewPeer, k.id)
         }
     }
 
@@ -174,7 +174,7 @@ abstract class Mesh<K , V> (
         }
 
         if (null == kToVTable[MeshKey.Root]) {
-            dispatchEvent(eventId = MeshDispatchEventId.CBMeshGetGroupOwner)
+            dispatchEvent(eventId = MeshDispatchEventId.DEMeshGetGroupOwner)
         }
 
         kToVTable.forEach { (k, v) ->
@@ -269,7 +269,7 @@ abstract class Mesh<K , V> (
 
         newPeers.forEach { key ->
             if (key is MeshKey.Key)
-                dispatchEvent(MeshDispatchEventId.CBMeshNewPeer, key.id)
+                dispatchEvent(MeshDispatchEventId.DEMeshNewPeer, key.id)
         }
 
         if (bcastPeersNow) {

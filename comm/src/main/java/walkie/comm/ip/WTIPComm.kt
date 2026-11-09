@@ -11,7 +11,6 @@ import kotlinx.serialization.json.Json
 import walkie.comm.WTCommDispatchEventId
 import walkie.comm.ip.WTIPComm.Companion.TAGKClass
 import walkie.talkie.api.WTBusMessage
-import walkie.talkie.api.WTBusMessageApi
 import walkie.talkie.api.wtModule.ModuleOpImpl
 import walkie.talkie.api.wtModule.ModuleOpInt
 import walkie.talkie.api.WTMessageBusId
@@ -23,12 +22,10 @@ import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.util.TCPClient
 import walkie.util.TCPServer
-import walkie.util.api.BusMessageApi
 import walkie.util.exceptionToString
 import walkie.util.BlockingQueue
 import walkie.util.EventDispatcher
-import walkie.util.EventDispatcherInt
-import walkie.util.BusMessage
+import walkie.util.api.EventDispatcherApi
 import walkie.util.getInetAddressByName
 import walkie.util.logd
 import walkie.util.logging
@@ -53,12 +50,12 @@ class WTIPComm (
     private val node: NodeIdInt,
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
-    private val _callBackList: EventDispatcherInt<Any> = EventDispatcher(),
+    private val _dispatchEvent: EventDispatcherApi<Any> = EventDispatcher(),
     private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
 ) :
     WTMessageBusApi by _busMux,
     ModuleOpInt by _moduleOp,
-    EventDispatcherInt<Any> by _callBackList
+    EventDispatcherApi<Any> by _dispatchEvent
 {
     val ipOutQueue = BlockingQueue<Triple<InetAddress, Int, ByteArray>>("ipOutQueue", 100, scope)
     val ipInQueue = BlockingQueue<String>("ipInQueue", 100, scope)
@@ -268,7 +265,7 @@ suspend fun WTIPComm.wifiServer(localIp: InetAddress? = null,
     s.wifiServerS = true
 
     serverPort(WTIPComm.SERVERPORT + Random.nextInt(99))
-    dispatchEvent(WTCommDispatchEventId.CBServerPort, serverPort())
+    dispatchEvent(WTCommDispatchEventId.DEServerPort, serverPort())
 
     scope.launch(Dispatchers.Default) {
         var count: Long = 0

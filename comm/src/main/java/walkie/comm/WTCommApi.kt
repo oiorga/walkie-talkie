@@ -1,7 +1,7 @@
 package walkie.comm
 
-import walkie.util.api.DispatchEventIdInt
+import walkie.util.api.DispatchEventId
 
-enum class WTCommDispatchEventId: DispatchEventIdInt {
-    CBServerPort
+enum class WTCommDispatchEventId: DispatchEventId {
+    DEServerPort
 }

@@ -2,11 +2,11 @@ package walkie.util.api;
 
 import kotlinx.serialization.Serializable
 
-enum class MeshDispatchEventId: DispatchEventIdInt {
-    CBMeshNewPeer,
-    CBMeshLostPeer,
-    CBMeshResetPeers,
-    CBMeshGetGroupOwner
+enum class MeshDispatchEventId: DispatchEventId {
+    DEMeshNewPeer,
+    DEMeshLostPeer,
+    DEMeshResetPeers,
+    DEMeshGetGroupOwner
 }
 
 @Serializable
