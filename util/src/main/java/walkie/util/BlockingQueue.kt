@@ -9,7 +9,7 @@ import walkie.util.api.BlockingQueueResult
 import kotlin.time.Duration.Companion.milliseconds
 
 class BlockingQueue<T> (
-    override val name: String = "BlockingQueue",
+    override val name: String,
     override val capacity: Int = 100,
     override val scope: CoroutineScope,
     private val channel: Channel<T> = Channel<T>(capacity),
@@ -25,7 +25,7 @@ class BlockingQueue<T> (
 
     init {
         logging(true)
-        logd(tag, "This simple name: ${this::class.java.simpleName}")
+        logd(tag, "This simple name: ${this::class.java.simpleName}/$name")
     }
 
     fun logD(tag: String = this.tag) {

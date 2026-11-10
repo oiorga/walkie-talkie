@@ -2,6 +2,7 @@ package walkie.util.mesh
 
 import android.os.SystemClock
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -13,16 +14,18 @@ import walkie.util.api.MeshKey
 import walkie.util.BlockingQueue
 import walkie.util.EventDispatcher
 import walkie.util.api.EventDispatcherApi
+import walkie.util.api.MeshApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
 
 abstract class Mesh<K , V> (
-    private var uniqueId: K,
-    private var scope: CoroutineScope,
-    private var heartbeat: Long = 3000L,
+    override val uniqueId: K,
+    override val scope: CoroutineScope,
+    override val heartbeat: Long = 3000L,
     private val _dispatchEvent: EventDispatcherApi<Any> = EventDispatcher()
-) : EventDispatcherApi<Any> by _dispatchEvent
+) : MeshApi<K, V>,
+    EventDispatcherApi<Any> by _dispatchEvent
 {
     companion object {
         const val TAG = "Mesh"
@@ -37,12 +40,13 @@ abstract class Mesh<K , V> (
     @Volatile
     private var kToVTableSnapshot: Map<MeshKey<K>, V> = emptyMap<MeshKey<K>, V>()
 
-    private val inPeersQ: BlockingQueue<Pair<MeshKey<K>, MutableMap<MeshKey<K>, V>>> = BlockingQueue<Pair<MeshKey<K>, MutableMap<MeshKey<K>, V>>>(name = "$TAG/inPeersQ", capacity = 100, scope)
-    private val meshMutex: Mutex = Mutex()
-    private var sendCall: (suspend (v: V, info: String) -> Unit)? = null
+    private val inPeersQ: BlockingQueue<Pair<MeshKey<K>, MutableMap<MeshKey<K>, V>>> = BlockingQueue<Pair<MeshKey<K>, MutableMap<MeshKey<K>, V>>>(name = "$TAG/inPeersQ", capacity = 100, scope = scope)
     private val inPeersGate: Gate = Gate()
 
-    suspend fun resetPeersInfo() {
+    private val meshMutex: Mutex = Mutex()
+    private var updatePeersCall: (suspend (v: V, info: String) -> Unit)? = null
+
+    override suspend fun resetPeersInfo() {
         val tag = "resetPeersInfo/${randomString(2u)}"
         logd(tag, "resetPeersInfo")
 
@@ -65,7 +69,7 @@ abstract class Mesh<K , V> (
         logd(tag, "Init Exit")
     }
 
-    abstract fun decodeFromString(input: String): Pair<MeshKey<K>, MutableMap<MeshKey<K>, V>>?
+    abstract override fun decodeFromString(input: String): Pair<MeshKey<K>, MutableMap<MeshKey<K>, V>>?
     fun addPeersJson(jsonString: String) {
         val tag = "addPeersJson/${randomString(2u)}"
 
@@ -74,7 +78,7 @@ abstract class Mesh<K , V> (
         inPeersQ.enqueueRetryBestEffort(kToVTable)
     }
 
-    abstract fun encodeToString(kToVTable: Pair<MeshKey<K>, Map<MeshKey<K>, V>>): String
+    abstract override fun encodeToString(kToVTable: Pair<MeshKey<K>, Map<MeshKey<K>, V>>): String
 
     private suspend fun sendPeers(dest: V, kToVTable: Pair<MeshKey<K>, Map<MeshKey<K>, V>>) {
         val tag = "sendPeers/${randomString(2u)}"
@@ -83,17 +87,17 @@ abstract class Mesh<K , V> (
         val jSon = encodeToString(kToVTable)
         logd(TAGKClass, tag, "(1): $dest -> $jSon")
 
-        sendCall?.invoke(dest, jSon)
+        updatePeersCall?.invoke(dest, jSon)
             ?: logd(TAGKClass, tag, "sendPeersCall is NULL")
     }
 
-    fun registerSend (sendCall: suspend (V, String) -> Unit) {
+    override fun registerUpdateCall (updatePeersCall: suspend (V, String) -> Unit) {
         val tag = "registerSend/${randomString(2u)}"
 
-        if (null != this.sendCall) {
+        if (null != this.updatePeersCall) {
             logd(tag, "this.sendCall is already set!!!")
         }
-        this.sendCall = sendCall
+        this.updatePeersCall = updatePeersCall
     }
 
     private fun main() {
@@ -116,7 +120,7 @@ abstract class Mesh<K , V> (
     /**
      * Add first Direct Peer (Group Owner) or Self
      **/
-    suspend fun addPeer(k: MeshKey<K>, v: V) {
+    override suspend fun addPeer(k: MeshKey<K>, v: V) {
         val tag = "addPeer/${randomString(2u)}"
 
         logd(tag, "$k -> $v")
@@ -278,9 +282,9 @@ abstract class Mesh<K , V> (
         }
     }
 
-    fun directPeer (node: MeshKey<K>): V? = (kToVTableSnapshot[node])
+    override fun directPeer (node: MeshKey<K>): V? = (kToVTableSnapshot[node])
 
-    fun directPeerAgeMills (node: MeshKey<K>): Long? = (kAgeTableSnapshot[node])
+    override fun directPeerAgeMills (node: MeshKey<K>): Long? = (kAgeTableSnapshot[node])
 
-    fun directPeerAgeSeconds (node: MeshKey<K>): Long? = (kAgeTableSnapshot[node]?.div(1000L))
+    override fun directPeerAgeSeconds (node: MeshKey<K>): Long? = (kAgeTableSnapshot[node]?.div(1000L))
 }

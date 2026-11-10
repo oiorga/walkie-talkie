@@ -44,7 +44,7 @@ class WTPRMComm (
     EventDispatcherApi<Any> by _dispatchEvent
 {
     val wtIPComm: WTIPComm = WTIPComm(node, scope)
-    private val wtMesh: Mesh<String, WTCommPeerInfo> = WTIPMesh(node.uid(), scope)
+    private val wtMesh: WTIPMesh = WTIPMesh(node.uid(), scope)
 
     private val prmMutex: Mutex = Mutex()
 
@@ -81,7 +81,7 @@ class WTPRMComm (
             onEventInfo = WTModOpArg.OnEventInfo(::onBusMessage, scope)
         )
 
-        wtMesh.registerSend { destPeer, jSon ->
+        wtMesh.registerUpdateCall { destPeer, jSon ->
             val tag = "wtMeshPRMSend/${randomString(2U)}"
             val dest = destPeer.umCI
             logd(TAGKClass, tag, "wtMesh sending: ${dest}/${inetToIpString(dest[0])} -> $jSon")

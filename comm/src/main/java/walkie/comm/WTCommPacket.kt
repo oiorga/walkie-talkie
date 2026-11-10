@@ -8,6 +8,7 @@ import walkie.talkie.api.wtcomm.WTPeerInt
 import walkie.talkie.api.wtsystem.nodeUniqueId
 import walkie.talkie.api.wtsystem.uidToId
 import walkie.talkie.api.wtsystem.uidToUnique
+import walkie.util.api.MeshApi
 import walkie.util.api.MeshKey
 import walkie.util.`try`
 import walkie.util.logd
@@ -45,7 +46,9 @@ data class WTCommPeerInfo (
         get() = nodeUniqueId(id, unique!!)
 }
 
-class WTIPMesh(uniqueId: String, scope: CoroutineScope) : Mesh<String, WTCommPeerInfo>(uniqueId, scope) {
+class WTIPMesh(uniqueId: String,
+               scope: CoroutineScope
+): Mesh<String, WTCommPeerInfo>(uniqueId, scope){
     companion object {
         const val TAG = "WTIPMesh"
         val TAGKClass = WTIPMesh::class

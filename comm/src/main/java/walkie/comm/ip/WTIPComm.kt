@@ -47,7 +47,7 @@ class WTIPCommStatic private constructor() {
 }
 
 class WTIPComm (
-    private val node: NodeIdInt,
+    private val nodeId: NodeIdInt,
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
     private val _dispatchEvent: EventDispatcherApi<Any> = EventDispatcher(),
@@ -57,8 +57,8 @@ class WTIPComm (
     ModuleOpInt by _moduleOp,
     EventDispatcherApi<Any> by _dispatchEvent
 {
-    val ipOutQueue = BlockingQueue<Triple<InetAddress, Int, ByteArray>>("ipOutQueue", 100, scope)
-    val ipInQueue = BlockingQueue<String>("ipInQueue", 100, scope)
+    val ipOutQueue: BlockingQueue<Triple<InetAddress, Int, ByteArray>> = BlockingQueue<Triple<InetAddress, Int, ByteArray>>("$TAG/ipOutQueue", 100, scope = scope)
+    val ipInQueue: BlockingQueue<String> = BlockingQueue<String>("$TAG/ipInQueue", 100, scope = scope)
 
     var wtServer: TCPServer? = null
     var localServerIpAddress: InetAddress? = null
