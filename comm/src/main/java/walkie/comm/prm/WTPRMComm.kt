@@ -10,8 +10,8 @@ import walkie.comm.WTIPMesh
 import walkie.comm.ip.WTIPComm
 import walkie.comm.ip.WTIPCommPacketType
 import walkie.talkie.api.WTBusMessage
-import walkie.talkie.api.wtModule.ModuleOpImpl
-import walkie.talkie.api.wtModule.ModuleOpInt
+import walkie.talkie.api.wtModule.WTModuleOp
+import walkie.talkie.api.wtModule.WTModuleOpApi
 import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
@@ -28,7 +28,6 @@ import walkie.util.api.EventDispatcherApi
 import walkie.util.inetToIpString
 import walkie.util.logd
 import walkie.util.logging
-import walkie.util.mesh.Mesh
 import walkie.util.randomString
 import java.net.InetAddress
 
@@ -37,10 +36,10 @@ class WTPRMComm (
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
     private val _dispatchEvent: EventDispatcherApi<Any> = EventDispatcher(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
+    private val _moduleOp: WTModuleOpApi = WTModuleOp(_busMux)
 ) :
     WTMessageBusApi by _busMux,
-    ModuleOpInt by _moduleOp,
+    WTModuleOpApi by _moduleOp,
     EventDispatcherApi<Any> by _dispatchEvent
 {
     val wtIPComm: WTIPComm = WTIPComm(node, scope)
@@ -78,7 +77,7 @@ class WTPRMComm (
 
         subscribe(
             to = WTModOpArg.To.PRMComm,
-            onEventInfo = WTModOpArg.OnEventInfo(::onBusMessage, scope)
+            onEvent = WTModOpArg.OnEvent(::onBusMessage, scope)
         )
 
         wtMesh.registerUpdateCall { destPeer, jSon ->

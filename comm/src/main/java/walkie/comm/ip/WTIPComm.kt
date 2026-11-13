@@ -11,8 +11,8 @@ import kotlinx.serialization.json.Json
 import walkie.comm.WTCommDispatchEventId
 import walkie.comm.ip.WTIPComm.Companion.TAGKClass
 import walkie.talkie.api.WTBusMessage
-import walkie.talkie.api.wtModule.ModuleOpImpl
-import walkie.talkie.api.wtModule.ModuleOpInt
+import walkie.talkie.api.wtModule.WTModuleOp
+import walkie.talkie.api.wtModule.WTModuleOpApi
 import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
@@ -51,10 +51,10 @@ class WTIPComm (
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
     private val _dispatchEvent: EventDispatcherApi<Any> = EventDispatcher(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
+    private val _moduleOp: WTModuleOpApi = WTModuleOp(_busMux)
 ) :
     WTMessageBusApi by _busMux,
-    ModuleOpInt by _moduleOp,
+    WTModuleOpApi by _moduleOp,
     EventDispatcherApi<Any> by _dispatchEvent
 {
     val ipOutQueue: BlockingQueue<Triple<InetAddress, Int, ByteArray>> = BlockingQueue<Triple<InetAddress, Int, ByteArray>>("$TAG/ipOutQueue", 100, scope = scope)
@@ -82,7 +82,7 @@ class WTIPComm (
 
         subscribe(
             to = WTModOpArg.To.IpComm,
-            onEventInfo = WTModOpArg.OnEventInfo(::onBusMessage, scope)
+            onEvent = WTModOpArg.OnEvent(::onBusMessage, scope)
         )
     }
 

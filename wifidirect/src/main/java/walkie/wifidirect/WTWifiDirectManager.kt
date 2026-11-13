@@ -23,9 +23,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import walkie.talkie.api.WTBusMessage
-import walkie.talkie.api.WTBusMessageApi
-import walkie.talkie.api.wtModule.ModuleOpImpl
-import walkie.talkie.api.wtModule.ModuleOpInt
+import walkie.talkie.api.wtModule.WTModuleOp
+import walkie.talkie.api.wtModule.WTModuleOpApi
 import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtdebug.wtError
 import walkie.talkie.api.wtsystem.NodeIdInt
@@ -39,7 +38,6 @@ import walkie.talkie.api.WTRemoteCall
 import walkie.util.GenericList
 import walkie.util.Mailbox
 import walkie.util.MailboxData
-import walkie.util.api.BusMessageBaseApi
 import walkie.util.logd
 import walkie.util.logdAppend
 import walkie.util.logging
@@ -60,9 +58,9 @@ class WTWifiDirectManager(
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
     private val _callMap: WTRemoteCall = WTRemoteCall(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux, _callMap)
+    private val _moduleOp: WTModuleOpApi = WTModuleOp(_busMux, _callMap)
 ) :
-    ModuleOpInt by _moduleOp,
+    WTModuleOpApi by _moduleOp,
     WTMessageBusApi by _busMux,
     WTRemoteCallApi by _callMap {
 
@@ -181,7 +179,7 @@ class WTWifiDirectManager(
 
         subscribe(
             to = WTModOpArg.To.Wifi,
-            onEventInfo = WTModOpArg.OnEventInfo(::onBusMessage, scope)
+            onEvent = WTModOpArg.OnEvent(::onBusMessage, scope)
         )
     }
 

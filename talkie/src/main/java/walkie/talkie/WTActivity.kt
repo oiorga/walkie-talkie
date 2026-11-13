@@ -45,8 +45,8 @@ import walkie.chat.Receiver
 import walkie.chat.Sender
 import walkie.comm.WTComm
 import walkie.talkie.api.WTBusMessage
-import walkie.talkie.api.wtModule.ModuleOpImpl
-import walkie.talkie.api.wtModule.ModuleOpInt
+import walkie.talkie.api.wtModule.WTModuleOp
+import walkie.talkie.api.wtModule.WTModuleOpApi
 import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtmisc.InfoMap
@@ -62,7 +62,6 @@ import walkie.talkie.ui.nav.WTNavInit
 import walkie.talkie.ui.screens.customComposablesInit
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.viewmodel.WTViewModelFactory
-import walkie.util.api.BusMessageApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -72,10 +71,10 @@ import kotlin.system.exitProcess
 class WTActivity(
     private val _busMux: WTMessageBus = WTMessageBus(),
     private val _callMap: WTRemoteCall = WTRemoteCall(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux, _callMap)
+    private val _moduleOp: WTModuleOpApi = WTModuleOp(_busMux, _callMap)
 ) :
     ComponentActivity(),
-    ModuleOpInt by _moduleOp,
+    WTModuleOpApi by _moduleOp,
     WTMessageBusApi by _busMux,
     WTRemoteCallApi by _callMap {
 
@@ -438,7 +437,7 @@ internal fun WTActivity.wtCustomInit(){
 
     subscribe(
         to = WTModOpArg.To.Activity,
-        onEventInfo = WTModOpArg.OnEventInfo(::onBusMessage, wtScope)
+        onEvent = WTModOpArg.OnEvent(::onBusMessage, wtScope)
     )
 
     /* To move to App init section */

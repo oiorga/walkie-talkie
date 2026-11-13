@@ -107,7 +107,7 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTDataHub {
 
             wtHub.subscribe(
                 to = WTModOpArg.To.CommonData,
-                onEventInfo = WTModOpArg.OnEventInfo(wtHub::onBusMessage, wtHub.wtScope)
+                onEvent = WTModOpArg.OnEvent(wtHub::onBusMessage, wtHub.wtScope)
             )
         }
         1 -> {

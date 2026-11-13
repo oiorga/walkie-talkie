@@ -11,8 +11,8 @@ import walkie.chat.ChatMessageItemList
 import walkie.chat.Receiver
 import walkie.chat.Sender
 import walkie.talkie.api.WTBusMessage
-import walkie.talkie.api.wtModule.ModuleOpImpl
-import walkie.talkie.api.wtModule.ModuleOpInt
+import walkie.talkie.api.wtModule.WTModuleOp
+import walkie.talkie.api.wtModule.WTModuleOpApi
 import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
@@ -28,8 +28,6 @@ import walkie.talkie.api.WTRemoteCallApi
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.node.NodeId
-import walkie.util.api.BusMessageApi
-import walkie.util.BusMessage
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -41,9 +39,9 @@ data class DiscussionMap(
     val scope: CoroutineScope,
     private val _callMap: WTRemoteCallApi = WTRemoteCall(),
     private val _busMux: WTMessageBus = WTMessageBus(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
+    private val _moduleOp: WTModuleOpApi = WTModuleOp(_busMux)
 ) : WTRemoteCallApi by _callMap,
-    ModuleOpInt by _moduleOp,
+    WTModuleOpApi by _moduleOp,
     WTMessageBusApi by _busMux
 {
     lateinit var updateUiLiveData: UpdateUiLiveData
@@ -67,7 +65,7 @@ data class DiscussionMap(
 
         subscribe(
             to = WTModOpArg.To.Chat,
-            onEventInfo = WTModOpArg.OnEventInfo(::onBusMessage, scope)
+            onEvent = WTModOpArg.OnEvent(::onBusMessage, scope)
         )
     }
 

@@ -3,8 +3,8 @@ package walkie.comm
 import kotlinx.coroutines.CoroutineScope
 import walkie.comm.ip.wtIPCommMain
 import walkie.comm.prm.WTPRMComm
-import walkie.talkie.api.wtModule.ModuleOpImpl
-import walkie.talkie.api.wtModule.ModuleOpInt
+import walkie.talkie.api.wtModule.WTModuleOp
+import walkie.talkie.api.wtModule.WTModuleOpApi
 import walkie.talkie.api.WTBusMessageType
 import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.WTMessageBusApi
@@ -28,10 +28,10 @@ class WTComm (
     private val nodeId: NodeIdInt,
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
+    private val _moduleOp: WTModuleOpApi = WTModuleOp(_busMux)
 
 ) : WTMessageBusApi by _busMux,
-    ModuleOpInt by _moduleOp,
+    WTModuleOpApi by _moduleOp,
     WTCommChatMessageIn,
     WTCommChatMessageOut,
     WTCommPacketOut,
@@ -83,7 +83,7 @@ class WTComm (
 
         subscribe(
             to = WTModOpArg.To.Comm,
-            onEventInfo = WTModOpArg.OnEventInfo(::onBusMessage, scope)
+            onEvent = WTModOpArg.OnEvent(::onBusMessage, scope)
         )
 
         wtPRMComm.subscribeEvent(MeshDispatchEventId.DEMeshNewPeer) { _ ->

@@ -17,9 +17,8 @@ import walkie.talkie.globalmap.DiscussionMap
 import walkie.talkie.ui.nav.wtChatUpdateUI
 import walkie.talkie.ui.screens.WTUITheme
 import walkie.talkie.viewmodel.WTViewModel
-import walkie.talkie.api.wtModule.ModuleOpImpl
-import walkie.talkie.api.wtModule.ModuleOpInt
-import walkie.talkie.api.WTBusMessageApi
+import walkie.talkie.api.wtModule.WTModuleOp
+import walkie.talkie.api.wtModule.WTModuleOpApi
 import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtdebug.WTDebugInt
 import walkie.talkie.api.WTBusMessageType
@@ -37,10 +36,10 @@ import walkie.wifidirect.WiFiDirectBroadcastReceiver
 class WTDataHub private constructor (
     private val _callMap: WTRemoteCallApi = WTRemoteCall(),
     private val _busMux: WTMessageBus = WTMessageBus(),
-    private val _moduleOp: ModuleOpInt = ModuleOpImpl(_busMux)
+    private val _moduleOp: WTModuleOpApi = WTModuleOp(_busMux)
 ) : WTRemoteCallApi by _callMap,
     WTMessageBusApi by _busMux,
-    ModuleOpInt by _moduleOp,
+    WTModuleOpApi by _moduleOp,
     WTDebugInt
 {
     companion object {
