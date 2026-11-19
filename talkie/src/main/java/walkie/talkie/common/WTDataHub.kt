@@ -9,6 +9,7 @@ import walkie.chat.ChatGroupMap
 import walkie.comm.WTComm
 import walkie.talkie.BuildConfig
 import walkie.talkie.api.WTBusMessage
+import walkie.talkie.api.WTBusMessageApi
 import walkie.talkie.api.wtchat.ChatGroupIdInt
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
@@ -88,7 +89,7 @@ class WTDataHub private constructor (
 
     override suspend fun onBusMessage(
         busId: WTMessageBusId,
-        msg: WTBusMessage
+        msg: WTBusMessageApi
         ) {
         val tag = "channelOnReceive/${randomString(2U)}"
         val type = msg.type

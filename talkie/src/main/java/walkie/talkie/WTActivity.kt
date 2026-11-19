@@ -45,6 +45,7 @@ import walkie.chat.Receiver
 import walkie.chat.Sender
 import walkie.comm.WTComm
 import walkie.talkie.api.WTBusMessage
+import walkie.talkie.api.WTBusMessageApi
 import walkie.talkie.api.wtModule.WTModuleOp
 import walkie.talkie.api.wtModule.WTModuleOpApi
 import walkie.talkie.api.WTMessageBusId
@@ -250,7 +251,7 @@ class WTActivity(
     private val info1 = InfoMap(groupIdWDI)
     override suspend fun onBusMessage(
         busId: WTMessageBusId,
-        msg: WTBusMessage
+        msg: WTBusMessageApi
     ) {
         val type = msg.type
         val data = msg.data

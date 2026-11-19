@@ -19,12 +19,12 @@ interface RemoteCallBaseApi<CallId, RemoteHandler: RemoteCallHandlerBaseApi<*, *
     val callMap: Map<CallId, RemoteHandler>
     fun callMapMergeIn (callMap: Map<CallId, RemoteHandler>)
     fun registerRemoteCall(remoteCallId: CallId, remoteHandler: RemoteHandler)
-    fun remoteCall (remoteCallId: CallId, input: CallInput) : CallResult?
-    fun remoteCall (remoteCallId: CallId) : CallResult?
+    fun remoteCall (remoteCallId: CallId, input: CallInput) : CallResult
+    fun remoteCall (remoteCallId: CallId) : CallResult
     fun remoteCallAdd(callImpl: RemoteCallBaseApi<CallId, RemoteHandler, CallInput, CallResult>)
     fun remoteCallJoin(callImpl: RemoteCallBaseApi<CallId, RemoteHandler, CallInput, CallResult>)
 }
 
-interface RemoteCallApi<CallId>: RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, Any, Any>
+interface RemoteCallApi<CallId: RemoteCallId>: RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, Any, Any>
 interface RemoteCallHandlerApi<CallInput, CallResult>: RemoteCallHandlerBaseApi<CallInput, CallResult>
 interface RemoteCallId: RemoteCallIdBase

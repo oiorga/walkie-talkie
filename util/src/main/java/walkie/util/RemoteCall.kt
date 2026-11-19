@@ -44,21 +44,20 @@ open class RemoteCallBase<CallId, CallInput, CallResult>() :
     override fun remoteCall(
         remoteCallId: CallId,
         input: CallInput
-    ): CallResult? = synchronized(lock) {
+    ): CallResult = synchronized(lock) {
         _callMap[remoteCallId] as? RemoteCallHandlerBaseApi<CallInput, CallResult>
     }?.call(input) ?: run {
         Log.d(tag, "$tag: call: callback $remoteCallId does not exist")
-        null
+        error("$tag: call: callback $remoteCallId does not exist")
     }
 
     override fun remoteCall(
         remoteCallId: CallId
-    ): CallResult? = synchronized(lock) {
+    ): CallResult = synchronized(lock) {
         _callMap[remoteCallId] as? RemoteCallHandlerBaseApi<CallInput, CallResult>
     }?.call(null) ?: run {
         Log.d(tag, "$tag: call: callback $remoteCallId does not exist")
-        /* error("$tag: call: callback $remoteCallId does not exist") */
-        null
+        error("$tag: call: callback $remoteCallId does not exist")
     }
 
     override fun remoteCallAdd(callImpl: RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, CallInput, CallResult>) {

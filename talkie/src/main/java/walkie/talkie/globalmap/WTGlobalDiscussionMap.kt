@@ -11,6 +11,7 @@ import walkie.chat.ChatMessageItemList
 import walkie.chat.Receiver
 import walkie.chat.Sender
 import walkie.talkie.api.WTBusMessage
+import walkie.talkie.api.WTBusMessageApi
 import walkie.talkie.api.wtModule.WTModuleOp
 import walkie.talkie.api.wtModule.WTModuleOpApi
 import walkie.talkie.api.WTMessageBusId
@@ -206,7 +207,7 @@ data class DiscussionMap(
 
     override suspend fun onBusMessage(
         busId: WTMessageBusId,
-        msg: WTBusMessage
+        msg: WTBusMessageApi
         ) {
         val data = msg.data
         when (busId) {

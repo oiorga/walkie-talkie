@@ -23,6 +23,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import walkie.talkie.api.WTBusMessage
+import walkie.talkie.api.WTBusMessageApi
 import walkie.talkie.api.wtModule.WTModuleOp
 import walkie.talkie.api.wtModule.WTModuleOpApi
 import walkie.talkie.api.WTMessageBusId
@@ -185,7 +186,7 @@ class WTWifiDirectManager(
 
     override suspend fun onBusMessage(
         busId: WTMessageBusId,
-        msg: WTBusMessage
+        msg: WTBusMessageApi
     ) {
         val tag = "channelOnReceive/${randomString(2U)}"
 

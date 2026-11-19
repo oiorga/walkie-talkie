@@ -2,6 +2,8 @@ package walkie.talkie.api.wtModule
 
 import kotlinx.coroutines.CoroutineScope
 import walkie.talkie.api.WTBusMessage
+import walkie.talkie.api.WTBusMessageApi
+import walkie.talkie.api.WTBusMessageType
 import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.WTMessageBusId
@@ -10,32 +12,44 @@ import walkie.talkie.api.WTRemoteCallApi
 import walkie.talkie.api.WTRemoteCallId
 import walkie.talkie.api.wtdebug.wtError
 import walkie.util.ModuleOpMod
+import walkie.util.api.BusMessageApi
 import walkie.util.api.BusMessageType
+import walkie.util.api.MessageBusApi
 import walkie.util.api.MessageBusId
 import walkie.util.api.ModOpMod
 import walkie.util.api.ModuleOpApi
 import walkie.util.api.ModuleOpModApi
+import walkie.util.api.RemoteCallApi
 import walkie.util.api.RemoteCallId
 import walkie.util.randomString
+import kotlin.Any
 
-/*
-interface WTModOpModApi: ModuleOpModApi<
-        RemoteCallId,
-        MessageBusId,
-        ModOpMod.OnEvent<MessageBusId, ModOpMod.Message<BusMessageType, Any>>,
-        RemoteCallId,
-        BusMessageType,
-        Any>
+interface WTModuleOpModApi :
+    ModuleOpModApi<
+            WTRemoteCallId,
+            WTMessageBusId,
+            WTRemoteCallId,
+            WTBusMessageType,
+            Any,
+            WTBusMessageApi,
+            WTMessageBusApi,
+            WTRemoteCallApi>
 
-class WTModOpMod: ModuleOpMod<
-//class WTModuleOp: ModuleOpMod<
-        RemoteCallId,
-        MessageBusId,
-        ModOpMod.OnEvent<MessageBusId, ModOpMod.Message<BusMessageType, Any>>,
-        RemoteCallId,
-        BusMessageType,
-        Any>()
-*/
+class WTModuleOpMod(
+    override val messageBus: WTMessageBusApi,
+    override val remoteCall: WTRemoteCallApi,
+    busMessageFactory: (WTBusMessageType, Any?) -> WTBusMessageApi
+): ModuleOpMod<WTRemoteCallId,
+        WTMessageBusId,
+        WTRemoteCallId,
+        WTBusMessageType,
+        Any,
+        WTBusMessageApi,
+        WTMessageBusApi,
+        WTRemoteCallApi>(messageBus, remoteCall, busMessageFactory)
+
+
+
 
 interface WTModuleOpApi: ModuleOpApi<WTModOpArg>
 
@@ -135,7 +149,6 @@ class WTModuleOp(
     */
 }
 
-
 sealed class WTModOpArg {
     sealed class To(val id: WTMessageBusId): WTModOpArg() {
         object Comm: To(WTMessageBusId.ToComm)
@@ -156,7 +169,7 @@ sealed class WTModOpArg {
     }
 
     data class OnEvent(
-        val onEvent: (suspend (WTMessageBusId, WTBusMessage) -> Unit),
+        val onEvent: (suspend (WTMessageBusId, WTBusMessageApi) -> Unit),
         val scope: CoroutineScope
     ) : WTModOpArg()
     data class Msg(val msg: WTBusMessage) : WTModOpArg()

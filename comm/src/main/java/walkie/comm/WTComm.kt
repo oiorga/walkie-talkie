@@ -10,6 +10,7 @@ import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.wtModule.WTModOpArg
 import walkie.talkie.api.WTBusMessage
+import walkie.talkie.api.WTBusMessageApi
 import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
@@ -148,7 +149,7 @@ class WTComm (
         }
     }
 
-    override suspend fun onBusMessage(busId: WTMessageBusId, msg: WTBusMessage) {
+    override suspend fun onBusMessage(busId: WTMessageBusId, msg: WTBusMessageApi) {
         val tag = "channelOnReceive/${randomString(2U)}"
         val type = msg.type
         val data = msg.data

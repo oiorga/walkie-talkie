@@ -6,8 +6,8 @@ import walkie.util.api.MessageBusId
 import walkie.util.api.BusMessageType
 import walkie.util.api.MessageBusApi
 
-interface WTMessageBusApi: MessageBusApi<WTMessageBusId, WTBusMessage, WTBusMessageType, Any>
-class WTMessageBus: MessageBus<WTMessageBusId, WTBusMessage, WTBusMessageType, Any>(), WTMessageBusApi
+interface WTMessageBusApi: MessageBusApi<WTMessageBusId, WTBusMessageApi, WTBusMessageType, Any>
+class WTMessageBus: MessageBus<WTMessageBusId, WTBusMessageApi, WTBusMessageType, Any>(), WTMessageBusApi
 class WTBusMessage(
     override val type: WTBusMessageType,
     override val data: Any?

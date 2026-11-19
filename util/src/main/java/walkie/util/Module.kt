@@ -1,32 +1,28 @@
 package walkie.util
 
 import walkie.util.api.BusMessageType
-import walkie.util.api.MessageBusApi
 import walkie.util.api.BusMessageApi
+import walkie.util.api.MessageBusApi
 import walkie.util.api.MessageBusId
 import walkie.util.api.ModOpMod
 import walkie.util.api.ModuleOpModApi
 import walkie.util.api.RemoteCallApi
 import walkie.util.api.RemoteCallId
 
-/*
-* Critics will say that particular details (remote call and bus exchanging messages mechanisms) to the implementation should be kept to the respective module. But we don't care.
-*
-* We could move the implementation details down the inheritance chain and keep here only the data structures and interfaces, but we don't care. Let this be the only misalignment.
-*/
-
-open class ModuleOpMod<
+abstract class ModuleOpMod<
         Prop: Cmd,
         Dest: MessageBusId,
-        OnEvent: ModOpMod.OnEvent<Dest, ModOpMod.Message<MType, Data>>,
         Cmd: RemoteCallId,
         MType: BusMessageType,
-        Data>(
-    private val _busMap: MessageBus<Dest, BusMessageApi<MType, Data>, MType, Data> = MessageBus(),
-    private val _callMap: RemoteCall<Cmd> = RemoteCall()
-):  ModuleOpModApi<Prop, Dest, OnEvent, Cmd, MType, Data>,
-    MessageBusApi<Dest, BusMessageApi<MType, Data>, MType, Data> by _busMap,
-    RemoteCallApi<Cmd> by _callMap {
+        DType,
+        MsgApi: BusMessageApi<MType, DType>,
+        BusApi: MessageBusApi<Dest, MsgApi, MType, DType>,
+        CallApi: RemoteCallApi<Cmd>
+        >(
+    override val messageBus: BusApi? = null,
+    override val remoteCall: CallApi? = null,
+    private val busMessageFactory: ((MType, DType?) -> MsgApi),
+): ModuleOpModApi<Prop, Dest, Cmd, MType, DType, MsgApi, BusApi, CallApi> {
 
     companion object {
         const val TAG = "ModOpMod"
@@ -34,60 +30,69 @@ open class ModuleOpMod<
     }
 
     override fun set(
-        prop: ModOpMod.Property<Prop>,
-        value: ModOpMod.DataIn<Data>
+        prop: ModOpMod.Property<Prop, Cmd, DType>,
+        value: ModOpMod.Data.In<DType>
     ): ModOpMod.Result<Nothing> {
         TODO("Not yet implemented")
     }
 
-    override fun get(prop: ModOpMod.Property<Prop>): ModOpMod.Result<Data> {
-        return (remoteCall(remoteCallId = prop.id) as? Data)?.let {
+    override fun get(prop: ModOpMod.Property<Prop, Cmd, DType>): ModOpMod.Result<*> {
+        return (remoteCall?.remoteCall(remoteCallId = prop.id))?.let {
             ModOpMod.Result.Value(it)
         } ?: run {
-            /* To flag here type mismatch */
-            ModOpMod.None
+            ModOpMod.Null
         }
     }
 
-    override fun toModOpMessage(msg: BusMessageApi<MType, Data>): ModOpMod.Message<MType, Data> {
-        val tag = "convertOnEventData/${randomString(2U)}"
-        return (msg.data as? Data)?.let { it ->
-            ModOpMod.Message<MType, Data>(msg.type, it)
-        } ?: run {
-            error("$tag. Cannot convert $msg to BusMessageApi")
-        }
+    fun modOpMessage(msg: BusMessageApi<MType, DType>): ModOpMod.Message<MsgApi, MType, DType> {
+        val tag = "modOpMessage/${randomString(2U)}"
+        return ModOpMod.Message.build(
+            type = msg.type,
+            value = msg.data,
+            message = { type, value ->
+                busMessageFactory?.invoke(type, value) ?: error ("$tag busMessageFactory is null")
+            }
+        )
     }
 
     override fun subscribe(
         to: ModOpMod.Destination<Dest>,
-        onEvent: ModOpMod.OnEvent<Dest, ModOpMod.Message<MType, Data>>
+        onEvent: ModOpMod.OnEvent<Dest, MsgApi, MType, DType>
     ): ModOpMod.Result<Nothing> {
-        busSubscribe(
+        messageBus?.busSubscribe(
             busId = to.id,
             scope = onEvent.scope,
             autoCreate = true,
             onReceive = { dest, busMessage ->
-                onEvent.onEventCall(dest, toModOpMessage(busMessage))
+                onEvent.onEventCall(dest, modOpMessage(busMessage))
             }
-        )
+        ) ?: run {
+            return ModOpMod.Null
+        }
 
-        return ModOpMod.None
+        return ModOpMod.Success
     }
 
-    override fun toBusMessage(msg: ModOpMod.Message<MType, Data>): BusMessageApi<MType, Data> {
-        return BusMessage<MType, Data>(msg.type, msg.data)
+    fun busMessage(msg: ModOpMod.Message<MsgApi, MType, DType>): MsgApi {
+        val tag = "busMessage/${randomString(2U)}"
+        return busMessageFactory?.invoke(msg.type, msg.value) ?: error ("$tag busMessageFactory is null")
     }
 
     override fun send(
         to: ModOpMod.Destination<Dest>,
-        msg: ModOpMod.Message<MType, Data>
+        msg: ModOpMod.Message<MsgApi, MType, DType>
     ): ModOpMod.Result<Nothing> {
-        busSendAsync(busId = to.id, toBusMessage(msg))
-        return ModOpMod.None
+
+        messageBus?.busSendAsync(
+            busId = to.id,
+            msg = busMessage(msg)
+        ) ?: return ModOpMod.Null
+
+        return ModOpMod.Success
     }
 
     override fun execute(cmd: ModOpMod.Command<Cmd>): ModOpMod.Result<Nothing> {
-        remoteCall(cmd.id)
-        return ModOpMod.None
+        remoteCall?.remoteCall(cmd.id) ?: run {return ModOpMod.Null }
+        return ModOpMod.Success
     }
 }
