@@ -11,8 +11,8 @@ import walkie.comm.ip.WTIPComm
 import walkie.comm.ip.WTIPCommPacketType
 import walkie.talkie.api.WTBusMessage
 import walkie.talkie.api.WTBusMessageApi
-import walkie.talkie.api.wtModule.WTModuleOp
-import walkie.talkie.api.wtModule.WTModuleOpApi
+import walkie.talkie.api.wtModule.WTModuleOpMod
+import walkie.talkie.api.wtModule.WTModuleOpModApi
 import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtcomm.CommPacket
@@ -21,7 +21,7 @@ import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.WTBusMessageType
 import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.WTMessageBus
-import walkie.talkie.api.wtModule.WTModOpArg
+import walkie.talkie.api.wtModule.WTModOpMod
 import walkie.util.api.MeshDispatchEventId
 import walkie.util.api.MeshKey
 import walkie.util.EventDispatcher
@@ -37,12 +37,12 @@ class WTPRMComm (
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
     private val _dispatchEvent: EventDispatcherApi<Any> = EventDispatcher(),
-    private val _moduleOp: WTModuleOpApi = WTModuleOp(
+    private val _moduleOp: WTModuleOpModApi = WTModuleOpMod(
         messageBus = _busMux,
         remoteCall = null)
 ) :
     WTMessageBusApi by _busMux,
-    WTModuleOpApi by _moduleOp,
+    WTModuleOpModApi by _moduleOp,
     EventDispatcherApi<Any> by _dispatchEvent
 {
     val wtIPComm: WTIPComm = WTIPComm(node, scope)
@@ -75,8 +75,8 @@ class WTPRMComm (
         logging(true)
 
         subscribe(
-            to = WTModOpArg.To.PRMComm,
-            onEvent = WTModOpArg.OnEvent(
+            to = WTModOpMod.To.PRMComm,
+            onEvent = WTModOpMod.OnEvent(
                 scope = scope,
                 onEventCall = { busId, message ->
                     onBusMessage(busId, WTBusMessage(message.type, message.value))
@@ -201,8 +201,8 @@ class WTPRMComm (
                             "$type localIpAddress: $localIpAddress")
 
                         send(
-                            to = WTModOpArg.To.IpComm,
-                            modMsg = WTModOpArg.Msg(
+                            to = WTModOpMod.To.IpComm,
+                            modMsg = WTModOpMod.Msg(
                                 WTBusMessageType.LocalIp,
                                 localIpAddress
                             )
@@ -292,8 +292,8 @@ class WTPRMComm (
                 str += peer?.let { "\n\t${peer.uid} ${peer.umCI} ${directPeerAgeSeconds(k)}" }
             }
             send(
-                to = WTModOpArg.To.Activity,
-                modMsg = WTModOpArg.Msg(
+                to = WTModOpMod.To.Activity,
+                modMsg = WTModOpMod.Msg(
                     WTBusMessageType.MeshDebugInfoMessage,
                     str
                 )

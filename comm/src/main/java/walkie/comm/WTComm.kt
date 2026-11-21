@@ -3,12 +3,12 @@ package walkie.comm
 import kotlinx.coroutines.CoroutineScope
 import walkie.comm.ip.wtIPCommMain
 import walkie.comm.prm.WTPRMComm
-import walkie.talkie.api.wtModule.WTModuleOp
-import walkie.talkie.api.wtModule.WTModuleOpApi
+import walkie.talkie.api.wtModule.WTModuleOpMod
+import walkie.talkie.api.wtModule.WTModuleOpModApi
 import walkie.talkie.api.WTBusMessageType
 import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.WTMessageBusApi
-import walkie.talkie.api.wtModule.WTModOpArg
+import walkie.talkie.api.wtModule.WTModOpMod
 import walkie.talkie.api.WTBusMessage
 import walkie.talkie.api.WTBusMessageApi
 import walkie.talkie.api.WTMessageBusId
@@ -20,8 +20,6 @@ import walkie.talkie.api.wtcomm.WTCommChatMessageOut
 import walkie.talkie.api.wtcomm.WTCommPacketIn
 import walkie.talkie.api.wtcomm.WTCommPacketOut
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.util.BusMessage
-import walkie.util.MessageBus
 import walkie.util.api.MeshDispatchEventId
 import walkie.util.logd
 import walkie.util.logging
@@ -31,12 +29,12 @@ class WTComm (
     private val nodeId: NodeIdInt,
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
-    private val _moduleOp: WTModuleOpApi = WTModuleOp(
+    private val _moduleOp: WTModuleOpModApi = WTModuleOpMod(
         messageBus = _busMux,
         remoteCall = null)
 
 ) : WTMessageBusApi by _busMux,
-    WTModuleOpApi by _moduleOp,
+    WTModuleOpModApi by _moduleOp,
     WTCommChatMessageIn,
     WTCommChatMessageOut,
     WTCommPacketOut,
@@ -87,8 +85,8 @@ class WTComm (
         */
 
         subscribe(
-            to = WTModOpArg.To.Comm,
-            onEvent = WTModOpArg.OnEvent(
+            to = WTModOpMod.To.Comm,
+            onEvent = WTModOpMod.OnEvent(
                 scope = scope,
                 onEventCall = { busId, message ->
                     onBusMessage(busId, WTBusMessage(message.type, message.value))
@@ -97,8 +95,8 @@ class WTComm (
 
         wtPRMComm.subscribeEvent(MeshDispatchEventId.DEMeshNewPeer) { _ ->
             send(
-                to = WTModOpArg.To.CommonData,
-                modMsg = WTModOpArg.Msg(
+                to = WTModOpMod.To.CommonData,
+                modMsg = WTModOpMod.Msg(
                     type = WTBusMessageType.UpdatePeersUI,
                     value = null
                 )
@@ -108,8 +106,8 @@ class WTComm (
             logd(tag, "$this sending serverPort: $serverPort to RCToWifi")
 
             send(
-                to = WTModOpArg.To.Wifi,
-                modMsg = WTModOpArg.Msg(
+                to = WTModOpMod.To.Wifi,
+                modMsg = WTModOpMod.Msg(
                     WTBusMessageType.LocalServerPort,
                     serverPort!!
                 )
@@ -132,8 +130,8 @@ class WTComm (
 
     override suspend fun chatMessageOut(commPacket: CommPacketInt) {
         send(
-            to = WTModOpArg.To.Chat,
-            modMsg = WTModOpArg.Msg(
+            to = WTModOpMod.To.Chat,
+            modMsg = WTModOpMod.Msg(
                 WTBusMessageType.CommToChatPacket,
                 commPacket
             )
@@ -172,8 +170,8 @@ class WTComm (
                     }
                     WTBusMessageType.LocalIp -> {
                         send(
-                            to = WTModOpArg.To.PRMComm,
-                            modMsg = WTModOpArg.Msg(
+                            to = WTModOpMod.To.PRMComm,
+                            modMsg = WTModOpMod.Msg(
                                 WTBusMessageType.LocalIp,
                                 data
                             )
@@ -181,8 +179,8 @@ class WTComm (
                     }
                     WTBusMessageType.GroupInfo -> {
                         send(
-                            to = WTModOpArg.To.PRMComm,
-                            modMsg = WTModOpArg.Msg(
+                            to = WTModOpMod.To.PRMComm,
+                            modMsg = WTModOpMod.Msg(
                                 WTBusMessageType.GroupInfo,
                                 data
                             )

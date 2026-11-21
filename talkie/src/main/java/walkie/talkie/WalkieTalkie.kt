@@ -14,7 +14,7 @@ import walkie.comm.WTComm
 import walkie.talkie.api.WTBusMessage
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtdebug.WTDebugInt
-import walkie.talkie.api.wtModule.WTModOpArg
+import walkie.talkie.api.wtModule.WTModOpMod
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.common.WTDataHub
 import walkie.talkie.globalmap.DiscussionMap
@@ -107,8 +107,8 @@ internal fun WalkieTalkie.wtHubInit(stage: Int) : WTDataHub {
             wtHub.wtScope = wtHub.wtRuntime.scope
 
             wtHub.subscribe(
-                to = WTModOpArg.To.CommonData,
-                onEvent = WTModOpArg.OnEvent(
+                to = WTModOpMod.To.CommonData,
+                onEvent = WTModOpMod.OnEvent(
                     scope = wtHub.wtScope,
                     onEventCall = { busId, message ->
                         wtHub.onBusMessage(

@@ -15,9 +15,9 @@ abstract class ModuleOpMod<
         Cmd: RemoteCallId,
         MType: BusMessageType,
         DType,
-        MsgApi: BusMessageApi<MType, DType>,
-        BusApi: MessageBusApi<Dest, MsgApi, MType, DType>,
-        CallApi: RemoteCallApi<Cmd>
+        MsgApi: BusMessageApi<MType, DType>,                /* Some will say that these transport APIs don't make sense here. */
+        BusApi: MessageBusApi<Dest, MsgApi, MType, DType>,  /* We agree and we don't care. */
+        CallApi: RemoteCallApi<Cmd>                         /* Let this be the only flaw of this app. */
         >(
     override val messageBus: BusApi?,
     override val remoteCall: CallApi?,

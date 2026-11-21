@@ -24,23 +24,21 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import walkie.talkie.api.WTBusMessage
 import walkie.talkie.api.WTBusMessageApi
-import walkie.talkie.api.wtModule.WTModuleOp
-import walkie.talkie.api.wtModule.WTModuleOpApi
+import walkie.talkie.api.wtModule.WTModuleOpMod
+import walkie.talkie.api.wtModule.WTModuleOpModApi
 import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtdebug.wtError
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.WTBusMessageType
 import walkie.talkie.api.WTMessageBusApi
-import walkie.talkie.api.wtModule.WTModOpArg
+import walkie.talkie.api.wtModule.WTModOpMod
 import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.WTRemoteCallApi
 import walkie.talkie.api.WTRemoteCall
 import walkie.talkie.api.wtModule.getPropVal
-import walkie.util.BusMessage
 import walkie.util.GenericList
 import walkie.util.Mailbox
 import walkie.util.MailboxData
-import walkie.util.MessageBus
 import walkie.util.logd
 import walkie.util.logdAppend
 import walkie.util.logging
@@ -61,9 +59,9 @@ class WTWifiDirectManager(
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
     private val _callMap: WTRemoteCall = WTRemoteCall(),
-    private val _moduleOp: WTModuleOpApi = WTModuleOp(_busMux, _callMap)
+    private val _moduleOp: WTModuleOpModApi = WTModuleOpMod(_busMux, _callMap)
 ) :
-    WTModuleOpApi by _moduleOp,
+    WTModuleOpModApi by _moduleOp,
     WTMessageBusApi by _busMux,
     WTRemoteCallApi by _callMap {
 
@@ -86,7 +84,7 @@ class WTWifiDirectManager(
     fun checkWifiPermissions(): Boolean {
         /* return (true == typedCall<Boolean>(RemoteCallId.RCCheckWifiDPermissions)) */
         /* return (true == (get(WTModOpArg.Prop.WifiPerm) as? WTModOpArg.Out<Boolean>)?.value) */
-        val hasWifiPermissions = getPropVal<Boolean>(WTModOpArg.Prop.WifiPerm)
+        val hasWifiPermissions = getPropVal<Boolean>(WTModOpMod.Prop.WifiPerm)
         return hasWifiPermissions ?: run {
             wtError(TAG, "checkWifiPermissions returned NULL: Check callback register.")
             false
@@ -95,7 +93,7 @@ class WTWifiDirectManager(
 
     fun requestWifiPermissions() {
         /* remoteCall(RemoteCallId.RCRequestWifiDPermissions) */
-        execute(WTModOpArg.Cmd.WifiPermRequest)
+        execute(WTModOpMod.Cmd.WifiPermRequest)
     }
 
     val deviceUid: String
@@ -181,8 +179,8 @@ class WTWifiDirectManager(
         logging(true)
 
         subscribe(
-            to = WTModOpArg.To.Wifi,
-            onEvent = WTModOpArg.OnEvent(scope = scope, onEventCall = { busId, message ->
+            to = WTModOpMod.To.Wifi,
+            onEvent = WTModOpMod.OnEvent(scope = scope, onEventCall = { busId, message ->
                 onBusMessage(busId, WTBusMessage(message.type, message.value))
             })
         )
@@ -227,8 +225,8 @@ class WTWifiDirectManager(
         logd(TAGKClass, tag, "Entry")
 
         send(
-            to = WTModOpArg.To.Comm,
-            modMsg = WTModOpArg.Msg(
+            to = WTModOpMod.To.Comm,
+            modMsg = WTModOpMod.Msg(
                 type = WTBusMessageType.GroupInfo,
                 value = Triple(null, null, null)
             )
@@ -626,8 +624,8 @@ class WTWifiDirectManager(
         )
 
         send(
-            to = WTModOpArg.To.Activity,
-            modMsg = WTModOpArg.Msg(
+            to = WTModOpMod.To.Activity,
+            modMsg = WTModOpMod.Msg(
                 type = WTBusMessageType.WifiDebugInfoMessage,
                 value = wtWifiDirectInfo()
             )
@@ -668,8 +666,8 @@ class WTWifiDirectManager(
         val tag = "mainLoopInit/${randomString(2u)}"
 
         send(
-            to = WTModOpArg.To.Activity,
-            modMsg = WTModOpArg.Msg(
+            to = WTModOpMod.To.Activity,
+            modMsg = WTModOpMod.Msg(
                 type = WTBusMessageType.WifiDebugInfoMessage,
                 value = wtWifiDirectInfo()
             )
@@ -680,8 +678,8 @@ class WTWifiDirectManager(
         clearAllServices()
 
         send(
-            to = WTModOpArg.To.Comm,
-            modMsg = WTModOpArg.Msg(
+            to = WTModOpMod.To.Comm,
+            modMsg = WTModOpMod.Msg(
                 type = WTBusMessageType.GroupInfo,
                 value = Triple(null, null, null)
             )
@@ -719,8 +717,8 @@ class WTWifiDirectManager(
                     "Group info changed(Null): wtGroupIp: $oldGroupIp -> $wtGroupIp wtLocalIp: $oldLocalIp -> $wtLocalIp"
                 )
                 send(
-                    to = WTModOpArg.To.Comm,
-                    modMsg = WTModOpArg.Msg(
+                    to = WTModOpMod.To.Comm,
+                    modMsg = WTModOpMod.Msg(
                         type = WTBusMessageType.GroupInfo,
                         value = Triple(null, null, null)
                     )
@@ -739,24 +737,24 @@ class WTWifiDirectManager(
                 )
 
                 send(
-                    to = WTModOpArg.To.Comm,
-                    modMsg = WTModOpArg.Msg(
+                    to = WTModOpMod.To.Comm,
+                    modMsg = WTModOpMod.Msg(
                         type = WTBusMessageType.GroupInfo,
                         value = Triple(null, null, null)
                     )
                 )
 
                 send(
-                    to = WTModOpArg.To.Comm,
-                    modMsg = WTModOpArg.Msg(
+                    to = WTModOpMod.To.Comm,
+                    modMsg = WTModOpMod.Msg(
                         type = WTBusMessageType.GroupInfo,
                         value = Triple(wtGroupOwnerName, wtGroupIp, wtGroupServerPort)
                     )
                 )
 
                 send(
-                    to = WTModOpArg.To.Comm,
-                    modMsg = WTModOpArg.Msg(
+                    to = WTModOpMod.To.Comm,
+                    modMsg = WTModOpMod.Msg(
                         type = WTBusMessageType.LocalIp,
                         value = wtLocalIp
                     )
@@ -776,8 +774,8 @@ class WTWifiDirectManager(
                 logd(tag, "Local IP info changed(IP): wtLocalIp: $oldLocalIp -> $wtLocalIp")
 
                 send(
-                    to = WTModOpArg.To.Comm,
-                    modMsg = WTModOpArg.Msg(
+                    to = WTModOpMod.To.Comm,
+                    modMsg = WTModOpMod.Msg(
                         type = WTBusMessageType.LocalIp,
                         value = wtLocalIp
                     )
@@ -1190,16 +1188,16 @@ class WTWifiDirectManager(
         resetData()
 
         send(
-            to = WTModOpArg.To.Activity,
-            modMsg = WTModOpArg.Msg(
+            to = WTModOpMod.To.Activity,
+            modMsg = WTModOpMod.Msg(
                 type = WTBusMessageType.WifiDebugInfoMessage,
                 value = wtWifiDirectInfo()
             )
         )
 
         send(
-            to = WTModOpArg.To.Activity,
-            modMsg = WTModOpArg.Msg(
+            to = WTModOpMod.To.Activity,
+            modMsg = WTModOpMod.Msg(
                 type = WTBusMessageType.WifiRestartChannel,
                 value = null
             )

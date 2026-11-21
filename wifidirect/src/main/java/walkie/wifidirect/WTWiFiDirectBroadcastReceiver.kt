@@ -26,11 +26,11 @@ import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_STATE_CHANGED_ACTION
 import android.net.wifi.p2p.WifiP2pManager.WIFI_P2P_THIS_DEVICE_CHANGED_ACTION
 import kotlinx.coroutines.CoroutineScope
 import walkie.talkie.api.WTBusMessage
-import walkie.talkie.api.wtModule.WTModuleOp
-import walkie.talkie.api.wtModule.WTModuleOpApi
+import walkie.talkie.api.wtModule.WTModuleOpMod
+import walkie.talkie.api.wtModule.WTModuleOpModApi
 import walkie.talkie.api.WTBusMessageType
 import walkie.talkie.api.WTMessageBusApi
-import walkie.talkie.api.wtModule.WTModOpArg
+import walkie.talkie.api.wtModule.WTModOpMod
 import walkie.talkie.api.WTMessageBus
 import walkie.util.getDeclaredSimpleName
 import walkie.util.logd
@@ -42,7 +42,7 @@ import walkie.util.logging
 class WiFiDirectBroadcastReceiver (
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
-    private val _moduleOp: WTModuleOpApi = WTModuleOp(
+    private val _moduleOp: WTModuleOpModApi = WTModuleOpMod(
         messageBus = _busMux,
         remoteCall = null,
         busMessageFactory = { type, data ->
@@ -52,7 +52,7 @@ class WiFiDirectBroadcastReceiver (
             )
         })
 ) : BroadcastReceiver(),
-    WTModuleOpApi by _moduleOp,
+    WTModuleOpModApi by _moduleOp,
     WTMessageBusApi by _busMux
 {
     companion object {
@@ -83,8 +83,8 @@ class WiFiDirectBroadcastReceiver (
             WIFI_P2P_THIS_DEVICE_CHANGED_ACTION,
             -> {
                 send(
-                    to = WTModOpArg.To.Wifi,
-                    modMsg = WTModOpArg.Msg(
+                    to = WTModOpMod.To.Wifi,
+                    modMsg = WTModOpMod.Msg(
                         type = WTBusMessageType.WifiBroadcastReceiver,
                         value = intent)
                 )

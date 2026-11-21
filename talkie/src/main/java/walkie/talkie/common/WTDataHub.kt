@@ -8,7 +8,6 @@ import kotlinx.coroutines.CoroutineScope
 import walkie.chat.ChatGroupMap
 import walkie.comm.WTComm
 import walkie.talkie.BuildConfig
-import walkie.talkie.api.WTBusMessage
 import walkie.talkie.api.WTBusMessageApi
 import walkie.talkie.api.wtchat.ChatGroupIdInt
 import walkie.talkie.api.wtchat.ChatGroupType
@@ -18,8 +17,8 @@ import walkie.talkie.globalmap.DiscussionMap
 import walkie.talkie.ui.nav.wtChatUpdateUI
 import walkie.talkie.ui.screens.WTUITheme
 import walkie.talkie.viewmodel.WTViewModel
-import walkie.talkie.api.wtModule.WTModuleOp
-import walkie.talkie.api.wtModule.WTModuleOpApi
+import walkie.talkie.api.wtModule.WTModuleOpMod
+import walkie.talkie.api.wtModule.WTModuleOpModApi
 import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtdebug.WTDebugInt
 import walkie.talkie.api.WTBusMessageType
@@ -37,12 +36,12 @@ import walkie.wifidirect.WiFiDirectBroadcastReceiver
 class WTDataHub private constructor (
     private val _callMap: WTRemoteCallApi = WTRemoteCall(),
     private val _busMux: WTMessageBus = WTMessageBus(),
-    private val _moduleOp: WTModuleOpApi = WTModuleOp(
+    private val _moduleOp: WTModuleOpModApi = WTModuleOpMod(
         messageBus = _busMux,
         remoteCall = _callMap)
 ) : WTRemoteCallApi by _callMap,
     WTMessageBusApi by _busMux,
-    WTModuleOpApi by _moduleOp,
+    WTModuleOpModApi by _moduleOp,
     WTDebugInt
 {
     companion object {

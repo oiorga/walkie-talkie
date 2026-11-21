@@ -12,15 +12,15 @@ import walkie.comm.WTCommDispatchEventId
 import walkie.comm.ip.WTIPComm.Companion.TAGKClass
 import walkie.talkie.api.WTBusMessage
 import walkie.talkie.api.WTBusMessageApi
-import walkie.talkie.api.wtModule.WTModuleOp
-import walkie.talkie.api.wtModule.WTModuleOpApi
+import walkie.talkie.api.wtModule.WTModuleOpMod
+import walkie.talkie.api.wtModule.WTModuleOpModApi
 import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.WTBusMessageType
 import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.WTMessageBusApi
-import walkie.talkie.api.wtModule.WTModOpArg
+import walkie.talkie.api.wtModule.WTModOpMod
 import walkie.util.TCPClient
 import walkie.util.TCPServer
 import walkie.util.exceptionToString
@@ -52,12 +52,12 @@ class WTIPComm (
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
     private val _dispatchEvent: EventDispatcherApi<Any> = EventDispatcher(),
-    private val _moduleOp: WTModuleOpApi = WTModuleOp(
+    private val _moduleOp: WTModuleOpModApi = WTModuleOpMod(
         messageBus = _busMux,
         remoteCall = null)
 ) :
     WTMessageBusApi by _busMux,
-    WTModuleOpApi by _moduleOp,
+    WTModuleOpModApi by _moduleOp,
     EventDispatcherApi<Any> by _dispatchEvent
 {
     val ipOutQueue: BlockingQueue<Triple<InetAddress, Int, ByteArray>> = BlockingQueue<Triple<InetAddress, Int, ByteArray>>("$TAG/ipOutQueue", 100, scope = scope)
@@ -80,8 +80,8 @@ class WTIPComm (
         logd(tag, "init")
 
         subscribe(
-            to = WTModOpArg.To.IpComm,
-            onEvent = WTModOpArg.OnEvent(
+            to = WTModOpMod.To.IpComm,
+            onEvent = WTModOpMod.OnEvent(
                 scope = scope,
                 onEventCall = { busId, message ->
                     onBusMessage(busId, WTBusMessage(message.type, message.value))
@@ -230,8 +230,8 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
             }
 
             send(
-                to = WTModOpArg.To.Comm,
-                modMsg = WTModOpArg.Msg(
+                to = WTModOpMod.To.Comm,
+                modMsg = WTModOpMod.Msg(
                     WTBusMessageType.WifiMessage,
                     commPacket
                 )
@@ -239,8 +239,8 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
         }
         WTIPCommPacketType.ControlMesh -> {
             send(
-                to = WTModOpArg.To.PRMComm,
-                modMsg = WTModOpArg.Msg(
+                to = WTModOpMod.To.PRMComm,
+                modMsg = WTModOpMod.Msg(
                     WTBusMessageType.ControlMesh,
                     decodedJSon.jsonString
                 )

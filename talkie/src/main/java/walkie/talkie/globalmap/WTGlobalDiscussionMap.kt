@@ -12,8 +12,8 @@ import walkie.chat.Receiver
 import walkie.chat.Sender
 import walkie.talkie.api.WTBusMessage
 import walkie.talkie.api.WTBusMessageApi
-import walkie.talkie.api.wtModule.WTModuleOp
-import walkie.talkie.api.wtModule.WTModuleOpApi
+import walkie.talkie.api.wtModule.WTModuleOpMod
+import walkie.talkie.api.wtModule.WTModuleOpModApi
 import walkie.talkie.api.WTMessageBusId
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtchat.ChatMessageAbs
@@ -26,7 +26,7 @@ import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.WTRemoteCall
 import walkie.talkie.api.WTRemoteCallApi
-import walkie.talkie.api.wtModule.WTModOpArg
+import walkie.talkie.api.wtModule.WTModOpMod
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.node.NodeId
 import walkie.util.logd
@@ -40,11 +40,11 @@ data class DiscussionMap(
     val scope: CoroutineScope,
     private val _callMap: WTRemoteCallApi = WTRemoteCall(),
     private val _busMux: WTMessageBus = WTMessageBus(),
-    private val _moduleOp: WTModuleOpApi = WTModuleOp(
+    private val _moduleOp: WTModuleOpModApi = WTModuleOpMod(
         messageBus = _busMux,
         remoteCall = _callMap)
 ) : WTRemoteCallApi by _callMap,
-    WTModuleOpApi by _moduleOp,
+    WTModuleOpModApi by _moduleOp,
     WTMessageBusApi by _busMux
 {
     lateinit var updateUiLiveData: UpdateUiLiveData
@@ -61,8 +61,8 @@ data class DiscussionMap(
         logd(TAG, "init")
 
         subscribe(
-            to = WTModOpArg.To.Chat,
-            onEvent = WTModOpArg.OnEvent(
+            to = WTModOpMod.To.Chat,
+            onEvent = WTModOpMod.OnEvent(
                 scope = scope,
                 onEventCall = { busId, message ->
                     onBusMessage(
@@ -118,8 +118,8 @@ data class DiscussionMap(
         mutex.unlock()
 
         send(
-            to = WTModOpArg.To.CommonData,
-            modMsg = WTModOpArg.Msg(
+            to = WTModOpMod.To.CommonData,
+            modMsg = WTModOpMod.Msg(
                 type = WTBusMessageType.UpdateChatUI,
                 value = chatMessage.groupId.type
             )
@@ -248,8 +248,8 @@ data class DiscussionMap(
         commPacket.logD(tag, logF)
 
         send(
-            to = WTModOpArg.To.Comm,
-            modMsg = WTModOpArg.Msg(
+            to = WTModOpMod.To.Comm,
+            modMsg = WTModOpMod.Msg(
                 type = messageType,
                 value = commPacket
             )
