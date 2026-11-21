@@ -15,7 +15,7 @@ interface ModuleOpApi<TArg> {
 }
 
 /* Module Operation Model */
-sealed interface ModOpMod<Prop: Cmd, Dest, Cmd, Msg, MType, DType> {
+interface ModOpMod<Prop: Cmd, Dest, Cmd, MsgApi, MType, DType> {
     companion object {
         val None: Result.None
             get() = Result.None
@@ -57,22 +57,18 @@ sealed interface ModOpMod<Prop: Cmd, Dest, Cmd, Msg, MType, DType> {
             }
         }
     }
-    interface Message<Msg, MType, DType>: ModOpMod<Nothing, Nothing, Nothing, Msg, MType, DType> {
+    interface Message<MsgApi, MType, DType>: ModOpMod<Nothing, Nothing, Nothing, MsgApi, MType, DType> {
         val type: MType
         val value: DType?
-        fun message(type: MType, value: DType?): Msg
 
         companion object {
-            fun <Msg, MType, DType>build(
+            fun <MsgApi, MType, DType>build(
                 type: MType,
                 value: DType?,
-                message: (MType, DType?) -> Msg): Message<Msg, MType, DType> {
-                return object: Message<Msg, MType, DType> {
+                build: (MType, DType?) -> MsgApi): Message<MsgApi, MType, DType> {
+                return object: Message<MsgApi, MType, DType> {
                     override val type = type
                     override val value = value
-                    override fun message(type: MType, value: DType?): Msg {
-                        return message(type, value)
-                    }
                 }
             }
         }
@@ -89,13 +85,13 @@ sealed interface ModOpMod<Prop: Cmd, Dest, Cmd, Msg, MType, DType> {
         data object Null: Result<Nothing>
         data object Success: Result<Nothing>
         data object Fail: Result<Nothing>
-        data class Value<DType>(val value: DType) : Result<DType>
+        data class Value<DType>(val value: DType): Result<DType>
     }
 
-    data class OnEvent<Dest, Msg, MType, DType>(
-        val onEventCall: (suspend (Dest, ModOpMod.Message<Msg, MType, DType>) -> Unit),
+    interface OnEvent<Dest, MsgApi, MType, DType>: ModOpMod<Nothing, Dest, Nothing, MsgApi, MType, DType> {
         val scope: CoroutineScope
-    ) : ModOpMod<Nothing, Dest, Nothing, Msg, MType, DType>
+        val onEventCall: (suspend (Dest, ModOpMod.Message<MsgApi, MType, DType>) -> Unit)
+    }
 }
 
 interface ModuleOpModApi<Prop: Cmd, Dest: MessageBusId, Cmd: RemoteCallId, MType: BusMessageType, DType,
@@ -104,9 +100,10 @@ interface ModuleOpModApi<Prop: Cmd, Dest: MessageBusId, Cmd: RemoteCallId, MType
         CallApi: RemoteCallApi<Cmd>> {
         val messageBus: BusApi?
         val remoteCall: CallApi?
+        val busMessageFactory: ((MType, DType?) -> MsgApi)
         fun set(prop: ModOpMod.Property<Prop, Cmd, DType>, value: ModOpMod.Data.In<DType>): ModOpMod.Result<Nothing>
         fun get(prop: ModOpMod.Property<Prop, Cmd, DType>): ModOpMod.Result<*>
         fun subscribe(to: ModOpMod.Destination<Dest>, onEvent: ModOpMod.OnEvent<Dest, MsgApi, MType, DType>): ModOpMod.Result<Nothing>
-        fun send(to: ModOpMod.Destination<Dest>, msg: ModOpMod.Message<MsgApi, MType, DType>): ModOpMod.Result<Nothing>
+        fun send(to: ModOpMod.Destination<Dest>, modMsg: ModOpMod.Message<MsgApi, MType, DType>): ModOpMod.Result<Nothing>
         fun execute(cmd: ModOpMod.Command<Cmd>): ModOpMod.Result<Nothing>
 }

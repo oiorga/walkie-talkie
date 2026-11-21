@@ -42,7 +42,15 @@ import walkie.util.logging
 class WiFiDirectBroadcastReceiver (
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
-    private val _moduleOp: WTModuleOpApi = WTModuleOp(_busMux)
+    private val _moduleOp: WTModuleOpApi = WTModuleOp(
+        messageBus = _busMux,
+        remoteCall = null,
+        busMessageFactory = { type, data ->
+            WTBusMessage(
+                type = type,
+                data = data
+            )
+        })
 ) : BroadcastReceiver(),
     WTModuleOpApi by _moduleOp,
     WTMessageBusApi by _busMux
@@ -76,12 +84,9 @@ class WiFiDirectBroadcastReceiver (
             -> {
                 send(
                     to = WTModOpArg.To.Wifi,
-                    msg = WTModOpArg.Msg(
-                        WTBusMessage(
-                            type = WTBusMessageType.WifiBroadcastReceiver,
-                            data = intent
-                        )
-                    )
+                    modMsg = WTModOpArg.Msg(
+                        type = WTBusMessageType.WifiBroadcastReceiver,
+                        value = intent)
                 )
             }
 

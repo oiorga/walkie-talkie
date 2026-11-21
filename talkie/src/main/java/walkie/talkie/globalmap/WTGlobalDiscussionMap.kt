@@ -40,7 +40,9 @@ data class DiscussionMap(
     val scope: CoroutineScope,
     private val _callMap: WTRemoteCallApi = WTRemoteCall(),
     private val _busMux: WTMessageBus = WTMessageBus(),
-    private val _moduleOp: WTModuleOpApi = WTModuleOp(_busMux)
+    private val _moduleOp: WTModuleOpApi = WTModuleOp(
+        messageBus = _busMux,
+        remoteCall = _callMap)
 ) : WTRemoteCallApi by _callMap,
     WTModuleOpApi by _moduleOp,
     WTMessageBusApi by _busMux
@@ -54,19 +56,21 @@ data class DiscussionMap(
     val mutex = Mutex()
 
     init {
-        /* registerRemoteCall(RemoteCallId.RCChatMessageFromComm) { run { recvFromComm(it as CommPacket) } } */
-
         logging(true)
         
         logd(TAG, "init")
 
-        /*
-        pipeSubscribe(PipeId.ToChat, scope, true,::onPipeMessage)
-        */
-
         subscribe(
             to = WTModOpArg.To.Chat,
-            onEvent = WTModOpArg.OnEvent(::onBusMessage, scope)
+            onEvent = WTModOpArg.OnEvent(
+                scope = scope,
+                onEventCall = { busId, message ->
+                    onBusMessage(
+                        busId = busId,
+                        msg = WTBusMessage(message.type, message.value)
+                    )
+                }
+            )
         )
     }
 
@@ -115,11 +119,9 @@ data class DiscussionMap(
 
         send(
             to = WTModOpArg.To.CommonData,
-            msg = WTModOpArg.Msg(
-                WTBusMessage(
-                    WTBusMessageType.UpdateChatUI,
-                    chatMessage.groupId.type
-                )
+            modMsg = WTModOpArg.Msg(
+                type = WTBusMessageType.UpdateChatUI,
+                value = chatMessage.groupId.type
             )
         )
     }
@@ -247,11 +249,9 @@ data class DiscussionMap(
 
         send(
             to = WTModOpArg.To.Comm,
-            msg = WTModOpArg.Msg(
-                WTBusMessage(
-                    messageType,
-                    commPacket
-                )
+            modMsg = WTModOpArg.Msg(
+                type = messageType,
+                value = commPacket
             )
         )
     }

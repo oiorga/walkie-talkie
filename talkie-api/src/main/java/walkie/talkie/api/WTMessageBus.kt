@@ -11,7 +11,7 @@ class WTMessageBus: MessageBus<WTMessageBusId, WTBusMessageApi, WTBusMessageType
 class WTBusMessage(
     override val type: WTBusMessageType,
     override val data: Any?
-): WTBusMessageApi
+): WTBusMessageApi, BusMessageApi<WTBusMessageType, Any>
 interface WTBusMessageApi: BusMessageApi<WTBusMessageType, Any>
 
 enum class WTBusMessageType: BusMessageType {

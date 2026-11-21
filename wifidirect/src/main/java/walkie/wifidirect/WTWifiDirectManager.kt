@@ -32,13 +32,15 @@ import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.WTBusMessageType
 import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.wtModule.WTModOpArg
-import walkie.talkie.api.wtModule.getVal
 import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.WTRemoteCallApi
 import walkie.talkie.api.WTRemoteCall
+import walkie.talkie.api.wtModule.getPropVal
+import walkie.util.BusMessage
 import walkie.util.GenericList
 import walkie.util.Mailbox
 import walkie.util.MailboxData
+import walkie.util.MessageBus
 import walkie.util.logd
 import walkie.util.logdAppend
 import walkie.util.logging
@@ -84,7 +86,7 @@ class WTWifiDirectManager(
     fun checkWifiPermissions(): Boolean {
         /* return (true == typedCall<Boolean>(RemoteCallId.RCCheckWifiDPermissions)) */
         /* return (true == (get(WTModOpArg.Prop.WifiPerm) as? WTModOpArg.Out<Boolean>)?.value) */
-        val hasWifiPermissions = getVal<Boolean>(WTModOpArg.Prop.WifiPerm)
+        val hasWifiPermissions = getPropVal<Boolean>(WTModOpArg.Prop.WifiPerm)
         return hasWifiPermissions ?: run {
             wtError(TAG, "checkWifiPermissions returned NULL: Check callback register.")
             false
@@ -180,7 +182,9 @@ class WTWifiDirectManager(
 
         subscribe(
             to = WTModOpArg.To.Wifi,
-            onEvent = WTModOpArg.OnEvent(::onBusMessage, scope)
+            onEvent = WTModOpArg.OnEvent(scope = scope, onEventCall = { busId, message ->
+                onBusMessage(busId, WTBusMessage(message.type, message.value))
+            })
         )
     }
 
@@ -224,11 +228,9 @@ class WTWifiDirectManager(
 
         send(
             to = WTModOpArg.To.Comm,
-            msg = WTModOpArg.Msg(
-                WTBusMessage(
-                    type = WTBusMessageType.GroupInfo,
-                    data = Triple(null, null, null)
-                )
+            modMsg = WTModOpArg.Msg(
+                type = WTBusMessageType.GroupInfo,
+                value = Triple(null, null, null)
             )
         )
 
@@ -625,11 +627,9 @@ class WTWifiDirectManager(
 
         send(
             to = WTModOpArg.To.Activity,
-            msg = WTModOpArg.Msg(
-                WTBusMessage(
-                    type = WTBusMessageType.WifiDebugInfoMessage,
-                    data = wtWifiDirectInfo()
-                )
+            modMsg = WTModOpArg.Msg(
+                type = WTBusMessageType.WifiDebugInfoMessage,
+                value = wtWifiDirectInfo()
             )
         )
     }
@@ -669,11 +669,9 @@ class WTWifiDirectManager(
 
         send(
             to = WTModOpArg.To.Activity,
-            msg = WTModOpArg.Msg(
-                WTBusMessage(
-                    type = WTBusMessageType.WifiDebugInfoMessage,
-                    data = wtWifiDirectInfo()
-                )
+            modMsg = WTModOpArg.Msg(
+                type = WTBusMessageType.WifiDebugInfoMessage,
+                value = wtWifiDirectInfo()
             )
         )
 
@@ -683,11 +681,9 @@ class WTWifiDirectManager(
 
         send(
             to = WTModOpArg.To.Comm,
-            msg = WTModOpArg.Msg(
-                WTBusMessage(
-                    type = WTBusMessageType.GroupInfo,
-                    data = Triple(null, null, null)
-                )
+            modMsg = WTModOpArg.Msg(
+                type = WTBusMessageType.GroupInfo,
+                value = Triple(null, null, null)
             )
         )
 
@@ -722,14 +718,11 @@ class WTWifiDirectManager(
                     tag,
                     "Group info changed(Null): wtGroupIp: $oldGroupIp -> $wtGroupIp wtLocalIp: $oldLocalIp -> $wtLocalIp"
                 )
-
                 send(
                     to = WTModOpArg.To.Comm,
-                    msg = WTModOpArg.Msg(
-                        WTBusMessage(
-                            type = WTBusMessageType.GroupInfo,
-                            data = Triple(null, null, null)
-                        )
+                    modMsg = WTModOpArg.Msg(
+                        type = WTBusMessageType.GroupInfo,
+                        value = Triple(null, null, null)
                     )
                 )
             }
@@ -747,31 +740,25 @@ class WTWifiDirectManager(
 
                 send(
                     to = WTModOpArg.To.Comm,
-                    msg = WTModOpArg.Msg(
-                        WTBusMessage(
-                            type = WTBusMessageType.GroupInfo,
-                            data = Triple(null, null, null)
-                        )
+                    modMsg = WTModOpArg.Msg(
+                        type = WTBusMessageType.GroupInfo,
+                        value = Triple(null, null, null)
                     )
                 )
 
                 send(
                     to = WTModOpArg.To.Comm,
-                    msg = WTModOpArg.Msg(
-                        WTBusMessage(
-                            type = WTBusMessageType.GroupInfo,
-                            data = Triple(wtGroupOwnerName, wtGroupIp, wtGroupServerPort)
-                        )
+                    modMsg = WTModOpArg.Msg(
+                        type = WTBusMessageType.GroupInfo,
+                        value = Triple(wtGroupOwnerName, wtGroupIp, wtGroupServerPort)
                     )
                 )
 
                 send(
                     to = WTModOpArg.To.Comm,
-                    msg = WTModOpArg.Msg(
-                        WTBusMessage(
-                            type = WTBusMessageType.LocalIp,
-                            data = wtLocalIp
-                        )
+                    modMsg = WTModOpArg.Msg(
+                        type = WTBusMessageType.LocalIp,
+                        value = wtLocalIp
                     )
                 )
 
@@ -790,11 +777,9 @@ class WTWifiDirectManager(
 
                 send(
                     to = WTModOpArg.To.Comm,
-                    msg = WTModOpArg.Msg(
-                        WTBusMessage(
-                            type = WTBusMessageType.LocalIp,
-                            data = wtLocalIp
-                        )
+                    modMsg = WTModOpArg.Msg(
+                        type = WTBusMessageType.LocalIp,
+                        value = wtLocalIp
                     )
                 )
             }
@@ -1206,21 +1191,17 @@ class WTWifiDirectManager(
 
         send(
             to = WTModOpArg.To.Activity,
-            msg = WTModOpArg.Msg(
-                WTBusMessage(
-                    type = WTBusMessageType.WifiDebugInfoMessage,
-                    data = wtWifiDirectInfo()
-                )
+            modMsg = WTModOpArg.Msg(
+                type = WTBusMessageType.WifiDebugInfoMessage,
+                value = wtWifiDirectInfo()
             )
         )
 
         send(
             to = WTModOpArg.To.Activity,
-            msg = WTModOpArg.Msg(
-                WTBusMessage(
-                    type = WTBusMessageType.WifiRestartChannel,
-                    data = null
-                )
+            modMsg = WTModOpArg.Msg(
+                type = WTBusMessageType.WifiRestartChannel,
+                value = null
             )
         )
 

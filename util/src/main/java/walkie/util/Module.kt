@@ -19,9 +19,9 @@ abstract class ModuleOpMod<
         BusApi: MessageBusApi<Dest, MsgApi, MType, DType>,
         CallApi: RemoteCallApi<Cmd>
         >(
-    override val messageBus: BusApi? = null,
-    override val remoteCall: CallApi? = null,
-    private val busMessageFactory: ((MType, DType?) -> MsgApi),
+    override val messageBus: BusApi?,
+    override val remoteCall: CallApi?,
+    override val busMessageFactory: ((MType, DType?) -> MsgApi),
 ): ModuleOpModApi<Prop, Dest, Cmd, MType, DType, MsgApi, BusApi, CallApi> {
 
     companion object {
@@ -49,7 +49,7 @@ abstract class ModuleOpMod<
         return ModOpMod.Message.build(
             type = msg.type,
             value = msg.data,
-            message = { type, value ->
+            build = { type, value ->
                 busMessageFactory?.invoke(type, value) ?: error ("$tag busMessageFactory is null")
             }
         )
@@ -80,12 +80,12 @@ abstract class ModuleOpMod<
 
     override fun send(
         to: ModOpMod.Destination<Dest>,
-        msg: ModOpMod.Message<MsgApi, MType, DType>
+        modMsg: ModOpMod.Message<MsgApi, MType, DType>
     ): ModOpMod.Result<Nothing> {
 
         messageBus?.busSendAsync(
             busId = to.id,
-            msg = busMessage(msg)
+            msg = busMessage(modMsg)
         ) ?: return ModOpMod.Null
 
         return ModOpMod.Success

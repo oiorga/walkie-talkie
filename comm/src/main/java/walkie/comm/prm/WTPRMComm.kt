@@ -37,7 +37,9 @@ class WTPRMComm (
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
     private val _dispatchEvent: EventDispatcherApi<Any> = EventDispatcher(),
-    private val _moduleOp: WTModuleOpApi = WTModuleOp(_busMux)
+    private val _moduleOp: WTModuleOpApi = WTModuleOp(
+        messageBus = _busMux,
+        remoteCall = null)
 ) :
     WTMessageBusApi by _busMux,
     WTModuleOpApi by _moduleOp,
@@ -72,13 +74,14 @@ class WTPRMComm (
     init {
         logging(true)
 
-        /*
-        pipeSubscribe(PipeId.ToPRMComm, scope, true, ::onPipeMessage)
-        */
-
         subscribe(
             to = WTModOpArg.To.PRMComm,
-            onEvent = WTModOpArg.OnEvent(::onBusMessage, scope)
+            onEvent = WTModOpArg.OnEvent(
+                scope = scope,
+                onEventCall = { busId, message ->
+                    onBusMessage(busId, WTBusMessage(message.type, message.value))
+                }
+            )
         )
 
         wtMesh.registerUpdateCall { destPeer, jSon ->
@@ -199,11 +202,9 @@ class WTPRMComm (
 
                         send(
                             to = WTModOpArg.To.IpComm,
-                            msg = WTModOpArg.Msg(
-                                WTBusMessage(
-                                    WTBusMessageType.LocalIp,
-                                    localIpAddress
-                                )
+                            modMsg = WTModOpArg.Msg(
+                                WTBusMessageType.LocalIp,
+                                localIpAddress
                             )
                         )
                         if (null != localIpAddress) {
@@ -292,11 +293,9 @@ class WTPRMComm (
             }
             send(
                 to = WTModOpArg.To.Activity,
-                msg = WTModOpArg.Msg(
-                    WTBusMessage(
-                        WTBusMessageType.MeshDebugInfoMessage,
-                        str
-                    )
+                modMsg = WTModOpArg.Msg(
+                    WTBusMessageType.MeshDebugInfoMessage,
+                    str
                 )
             )
         }

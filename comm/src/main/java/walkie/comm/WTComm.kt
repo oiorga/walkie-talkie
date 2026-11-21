@@ -20,6 +20,8 @@ import walkie.talkie.api.wtcomm.WTCommChatMessageOut
 import walkie.talkie.api.wtcomm.WTCommPacketIn
 import walkie.talkie.api.wtcomm.WTCommPacketOut
 import walkie.talkie.api.wtsystem.NodeIdInt
+import walkie.util.BusMessage
+import walkie.util.MessageBus
 import walkie.util.api.MeshDispatchEventId
 import walkie.util.logd
 import walkie.util.logging
@@ -29,7 +31,9 @@ class WTComm (
     private val nodeId: NodeIdInt,
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
-    private val _moduleOp: WTModuleOpApi = WTModuleOp(_busMux)
+    private val _moduleOp: WTModuleOpApi = WTModuleOp(
+        messageBus = _busMux,
+        remoteCall = null)
 
 ) : WTMessageBusApi by _busMux,
     WTModuleOpApi by _moduleOp,
@@ -84,17 +88,19 @@ class WTComm (
 
         subscribe(
             to = WTModOpArg.To.Comm,
-            onEvent = WTModOpArg.OnEvent(::onBusMessage, scope)
+            onEvent = WTModOpArg.OnEvent(
+                scope = scope,
+                onEventCall = { busId, message ->
+                    onBusMessage(busId, WTBusMessage(message.type, message.value))
+                })
         )
 
         wtPRMComm.subscribeEvent(MeshDispatchEventId.DEMeshNewPeer) { _ ->
             send(
                 to = WTModOpArg.To.CommonData,
-                msg = WTModOpArg.Msg(
-                    WTBusMessage(
-                        WTBusMessageType.UpdatePeersUI,
-                        null
-                    )
+                modMsg = WTModOpArg.Msg(
+                    type = WTBusMessageType.UpdatePeersUI,
+                    value = null
                 )
             )
         }
@@ -103,11 +109,9 @@ class WTComm (
 
             send(
                 to = WTModOpArg.To.Wifi,
-                msg = WTModOpArg.Msg(
-                    WTBusMessage(
-                        WTBusMessageType.LocalServerPort,
-                        serverPort!!
-                    )
+                modMsg = WTModOpArg.Msg(
+                    WTBusMessageType.LocalServerPort,
+                    serverPort!!
                 )
             )
         }
@@ -129,11 +133,9 @@ class WTComm (
     override suspend fun chatMessageOut(commPacket: CommPacketInt) {
         send(
             to = WTModOpArg.To.Chat,
-            msg = WTModOpArg.Msg(
-                WTBusMessage(
-                    WTBusMessageType.CommToChatPacket,
-                    commPacket
-                )
+            modMsg = WTModOpArg.Msg(
+                WTBusMessageType.CommToChatPacket,
+                commPacket
             )
         )
     }
@@ -171,22 +173,18 @@ class WTComm (
                     WTBusMessageType.LocalIp -> {
                         send(
                             to = WTModOpArg.To.PRMComm,
-                            msg = WTModOpArg.Msg(
-                                WTBusMessage(
-                                    WTBusMessageType.LocalIp,
-                                    data
-                                )
+                            modMsg = WTModOpArg.Msg(
+                                WTBusMessageType.LocalIp,
+                                data
                             )
                         )
                     }
                     WTBusMessageType.GroupInfo -> {
                         send(
                             to = WTModOpArg.To.PRMComm,
-                            msg = WTModOpArg.Msg(
-                                WTBusMessage(
-                                    WTBusMessageType.GroupInfo,
-                                    data
-                                )
+                            modMsg = WTModOpArg.Msg(
+                                WTBusMessageType.GroupInfo,
+                                data
                             )
                         )
                     }

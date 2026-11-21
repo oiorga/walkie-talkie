@@ -37,7 +37,9 @@ import walkie.wifidirect.WiFiDirectBroadcastReceiver
 class WTDataHub private constructor (
     private val _callMap: WTRemoteCallApi = WTRemoteCall(),
     private val _busMux: WTMessageBus = WTMessageBus(),
-    private val _moduleOp: WTModuleOpApi = WTModuleOp(_busMux)
+    private val _moduleOp: WTModuleOpApi = WTModuleOp(
+        messageBus = _busMux,
+        remoteCall = _callMap)
 ) : WTRemoteCallApi by _callMap,
     WTMessageBusApi by _busMux,
     WTModuleOpApi by _moduleOp,

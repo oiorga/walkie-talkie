@@ -52,7 +52,9 @@ class WTIPComm (
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
     private val _dispatchEvent: EventDispatcherApi<Any> = EventDispatcher(),
-    private val _moduleOp: WTModuleOpApi = WTModuleOp(_busMux)
+    private val _moduleOp: WTModuleOpApi = WTModuleOp(
+        messageBus = _busMux,
+        remoteCall = null)
 ) :
     WTMessageBusApi by _busMux,
     WTModuleOpApi by _moduleOp,
@@ -77,13 +79,14 @@ class WTIPComm (
         logging(true)
         logd(tag, "init")
 
-        /*
-        pipeSubscribe(PipeId.ToIpComm, scope, true,::onPipeMessage)
-        */
-
         subscribe(
             to = WTModOpArg.To.IpComm,
-            onEvent = WTModOpArg.OnEvent(::onBusMessage, scope)
+            onEvent = WTModOpArg.OnEvent(
+                scope = scope,
+                onEventCall = { busId, message ->
+                    onBusMessage(busId, WTBusMessage(message.type, message.value))
+                }
+            )
         )
     }
 
@@ -228,22 +231,18 @@ fun WTIPComm.wifiServerProcessInput(jSon: String) {
 
             send(
                 to = WTModOpArg.To.Comm,
-                msg = WTModOpArg.Msg(
-                    WTBusMessage(
-                        WTBusMessageType.WifiMessage,
-                        commPacket
-                    )
+                modMsg = WTModOpArg.Msg(
+                    WTBusMessageType.WifiMessage,
+                    commPacket
                 )
             )
         }
         WTIPCommPacketType.ControlMesh -> {
             send(
                 to = WTModOpArg.To.PRMComm,
-                msg = WTModOpArg.Msg(
-                    WTBusMessage(
-                        WTBusMessageType.ControlMesh,
-                        decodedJSon.jsonString
-                    )
+                modMsg = WTModOpArg.Msg(
+                    WTBusMessageType.ControlMesh,
+                    decodedJSon.jsonString
                 )
             )
         }

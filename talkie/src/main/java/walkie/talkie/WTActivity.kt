@@ -438,7 +438,14 @@ internal fun WTActivity.wtCustomInit(){
 
     subscribe(
         to = WTModOpArg.To.Activity,
-        onEvent = WTModOpArg.OnEvent(::onBusMessage, wtScope)
+        onEvent = WTModOpArg.OnEvent(
+            scope = wtScope,
+            onEventCall = { busId, message ->
+                onBusMessage(
+                    busId,
+                    WTBusMessage(message.type, message.value))
+            }
+        )
     )
 
     /* To move to App init section */
