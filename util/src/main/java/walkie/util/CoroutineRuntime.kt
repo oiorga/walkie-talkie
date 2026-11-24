@@ -12,13 +12,6 @@ sealed class CoroutineRuntime(
     val job: RunJob,
     val dispatcher: RunDispatcher
 ) {
-    /*
-    object Main : CoroutineRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.Main)
-    object UI : CoroutineRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.UI)
-    object IO : CoroutineRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.IO)
-    object CPU : CoroutineRuntime(rootJob = RunJob.Supervisor, dispatcher = RunDispatcher.CPU)
-    */
-
     /* Breaking the seal */
     class Custom(rootJob: RunJob, dispatcher: RunDispatcher) : CoroutineRuntime (rootJob, dispatcher)
 

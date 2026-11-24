@@ -3,7 +3,7 @@ package walkie.wifidirect
 import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pInfo
 import android.util.Log
-import walkie.util.getInterfaceIpAddress
+import walkie.util.getInterfaceIpv4Address
 import walkie.util.randomString
 
 internal fun WifiP2pGroup.logD(tag: String = "WifiP2pGroup") {
@@ -15,7 +15,7 @@ internal fun WifiP2pGroup.logD(tag: String = "WifiP2pGroup") {
                 "\n\tdeviceName: " + this.owner?.deviceName +
                 "\n\tclientList: " + this.clientList +
                 "\n\tpassphrase: " + this.passphrase +
-                "\n\tinterface: " + this.`interface` + "/" + getInterfaceIpAddress(this.`interface`!!)
+                "\n\tinterface: " + this.`interface` + "/" + getInterfaceIpv4Address(this.`interface`!!)
     )
 }
 

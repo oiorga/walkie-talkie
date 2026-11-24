@@ -4,7 +4,7 @@ import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pInfo
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.util.getInterfaceIpAddress
+import walkie.util.getInterfaceIpv4Address
 import walkie.util.jvmEnclosingClassSimpleName
 import walkie.util.logd
 import walkie.util.logdAppend
@@ -527,7 +527,7 @@ data class WTWifiDB(
     val groupInterface: String?
         get() = groupInfo?.`interface`
     val groupInterfaceIpAddress: InetAddress?
-        get() = groupInterface?.let { getInterfaceIpAddress(it) }
+        get() = groupInterface?.let { getInterfaceIpv4Address(it) }
 
     val groupOwnerName: String?
         get() = (if (isGroupOwner) thisDevice?.deviceName else groupInfo?.owner?.deviceName)
@@ -535,7 +535,7 @@ data class WTWifiDB(
         get() = if (isGroupOwner) thisDevice else groupInfo?.owner
     val localIp: InetAddress?
         get() = groupInfo?.`interface`?.let { iFace ->
-            getInterfaceIpAddress(iFace)
+            getInterfaceIpv4Address(iFace)
         }
     val groupOwner: WTWifiDirectPeerInfo?
         get() = let { _ ->

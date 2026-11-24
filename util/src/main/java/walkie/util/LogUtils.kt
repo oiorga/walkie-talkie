@@ -6,7 +6,8 @@ import java.util.concurrent.atomic.AtomicLong
 import kotlin.reflect.KClass
 
 /**
- * From: https://gist.github.com/paolop
+ * Initial From:
+ *       https://gist.github.com/paolop
  *       https://gist.github.com/paolop/0bd59e49b33d18d6089fb1bf5488e212
  *
  */
