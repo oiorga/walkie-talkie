@@ -12,7 +12,7 @@ class BlockingQueue<T> (
     override val name: String,
     override val capacity: Int = 100,
     override val scope: CoroutineScope,
-    private val channel: Channel<T> = Channel<T>(capacity),
+    private val channel: Channel<T> = Channel<T>(capacity)
 ) : BlockingQueueApi<T> {
     private val logDString: String
         get() = "name: $name"
