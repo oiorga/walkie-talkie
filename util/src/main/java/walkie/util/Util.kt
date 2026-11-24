@@ -36,21 +36,32 @@ import kotlin.reflect.KClass
  * @throws IllegalArgumentException if `enclosingClass` is `null` and this function is invoked within an anonymous class
  */
 inline fun <reified T> T.getDeclaredSimpleName(enclosingClass: KClass<*>? = null): String {
-    val declaredSimpleName: String = (enclosingClass?.simpleName) ?: T::class.java.enclosingClass?.simpleName ?: (T::class.java.simpleName)
-    if (declaredSimpleName.isBlank()) {
-        throw IllegalArgumentException("getClassSimpleName: enclosingClass cannot be null when invoked from an anonymous class")
-    }
-    return declaredSimpleName
+    return enclosingClass?.simpleName?.takeIf { it.isNotBlank() }
+        ?: T::class.java.enclosingClass?.simpleName?.takeIf { it.isNotBlank() }
+        ?: T::class.java.simpleName.takeIf { it.isNotBlank() }
+        ?: throw IllegalArgumentException(
+            "getDeclaredSimpleName: Unable to resolve a non-blank class simple name"
+        )
 }
 
-fun Any.getEnclosingClassSimpleName(): String =
-    this::class.java.enclosingClass?.simpleName ?: "null"
+@PublishedApi
+internal inline fun <reified T> T.resolveKClass(runtimeType: Boolean = false): KClass<*> =
+    if (runtimeType) this?.let { it::class } ?: T::class else T::class
 
-fun Any.getRuntimeSimpleName(): String =
-    this::class.simpleName ?: this::class.java.simpleName ?: "null"
+inline fun <reified T> T.simpleNameOrJvm(runtimeType: Boolean = false): String {
+    val kClass = resolveKClass(runtimeType)
+    return kClass.simpleName?.takeIf { it.isNotBlank() } ?: kClass.java.simpleName
+}
 
-fun Any.getRuntimeQualifiedName(): String =
-    this::class.qualifiedName ?: this::class.java.name ?: "null"
+inline fun <reified T> T.qualifiedNameOrJvm(runtimeType: Boolean = false): String {
+    val kClass = resolveKClass(runtimeType)
+    return kClass.qualifiedName?.takeIf { it.isNotBlank() } ?: kClass.java.name
+}
+
+inline fun <reified T> T.jvmEnclosingClassSimpleName(runtimeType: Boolean = false): String? {
+    val kClass = resolveKClass(runtimeType)
+    return kClass.java.enclosingClass?.simpleName?.takeIf { it.isNotBlank() }
+}
 
 fun getInterfaceIpAddress(interfaceName: String, ipV4: Boolean = true): InetAddress? {
     var ipAddress: InetAddress? = null

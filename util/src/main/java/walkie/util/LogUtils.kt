@@ -21,19 +21,18 @@ import kotlin.reflect.KClass
 *
 * @throws IllegalArgumentException if `enclosingClass` is `null` and this function is invoked within an anonymous class
 *
-*
-* Revisited with Claude: 11/23/2026
-*
-*
 */
 
-inline fun <reified T> T.getDeclaredSimpleNameLog(enclosingClass: KClass<*>? = null): String {
-    val ret: String = enclosingClass?.simpleName ?: T::class.java.simpleName
-    if (ret.isBlank()) {
-        val msg = "getClassSimpleName: enclosingClass cannot be null when invoked from an anonymous class"
-        Log.d(Logging.TAG, msg)
-        throw IllegalArgumentException(msg)
-    }
+@PublishedApi
+internal inline fun <reified T> T.getDeclaredSimpleNameLog(enclosingClass: KClass<*>? = null): String {
+    val ret: String = enclosingClass?.simpleName?.takeIf { it.isNotBlank() }
+        ?: T::class.java.enclosingClass?.simpleName?.takeIf { it.isNotBlank() }
+        ?: T::class.java.simpleName.takeIf { it.isNotBlank() }
+        ?: run {
+            val msg = "getDeclaredSimpleName: Unable to resolve a non-blank class simple name"
+            Log.d(Logging.TAG, msg)
+            throw IllegalArgumentException(msg)
+        }
     if (Logging.ONE.iLog()) Log.d(Logging.TAG, "getClassSimpleName: enclosingClass: $enclosingClass simpleName: $ret")
     return ret
 }

@@ -62,7 +62,6 @@ class WTIPMesh(uniqueId: String,
     init {
         logging(true)
     }
-
     override fun encodeToString(kToVTable: Pair<MeshKey<String>, Map<MeshKey<String>, WTCommPeerInfo>>): String {
 
         val tag = "encodeToString/${randomString(2U)}"

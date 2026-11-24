@@ -4,14 +4,14 @@ import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pInfo
 import walkie.talkie.api.wtsystem.NodeIdInt
-import walkie.util.getEnclosingClassSimpleName
 import walkie.util.getInterfaceIpAddress
-import walkie.util.getRuntimeSimpleName
+import walkie.util.jvmEnclosingClassSimpleName
 import walkie.util.logd
 import walkie.util.logdAppend
 import walkie.util.logging
 import walkie.util.misc.CountDown
 import walkie.util.randomString
+import walkie.util.simpleNameOrJvm
 import java.net.InetAddress
 import kotlin.random.Random
 
@@ -110,7 +110,7 @@ interface WTWifiEnabledInt<T> {
 
 sealed class WTWifiEvent {
     val description: String
-        get() = "${getEnclosingClassSimpleName()}.${getRuntimeSimpleName()}"
+        get() = "${this::class.jvmEnclosingClassSimpleName()}.${this::class.simpleNameOrJvm()}"
     override fun toString(): String {
         return description
     }
@@ -159,7 +159,7 @@ sealed class WTWifiEvent {
 
 sealed class WTWifiState {
     val description: String
-        get() = "${getEnclosingClassSimpleName()}.${getRuntimeSimpleName()}"
+        get() = "${this::class.jvmEnclosingClassSimpleName()}.${this::class.simpleNameOrJvm()}"
     override fun toString(): String {
         return description
     }
