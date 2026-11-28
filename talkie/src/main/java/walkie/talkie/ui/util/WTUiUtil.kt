@@ -138,7 +138,7 @@ fun WTActivity.ComposableChatItem(
         }
     }
 
-    WTActivity.logd(tag, "Exit")
+    logd(tag, "Exit")
 }
 
 @Composable
@@ -239,7 +239,7 @@ internal fun LazyListState.reachedBottom(buffer: Int = 1): Boolean {
     if (null != lastVisibleItem)
         ret = ((0 != lastVisibleItem.index) && ((this.layoutInfo.totalItemsCount - buffer) == lastVisibleItem.index))
 
-    logd (tagKClass, tag,"$tag: buffer: $buffer: $ret")
+    /* logd (tagKClass, tag,"$tag: buffer: $buffer: $ret") */
 
     return ret
 }

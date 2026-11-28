@@ -22,6 +22,7 @@ import walkie.talkie.node.NodeId
 import walkie.talkie.playground.commSquirrelWheel
 import walkie.util.CoroutineRuntime
 import walkie.util.Logging
+import walkie.util.api.LoggingApi
 import walkie.util.api.busAdd
 import walkie.util.misc.generateBinaryRec
 import walkie.util.genericListOf
@@ -32,9 +33,11 @@ import walkie.wifidirect.WTWifiDirectManager
 import walkie.wifidirect.WiFiDirectBroadcastReceiver
 import kotlin.random.Random
 
-class WalkieTalkie:
+class WalkieTalkie():
+    LoggingApi by Logging,
     Application(),
     WTDebugInt {
+
     companion object {
         const val TAG = "WalkieTalkie"
         val TAGKClass = WalkieTalkie::class
@@ -44,7 +47,7 @@ class WalkieTalkie:
     val wtHub: WTDataHub = WTDataHub.ONE
 
     init {
-        Logging.ONE.setGlobal(true)
+        Logging.setGlobal(true)
         logging(true)
         Logging.enable(enclosingClass = LazyListState::class, true)
         Logging.enable(enclosingClass = CoroutineScope::class, true)

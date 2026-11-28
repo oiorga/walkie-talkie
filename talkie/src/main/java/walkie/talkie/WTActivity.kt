@@ -63,6 +63,8 @@ import walkie.talkie.ui.nav.WTNavInit
 import walkie.talkie.ui.screens.customComposablesInit
 import walkie.talkie.viewmodel.WTViewModel
 import walkie.talkie.viewmodel.WTViewModelFactory
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -72,10 +74,11 @@ import kotlin.system.exitProcess
 class WTActivity(
     private val _busMux: WTMessageBus = WTMessageBus(),
     private val _callMap: WTRemoteCall = WTRemoteCall(),
-    private val _moduleOp: WTModuleOpModApi = WTModuleOpMod(_busMux, _callMap)
+    private val moduleOp: WTModuleOpModApi = WTModuleOpMod(_busMux, _callMap),
 ) :
     ComponentActivity(),
-    WTModuleOpModApi by _moduleOp,
+    LoggingApi by Logging,
+    WTModuleOpModApi by moduleOp,
     WTMessageBusApi by _busMux,
     WTRemoteCallApi by _callMap {
 
@@ -129,7 +132,7 @@ class WTActivity(
         Logging.enable(enclosingClass = LazyListState::class, true)
         Logging.enable(enclosingClass = CoroutineScope::class, true)
         */
-        _moduleOp.logging(true)
+        logging(true)
     }
 
     private suspend fun wifiCleanUp() {

@@ -1,13 +1,14 @@
 package walkie.talkie.api.wtsystem
 
-interface NodeIdInt {
+import walkie.util.api.LoggingApi
+
+interface NodeIdInt: LoggingApi {
     val id: String
     val unique: String?
 
     fun id(): String
     fun unique(): String
     fun uid(id: String? = null, unique: String? = null): String
-    fun logD(tag: String, logF: Boolean = true)
 }
 
 fun nodeUniqueId (id: String, unique: String): String {

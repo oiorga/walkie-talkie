@@ -27,6 +27,8 @@ import walkie.talkie.api.WTMessageBus
 import walkie.talkie.api.WTRemoteCall
 import walkie.talkie.api.WTRemoteCallApi
 import walkie.util.CoroutineRuntime
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -38,8 +40,10 @@ class WTDataHub private constructor (
     private val _busMux: WTMessageBus = WTMessageBus(),
     private val _moduleOp: WTModuleOpModApi = WTModuleOpMod(
         messageBus = _busMux,
-        remoteCall = _callMap)
-) : WTRemoteCallApi by _callMap,
+        remoteCall = _callMap),
+) :
+    LoggingApi by Logging,
+    WTRemoteCallApi by _callMap,
     WTMessageBusApi by _busMux,
     WTModuleOpModApi by _moduleOp,
     WTDebugInt

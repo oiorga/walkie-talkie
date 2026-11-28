@@ -10,7 +10,6 @@ abstract class DiscussionAbs (
     abstract val timeStampCreation: Long
     abstract val timeStampLastUpdated: Long
     var read: Boolean = false
-
     abstract fun addChatMessage(chatMessage: ChatMessageAbs)
 }
 

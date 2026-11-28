@@ -94,4 +94,5 @@ dependencies {
     implementation(project(":comm"))
     implementation(project(":talkie-api"))
     implementation(project(":util"))
+    implementation(project(":util-api"))
 }

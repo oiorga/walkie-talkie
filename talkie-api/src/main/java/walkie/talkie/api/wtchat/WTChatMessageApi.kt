@@ -4,17 +4,20 @@ import android.util.Log
 import walkie.util.GenericListAbs
 import walkie.talkie.api.wtcomm.CommPacketInt
 import walkie.talkie.api.wtsystem.NodeIdInt
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 
 abstract class ChatMessageAbs (
     open val receiver: ReceiverInt,
     open val sender: SenderInt,
     open val groupId: ChatGroupIdInt,
-    private val chatMessageItemList: GenericListAbs<ChatMessageItemInt>
-) : GenericListAbs<ChatMessageItemInt>(chatMessageItemList) {
+    private val chatMessageItemList: GenericListAbs<ChatMessageItemInt>,
+) : GenericListAbs<ChatMessageItemInt>(chatMessageItemList),
+    LoggingApi by Logging {
     abstract val timeStampCreation: Long
     abstract fun toCommPacket(): CommPacketInt
 
-    open fun logD(tag: String = "ChatMessage", logF: Boolean = true) {
+    override fun logD(tag: String, logF: Boolean) {
         if (logF) Log.d(tag, tag +
                 "\n receiver: " + this.receiver.toString() +
                 "\n sender: " + this.sender.toString() +

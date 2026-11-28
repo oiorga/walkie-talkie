@@ -2,12 +2,15 @@ package  walkie.comm
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import walkie.talkie.api.wtcomm.WTMedium
 import walkie.talkie.api.wtcomm.WTPeerInt
 import walkie.talkie.api.wtsystem.nodeUniqueId
 import walkie.talkie.api.wtsystem.uidToId
 import walkie.talkie.api.wtsystem.uidToUnique
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 import walkie.util.api.MeshApi
 import walkie.util.api.MeshKey
 import walkie.util.`try`
@@ -22,7 +25,10 @@ data class WTCommPeerInfo (
     override var unique: String? = null,
     override val underlyingMedium: WTMedium = WTMedium.WifiIp,
     override val umCI: List<String> = listOf(),
-) : WTPeerInt {
+    @Transient
+    private val logging: LoggingApi = Logging // direct interface delegation does not work properly with Serializable in the init { } block
+) : WTPeerInt,
+    LoggingApi by logging {
     companion object {
         private const val TAG = "WTCommPeerInfo"
         val TAGKClass = WTCommPeerInfo::class
@@ -46,9 +52,10 @@ data class WTCommPeerInfo (
         get() = nodeUniqueId(id, unique!!)
 }
 
-class WTIPMesh(uniqueId: String,
-               scope: CoroutineScope
-): Mesh<String, WTCommPeerInfo>(uniqueId, scope){
+class WTIPMesh(
+    uniqueId: String,
+    scope: CoroutineScope
+) : Mesh<String, WTCommPeerInfo>(uniqueId, scope) {
     companion object {
         const val TAG = "WTIPMesh"
         val TAGKClass = WTIPMesh::class

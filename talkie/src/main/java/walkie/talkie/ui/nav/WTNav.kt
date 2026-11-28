@@ -18,6 +18,8 @@ import walkie.talkie.ui.screens.WTActivityDebugUI
 import walkie.talkie.ui.screens.WTActivityMainUI
 import walkie.talkie.ui.screens.WTActivityPeersUI
 import walkie.talkie.ui.screens.WTChat
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -28,8 +30,8 @@ data class WTNavNode (
     val onClick: (() -> Unit)? = null,
     val changeOnclick: Boolean = false,
     val preview: (@Composable (Modifier?) -> Unit)? = null,
-    val navController: NavHostController? = null
-) {
+    val navController: NavHostController? = null,
+) : LoggingApi by Logging {
     private var execOnClick: (() -> Unit)? = null
 
     companion object {
@@ -81,7 +83,8 @@ data class WTNavGraph (
     val destination: WTNavigation,
     val modifier: Modifier = Modifier,
     private val _composables: MutableMap<WTNavigation, @Composable () -> Unit> = mutableMapOf(),
-) : MutableMap<WTNavigation, @Composable () ->  Unit> by _composables {
+) : MutableMap<WTNavigation, @Composable () ->  Unit> by _composables,
+    LoggingApi by Logging {
     companion object {
         const val TAG = "WTNav"
         val TAGKClass = WTNavGraph::class

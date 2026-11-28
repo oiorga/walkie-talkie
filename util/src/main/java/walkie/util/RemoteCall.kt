@@ -1,14 +1,16 @@
 package walkie.util
 
 import android.util.Log
+import walkie.util.api.LoggingApi
 import walkie.util.api.RemoteCallApi
 import walkie.util.api.RemoteCallBaseApi
 import walkie.util.api.RemoteCallHandlerApi
 import walkie.util.api.RemoteCallHandlerBaseApi
 import walkie.util.api.RemoteCallId
 
-open class RemoteCallBase<CallId, CallInput, CallResult>() :
-    RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, CallInput, CallResult> {
+abstract class RemoteCallBase<CallId, CallInput, CallResult> :
+    RemoteCallBaseApi<CallId, RemoteCallHandlerBaseApi<*, *>, CallInput, CallResult>,
+    LoggingApi by Logging {
     private var _callMap: MutableMap<CallId, RemoteCallHandlerBaseApi<*, *>> = mutableMapOf()
     override val callMap: Map<CallId, RemoteCallHandlerBaseApi<*, *>>
         get() = _callMap
@@ -84,4 +86,4 @@ open class RemoteCallBase<CallId, CallInput, CallResult>() :
     }
 }
 
-open class RemoteCall<CallId: RemoteCallId>: RemoteCallBase<CallId, Any, Any>(), RemoteCallApi<CallId>
+abstract class RemoteCall<CallId: RemoteCallId>: RemoteCallBase<CallId, Any, Any>(), RemoteCallApi<CallId>

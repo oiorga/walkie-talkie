@@ -7,9 +7,33 @@ import kotlin.reflect.KClass
 
 interface LoggingApi {
     companion object {
-        const val TAG = "Logging"
+        const val TAG = "LoggingApi"
         const val ILOG = false
         const val MAX_BUFFER_CHARS = 64 * 1024
+
+        fun getClassLogName(enclosingClass: KClass<*>): String? {
+            return enclosingClass.simpleName?.takeIf { it.isNotBlank() }
+                ?: enclosingClass.java.name.takeIf { it.isNotBlank() }
+                ?: enclosingClass.qualifiedName?.takeIf { it.isNotBlank() }
+        }
+
+        inline fun <reified T> getResolvedClassLogName(enclosingClass: KClass<*>? = null): String {
+            val ret: String = enclosingClass?.let {
+                getClassLogName(enclosingClass = it)
+            } ?: getClassLogName(enclosingClass = T::class) ?: run {
+                    val msg = "getDeclaredSimpleName: Unable to resolve a non-blank class simple name"
+                    if (ILOG) Log.d(TAG, msg)
+                throw IllegalArgumentException(msg)
+            }
+
+            if (ILOG) Log.d(TAG, "getClassSimpleName: enclosingClass: $enclosingClass simpleName: $ret")
+            return ret
+        }
+
+        fun d(tag: String, msg: String) {
+            if (!ILOG)
+                Log.d(tag, msg)
+        }
     }
 
     object State {
@@ -23,27 +47,25 @@ interface LoggingApi {
         private val tagToTextMap = ConcurrentHashMap<String, StringBuffer>()
 
         private fun getClassLogKey(enclosingClass: KClass<*>): String {
-            val ret: String = enclosingClass.qualifiedName?.takeIf { it.isNotBlank() }
-                ?: enclosingClass.java.name.takeIf { it.isNotBlank() }
-                ?: run {
-                    val msg = "getClassSimpleNameLog: Unable to resolve a non-blank class simple name"
-                    Log.d(TAG, msg)
-                    throw IllegalArgumentException(msg)
-                }
+            val ret: String = getClassLogName(enclosingClass = enclosingClass) ?: run {
+                val msg = "getDeclaredSimpleName: Unable to resolve a non-blank class simple name"
+                Log.d(TAG, msg)
+                throw IllegalArgumentException(msg)
+            }
             if (ILOG) Log.d(TAG, "getClassSimpleName: enclosingClass: $enclosingClass simpleName: $ret")
             return ret
         }
 
-        fun enable (enclosingClass: KClass<*>,
-                    enable: Boolean = true,
-                    extraCall: ((String, String) -> Unit)? = null) {
+        fun enable(enclosingClass: KClass<*>,
+                   enable: Boolean = true,
+                   extraCall: ((String, String) -> Unit)? = null) {
             val simpleName = getClassLogKey(enclosingClass)
-            if (ILOG) Log.d(TAG, "$enclosingClass/$simpleName Calling logging $enable")
-            registerLog(simpleName, enable, extraCall
-            )
+            if (ILOG) Log.d(TAG, "$enclosingClass/$simpleName Calling logging $enable extraCall: $extraCall")
+            registerLog(simpleName, enable, extraCall)
         }
 
         fun setGlobal(enable: Boolean) {
+            if (ILOG) Log.d(TAG, "setGlobal $enable")
             globalEnable = enable
         }
 
@@ -55,6 +77,8 @@ interface LoggingApi {
             enable: Boolean,
             extraCall: ((String, String) -> Unit)?
         ) {
+            if (ILOG) Log.d(TAG, "registerLog $classTag $enable")
+
             val previous = enableMap.put(classTag, enable)
 
             if (previous != enable) {
@@ -68,16 +92,23 @@ interface LoggingApi {
             }
         }
 
-        fun extraCall(tag: String):((String, String) -> Unit)? {
-            return extraCallMap[tag]
+        fun extraCall(tag: String): ((String, String) -> Unit)? {
+            extraCallMap[tag]?.let {
+                if (ILOG) Log.d(TAG, "Extracting extraCall for execute: ${extraCallMap[tag]} tag: $tag")
+                return it
+            }
+            return null
         }
 
         fun callCount(classTag: String) : Long {
+            if (ILOG) Log.d(TAG, "callCount: classTag: $classTag")
             return callCountMap.computeIfAbsent(classTag) { AtomicLong() }.incrementAndGet()
         }
 
-        fun appendLog(classTag: String, tag: String? = null, text: String) {
+        fun logAppend(classTag: String, tag: String? = null, text: String) {
             val prefix = staticPrefix(classTag, tag)
+            if (ILOG) Log.d(TAG, "appendLog: classTag: $classTag tag: $tag prefix: $prefix")
+
             synchronized(tagToTextMap) {
                 val buffer = tagToTextMap.computeIfAbsent(prefix) { StringBuffer() }
                 buffer.append(text)
@@ -88,6 +119,8 @@ interface LoggingApi {
 
         fun consumeLog(classTag: String, tag: String? = null): String {
             val prefix: String = staticPrefix(classTag, tag)
+            if (ILOG) Log.d(TAG, "consumeLog: classTag: $classTag tag: $tag prefix: $prefix")
+
             synchronized(tagToTextMap) {
                 return tagToTextMap.remove(prefix)?.toString() ?: ""
             }
@@ -95,6 +128,24 @@ interface LoggingApi {
 
         fun staticPrefix(classTag: String, tag: String? = null): String {
             return (if (tag == null) classTag else "$classTag/$tag")
+        }
+
+        fun prefix(classTag: String, tag: String? = null): String {
+            val count = callCount(classTag)
+            return (if (tag == null) "$count/$classTag" else "$count/$classTag/$tag")
+        }
+
+        fun logdEmit(classTag: String, tag: String?, message: String?) {
+            val existing = consumeLog(classTag, tag)
+            val prefix = prefix(classTag, tag)
+            val text = "[$prefix] " + existing + (message ?: "")
+            LoggingApi.d("[$prefix]", text)
+            val callbackKey = tag ?: classTag
+            extraCall(classTag)?.invoke(callbackKey, text)
+        }
+
+        fun logdAppendEmit(classTag: String, tag: String?, message: String) {
+            logAppend(classTag, tag, message)
         }
     }
 
@@ -108,14 +159,10 @@ interface LoggingApi {
         extraCall: ((String, String) -> Unit)? = null
     ) = State.registerLog(classTag, enable, extraCall)
 
+    /*
     fun extraCall(tag: String):((String, String) -> Unit)? = State.extraCall(tag)
-
-    fun prefix (classTag: String, tag: String? = null): String {
-        val count = callCount(classTag)
-        return (if (tag == null) "$count/$classTag" else "$count/$classTag/$tag")
-    }
-
     private fun callCount(classTag: String) : Long = State.callCount(classTag)
+    */
 
     fun isEnabled(): Boolean = State.globalEnable
 
@@ -123,7 +170,14 @@ interface LoggingApi {
 
     fun setGlobal(enable: Boolean) = State.setGlobal(enable)
 
-    fun appendLog(classTag: String, tag: String? = null, text: String) = State.appendLog(classTag, tag, text)
-
+    /*
+    fun logAppend(classTag: String, tag: String? = null, text: String) = State.logAppend(classTag, tag, text)
     fun consumeLog(classTag: String, tag: String? = null): String  = State.consumeLog(classTag, tag)
+    */
+
+    fun logdEmit(classTag: String, tag: String?, message: String?) = State.logdEmit(classTag, tag, message)
+
+    fun logdAppendEmit(classTag: String, tag: String?, message: String) = State.logdAppendEmit(classTag, tag, message)
+
+    fun logD(tag: String, logF: Boolean = true) { }
 }

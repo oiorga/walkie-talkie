@@ -9,6 +9,8 @@ import walkie.talkie.api.wtchat.ReceiverInt
 import walkie.talkie.api.wtchat.SenderInt
 import walkie.talkie.api.wtcomm.CommPacket
 import walkie.talkie.api.wtcomm.CommPacketInt
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -149,7 +151,8 @@ data class ChatMessageItem(
 
 data class ChatMessageItemList(
     private val itList: MutableList<ChatMessageItemInt> = mutableListOf<ChatMessageItemInt>()
-) : GenericListAbs<ChatMessageItemInt>(itList) {
+) : GenericListAbs<ChatMessageItemInt>(itList),
+    LoggingApi by Logging {
 
     companion object {
         const val TAG = "ChatMessageItemList"

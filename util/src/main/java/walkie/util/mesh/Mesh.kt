@@ -13,7 +13,9 @@ import walkie.util.api.MeshDispatchEventId
 import walkie.util.api.MeshKey
 import walkie.util.BlockingQueue
 import walkie.util.EventDispatcher
+import walkie.util.Logging
 import walkie.util.api.EventDispatcherApi
+import walkie.util.api.LoggingApi
 import walkie.util.api.MeshApi
 import walkie.util.logd
 import walkie.util.logging
@@ -23,10 +25,12 @@ abstract class Mesh<K , V> (
     override val uniqueId: K,
     override val scope: CoroutineScope,
     override val heartbeat: Long = 3000L,
-    private val _dispatchEvent: EventDispatcherApi<Any> = EventDispatcher()
-) : MeshApi<K, V>,
+    private val _dispatchEvent: EventDispatcherApi<Any> = EventDispatcher(),
+) : LoggingApi by Logging,
+    MeshApi<K, V>,
     EventDispatcherApi<Any> by _dispatchEvent
 {
+
     companion object {
         const val TAG = "Mesh"
         val TAGKClass = Mesh::class

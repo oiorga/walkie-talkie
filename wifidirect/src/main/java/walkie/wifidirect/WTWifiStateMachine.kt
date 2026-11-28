@@ -4,6 +4,8 @@ import android.net.wifi.p2p.WifiP2pDevice
 import android.net.wifi.p2p.WifiP2pGroup
 import android.net.wifi.p2p.WifiP2pInfo
 import walkie.talkie.api.wtsystem.NodeIdInt
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 import walkie.util.getInterfaceIpv4Address
 import walkie.util.jvmEnclosingClassSimpleName
 import walkie.util.logd
@@ -188,8 +190,8 @@ data class WTWifiDB(
     private var connectToDeviceCached: WTWifiDirectPeerInfo? = null,
     var tick: Int = 0,
     private var cycle: Int  = CYCLE + Random.nextInt(CYCLE / 2),
-    private var errTracker: WTWifiErrorTracker? = null
-    ) {
+    private var errTracker: WTWifiErrorTracker? = null,
+) : LoggingApi by Logging {
     companion object {
         const val TAG = "WTWifiDB"
         val TAGKClass = WTWifiDB::class

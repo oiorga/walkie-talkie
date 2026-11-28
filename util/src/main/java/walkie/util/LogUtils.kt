@@ -1,121 +1,87 @@
 package walkie.util
 
-import android.util.Log
 import walkie.util.api.LoggingApi
 import kotlin.jvm.java
 import kotlin.reflect.KClass
 
 /**
- * Initial From:
- *       https://gist.github.com/paolop
- *       https://gist.github.com/paolop/0bd59e49b33d18d6089fb1bf5488e212
- *
- */
-
-/**
-* Utility that returns the name of the class from within it is invoked.
-* It allows to handle invocations from anonymous classes given that the string returned by `T::class.java.simpleName`
-* in this case is an empty string.
-*
-* From: https://gist.github.com/paolop
-*       https://gist.github.com/paolop/0bd59e49b33d18d6089fb1bf5488e212
-*
-* @throws IllegalArgumentException if `enclosingClass` is `null` and this function is invoked within an anonymous class
 *
 */
 
-@PublishedApi
-internal inline fun <reified T> T.getDeclaredSimpleNameLog(enclosingClass: KClass<*>? = null): String {
-    val ret: String = enclosingClass?.simpleName?.takeIf { it.isNotBlank() }
-        ?: T::class.java.enclosingClass?.simpleName?.takeIf { it.isNotBlank() }
-        ?: T::class.java.simpleName.takeIf { it.isNotBlank() }
-        ?: run {
-            val msg = "getDeclaredSimpleName: Unable to resolve a non-blank class simple name"
-            Log.d(Logging.TAG, msg)
-            throw IllegalArgumentException(msg)
-        }
-    if (Logging.ONE.iLog()) Log.d(Logging.TAG, "getClassSimpleName: enclosingClass: $enclosingClass simpleName: $ret")
-    return ret
+object Logging: LoggingApi {
+    const val TAG = "Logging"
+
+    fun enable (enclosingClass: KClass<*>,
+                enable: Boolean = true,
+                extraCall: ((String, String) -> Unit)? = null)
+            = LoggingApi.State.enable(enclosingClass, enable, extraCall)
 }
 
-inline fun <reified T> T.logging(enable: Boolean = true,
+@PublishedApi
+internal inline fun <reified T: LoggingApi> T.getDeclaredSimpleNameLog(
+    enclosingClass: KClass<*>? = null
+): String = LoggingApi.getResolvedClassLogName<T>(enclosingClass)
+
+inline fun <reified T: LoggingApi> T.logging(enable: Boolean = true,
                                  noinline extraCall: ((String, String) -> Unit)? = null) {
     val classTag = getDeclaredSimpleNameLog()
-    if (Logging.ONE.iLog()) Log.d(Logging.TAG, "$classTag calling logging $enable")
-    Logging.ONE.registerLog(classTag, enable, extraCall)
+    if (Logging.iLog()) LoggingApi.d(Logging.TAG, "$classTag calling logging $enable")
+    Logging.registerLog(classTag, enable, extraCall)
 }
 
-@PublishedApi
-internal fun logdEmit(classTag: String, tag: String?, message: String?) {
-    val logging = Logging.ONE
-    val existing = logging.consumeLog(classTag, tag)
-    val prefix = logging.prefix(classTag, tag)
-    val text = "[$prefix] " + existing + (message ?: "")
-    Log.d("[$prefix]", text)
-    val callbackKey = tag ?: classTag
-    logging.extraCall(callbackKey)?.invoke(callbackKey, text)
-}
-
-@PublishedApi
-internal fun logdAppendEmit(classTag: String, tag: String?, message: String) {
-    Logging.ONE.appendLog(classTag, tag, message)
-}
-
-inline fun <reified T> T.logd(enclosingClass: KClass<*>? = null, message: String? = null, logF: Boolean = true) {
-    if (logF && Logging.ONE.isEnabled()) {
-        if (Logging.ONE.iLog()) Log.d(Logging.TAG, "logd calling log: enclosingClass: $enclosingClass")
+inline fun <reified T: LoggingApi> T.logd(enclosingClass: KClass<*>? = null, message: String? = null, logF: Boolean = true) {
+    if (logF && Logging.isEnabled()) {
+        if (Logging.iLog()) {
+            val iTag = "${Logging.TAG}/logd1"
+            LoggingApi.d(iTag , "logd calling log: enclosingClass: $enclosingClass")
+        }
         log(enclosingClass) { classTag -> logdEmit(classTag, null, message) }
     }
 }
 
-inline fun <reified T> T.logdAppend(enclosingClass: KClass<*>? = null, message: String, logF: Boolean = true) {
-    if (logF && Logging.ONE.isEnabled()) {
-        if (Logging.ONE.iLog()) Log.d(Logging.TAG, "logdAppend calling log: enclosingClass: $enclosingClass")
-        log(enclosingClass) { classTag -> logdAppendEmit(classTag, null, message) }
-    }
-}
-
-inline fun <reified T> T.logd(enclosingClass: KClass<*>? = null, tag: String, message: String? = null, logF: Boolean = true) {
-    if (logF && Logging.ONE.isEnabled()) {
-        if (Logging.ONE.iLog()) Log.d(Logging.TAG, "logd calling log: enclosingClass: $enclosingClass tag: $tag")
+inline fun <reified T: LoggingApi> T.logd(enclosingClass: KClass<*>? = null, tag: String, message: String? = null, logF: Boolean = true) {
+    if (logF && Logging.isEnabled()) {
+        if (Logging.iLog()) {
+            val iTag = "${Logging.TAG}/logd2"
+            LoggingApi.d(iTag, "logd calling log: enclosingClass: $enclosingClass tag: $tag")
+        }
         log(enclosingClass) { classTag -> logdEmit(classTag, tag, message) }
     }
 }
 
-inline fun <reified T> T.logdAppend(enclosingClass: KClass<*>? = null, tag: String, message: String, logF: Boolean = true) {
-    if (logF && Logging.ONE.isEnabled()) {
-        if (Logging.ONE.iLog()) Log.d(Logging.TAG, "logdAppend calling log: enclosingClass: $enclosingClass tag: $tag")
-        log(enclosingClass) { classTag -> logdAppendEmit(classTag, tag, message) }
-    }
-}
-
 @PublishedApi
-internal inline fun <reified T> T.log(
+internal inline fun <reified T: LoggingApi> T.log(
     enclosingClass: KClass<*>? = null,
     logger: (String) -> Unit
 ) {
-    val logging = Logging.ONE
     val classTag = this.getDeclaredSimpleNameLog(enclosingClass)
-    if (!logging.isEnabled(classTag)) return
-    if (logging.iLog()) {
-        Log.d(
-            Logging.TAG, "log calling logger: " +
+    if (!Logging.isEnabled(classTag)) return
+    if (Logging.iLog()) {
+        val iTag = "${Logging.TAG}/log1"
+        LoggingApi.d(iTag,
+            "log calling logger: " +
                     "\nenclosingClass: $enclosingClass " +
                     "\nclassTag: [$classTag] - [${T::class.java.simpleName}/${T::class.simpleName}]")
     }
     logger(classTag)
 }
 
-inline fun <reified T> T.logd(tag: String, message: String? = null, logF: Boolean = true) {
-    if (logF && Logging.ONE.isEnabled()) {
-        if (Logging.ONE.iLog()) Log.d(Logging.TAG, "logd calling log: tag: $tag")
+inline fun <reified T: LoggingApi> T.logd(tag: String, message: String? = null, logF: Boolean = true) {
+    if (logF && Logging.isEnabled()) {
+        if (Logging.iLog()) {
+            val iTag = "${Logging.TAG}/log3"
+            LoggingApi.d(iTag, "logd calling log: tag: $tag")
+        }
         log(null) { classTag -> logdEmit(classTag, tag, message) }
     }
 }
 
-inline fun <reified T> T.logdAppend(tag: String, message: String = "", logF: Boolean = true) {
-    if (logF && Logging.ONE.isEnabled()) {
-        if (Logging.ONE.iLog()) Log.d(Logging.TAG, "logdAppend calling log: tag: $tag")
+inline fun <reified T: LoggingApi> T.logdAppend(tag: String, message: String = "", logF: Boolean = true) {
+    if (logF && Logging.isEnabled()) {
+        if (Logging.iLog()) {
+            val iTag = "${Logging.TAG}/logAppend3"
+            LoggingApi.d(iTag, "logdAppend calling log: tag: $tag")
+        }
         log(null) { classTag -> logdAppendEmit(classTag, tag, message) }
     }
 }
@@ -221,16 +187,3 @@ class Logging() {
     }
 }
 */
-
-class Logging(): LoggingApi{
-    companion object {
-        val ONE: Logging by lazy(LazyThreadSafetyMode.SYNCHRONIZED) { Logging() }
-        const val TAG = LoggingApi.TAG
-        const val ILOG = LoggingApi.ILOG
-        private const val MAX_BUFFER_CHARS = LoggingApi.MAX_BUFFER_CHARS
-        fun enable (enclosingClass: KClass<*>,
-                    enable: Boolean = true,
-                    extraCall: ((String, String) -> Unit)? = null)
-        = LoggingApi.State.enable(enclosingClass, enable, extraCall)
-    }
-}

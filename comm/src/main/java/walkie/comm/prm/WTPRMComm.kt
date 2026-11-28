@@ -25,7 +25,9 @@ import walkie.talkie.api.wtModule.WTModOpMod
 import walkie.util.api.MeshDispatchEventId
 import walkie.util.api.MeshKey
 import walkie.util.EventDispatcher
+import walkie.util.Logging
 import walkie.util.api.EventDispatcherApi
+import walkie.util.api.LoggingApi
 import walkie.util.inetToIpString
 import walkie.util.logd
 import walkie.util.logging
@@ -39,12 +41,12 @@ class WTPRMComm (
     private val _dispatchEvent: EventDispatcherApi<Any> = EventDispatcher(),
     private val _moduleOp: WTModuleOpModApi = WTModuleOpMod(
         messageBus = _busMux,
-        remoteCall = null)
+        remoteCall = null),
 ) :
+    LoggingApi by Logging,
     WTMessageBusApi by _busMux,
     WTModuleOpModApi by _moduleOp,
-    EventDispatcherApi<Any> by _dispatchEvent
-{
+    EventDispatcherApi<Any> by _dispatchEvent {
     val wtIPComm: WTIPComm = WTIPComm(node, scope)
     private val wtMesh: WTIPMesh = WTIPMesh(node.uid(), scope)
 

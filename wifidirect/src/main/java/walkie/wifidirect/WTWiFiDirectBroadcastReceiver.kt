@@ -32,6 +32,8 @@ import walkie.talkie.api.WTBusMessageType
 import walkie.talkie.api.WTMessageBusApi
 import walkie.talkie.api.wtModule.WTModOpMod
 import walkie.talkie.api.WTMessageBus
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 import walkie.util.getDeclaredSimpleName
 import walkie.util.logd
 import walkie.util.logging
@@ -50,8 +52,9 @@ class WiFiDirectBroadcastReceiver (
                 type = type,
                 data = data
             )
-        })
+        }),
 ) : BroadcastReceiver(),
+    LoggingApi by Logging,
     WTModuleOpModApi by _moduleOp,
     WTMessageBusApi by _busMux
 {

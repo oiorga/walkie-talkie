@@ -6,14 +6,16 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import walkie.util.api.BlockingQueueApi
 import walkie.util.api.BlockingQueueResult
+import walkie.util.api.LoggingApi
 import kotlin.time.Duration.Companion.milliseconds
 
 class BlockingQueue<T> (
     override val name: String,
     override val capacity: Int = 100,
     override val scope: CoroutineScope,
-    private val channel: Channel<T> = Channel<T>(capacity)
-) : BlockingQueueApi<T> {
+    private val channel: Channel<T> = Channel<T>(capacity),
+) : BlockingQueueApi<T>,
+    LoggingApi by Logging {
     private val logDString: String
         get() = "name: $name"
     val tag = name

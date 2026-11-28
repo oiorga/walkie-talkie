@@ -9,6 +9,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import walkie.util.api.LoggingApi
 import java.net.BindException
 import java.net.ConnectException
 import java.net.InetAddress
@@ -27,7 +28,8 @@ class TCPServer (
     private val soTimeout: Int = 0,
     private val scope: CoroutineScope,
     private val callBackLoop: (suspend (client: Socket, input : Scanner) -> Boolean)? = null
-) {
+) : LoggingApi by Logging {
+
     companion object {
         const val TAG = "TCPServer"
         val TAGKClass = TCPServer::class
@@ -184,12 +186,12 @@ class TCPServer (
 class TCPClient (
     private val serverIpAddress: InetAddress,
     private val serverPort: Int,
-    private val scope: CoroutineScope
-) {
+    private val scope: CoroutineScope,
+) : LoggingApi by Logging {
+
     companion object {
         const val TAG = "TCPClient"
         val TAGKClass = TCPClient::class
-
     }
 
     private val dispatcher = Dispatchers.IO

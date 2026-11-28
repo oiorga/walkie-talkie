@@ -37,8 +37,10 @@ import walkie.talkie.api.WTRemoteCallApi
 import walkie.talkie.api.WTRemoteCall
 import walkie.talkie.api.wtModule.getPropVal
 import walkie.util.GenericList
+import walkie.util.Logging
 import walkie.util.Mailbox
 import walkie.util.MailboxData
+import walkie.util.api.LoggingApi
 import walkie.util.logd
 import walkie.util.logdAppend
 import walkie.util.logging
@@ -59,8 +61,8 @@ class WTWifiDirectManager(
     val scope: CoroutineScope,
     private val _busMux: WTMessageBus = WTMessageBus(),
     private val _callMap: WTRemoteCall = WTRemoteCall(),
-    private val _moduleOp: WTModuleOpModApi = WTModuleOpMod(_busMux, _callMap)
-) :
+    private val _moduleOp: WTModuleOpModApi = WTModuleOpMod(_busMux, _callMap),
+) : LoggingApi by Logging,
     WTModuleOpModApi by _moduleOp,
     WTMessageBusApi by _busMux,
     WTRemoteCallApi by _callMap {

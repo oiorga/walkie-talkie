@@ -10,6 +10,8 @@ import walkie.talkie.R
 import walkie.talkie.ui.theme.DarkGreen
 import walkie.talkie.ui.theme.DarkGreen01
 import walkie.talkie.ui.theme.PaleGreen
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -45,8 +47,8 @@ class WTLineTextAnimation(
     private val textArray: String = ".",
     val color: Color = Color.Green,
     val colorStep: Int? = null,
-    private val outputLength: Int = textArray.length
-) {
+    private val outputLength: Int = textArray.length,
+) : LoggingApi by Logging {
     private var tick: Int = 0
     private var output: String = ""
     private var tLength: Int = textArray.length
@@ -57,7 +59,7 @@ class WTLineTextAnimation(
     }
 
     init {
-        val tag = "init{}/${randomString(2U)}"
+        val tag = "init/${randomString(2U)}"
         logging()
         logd(tag, "textArray: $textArray outputLength: $outputLength")
     }

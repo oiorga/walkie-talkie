@@ -4,14 +4,17 @@ import walkie.talkie.api.wtsystem.NodeIdInt
 import walkie.talkie.api.wtsystem.nodeUniqueId
 import walkie.talkie.api.wtsystem.uidToId
 import walkie.talkie.api.wtsystem.uidToUnique
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
 
 data class NodeId (
     override val id: String,
-    override val unique: String? = null
-) : NodeIdInt {
+    override val unique: String? = null,
+) : NodeIdInt,
+    LoggingApi by Logging {
     private var uid: String
     private var uniq: String
 
@@ -39,14 +42,14 @@ data class NodeId (
     }
 
     override fun id(): String {
-        return id.toString()
+        return id
     }
     override fun unique(): String {
-        return uniq.toString()
+        return uniq
     }
 
     override fun uid(id: String?, unique: String?): String {
-        if (null == id && null == unique) return uid.toString()
+        if (null == id && null == unique) return uid
         id!!
         unique!!
         return nodeUniqueId(id, unique)
@@ -61,7 +64,11 @@ data class NodeId (
                     "\n\t\t\t\tuid: $uid")
     }
 
-    data class Builder(private var id: String? = null, private var unique: String? = null, private var uid: String? = null) {
+    data class Builder(
+        private var id: String? = null,
+        private var unique: String? = null,
+        private var uid: String? = null
+    ) : LoggingApi by Logging {
         fun id(id: String) = apply {
             this.id = id
         }

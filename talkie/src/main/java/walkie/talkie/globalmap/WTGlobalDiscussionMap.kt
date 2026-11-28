@@ -29,6 +29,8 @@ import walkie.talkie.api.WTRemoteCallApi
 import walkie.talkie.api.wtModule.WTModOpMod
 import walkie.talkie.common.UpdateUiLiveData
 import walkie.talkie.node.NodeId
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -43,7 +45,9 @@ data class DiscussionMap(
     private val _moduleOp: WTModuleOpModApi = WTModuleOpMod(
         messageBus = _busMux,
         remoteCall = _callMap)
-) : WTRemoteCallApi by _callMap,
+) :
+    LoggingApi by Logging,
+    WTRemoteCallApi by _callMap,
     WTModuleOpModApi by _moduleOp,
     WTMessageBusApi by _busMux
 {

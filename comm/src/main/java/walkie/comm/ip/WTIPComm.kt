@@ -26,7 +26,9 @@ import walkie.util.TCPServer
 import walkie.util.exceptionToString
 import walkie.util.BlockingQueue
 import walkie.util.EventDispatcher
+import walkie.util.Logging
 import walkie.util.api.EventDispatcherApi
+import walkie.util.api.LoggingApi
 import walkie.util.getInetAddressByName
 import walkie.util.logd
 import walkie.util.logging
@@ -56,6 +58,7 @@ class WTIPComm (
         messageBus = _busMux,
         remoteCall = null)
 ) :
+    LoggingApi by Logging,
     WTMessageBusApi by _busMux,
     WTModuleOpModApi by _moduleOp,
     EventDispatcherApi<Any> by _dispatchEvent

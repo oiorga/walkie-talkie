@@ -23,6 +23,8 @@ import walkie.talkie.api.wtmisc.WTNavigation
 import walkie.talkie.common.WTDataHub
 import walkie.talkie.node.NodeId
 import walkie.talkie.ui.nav.WTNavGraph
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -41,7 +43,10 @@ class WTViewModelFactory(
     }
 }
 
-class WTViewModel (val wtHub: WTDataHub): ViewModel(), WTDebugInt {
+class WTViewModel (
+    val wtHub: WTDataHub,
+) : ViewModel(), WTDebugInt,
+    LoggingApi by Logging{
     companion object {
         const val TAG = "WTViewModel"
     }

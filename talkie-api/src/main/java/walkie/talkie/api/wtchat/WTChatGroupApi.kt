@@ -5,6 +5,8 @@ import kotlinx.serialization.Serializable
 import walkie.util.GenericListAbs
 import walkie.util.GenericMapAbs
 import walkie.talkie.api.wtsystem.NodeIdInt
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 
 @Serializable
 sealed interface CGType {
@@ -39,7 +41,6 @@ interface ChatGroupIdInt {
         get() = (ChatGroupType.LocalDebug == type ||
                 ChatGroupType.LocalChatTesting == type ||
                 ChatGroupType.RemoteChatTesting == type)
-    fun logD(tag: String = "ChatGroupIdInt", logF: Boolean = true)
 }
 
 abstract class ChatGroupMapAbs (
@@ -49,12 +50,5 @@ abstract class ChatGroupMapAbs (
 abstract class ChatGroupListAbs (
     open val groupId: ChatGroupIdInt,
     private val groupIdList: MutableList<NodeIdInt>
-) : GenericListAbs<NodeIdInt>(groupIdList) {
-
-    fun logD(tag: String = "ChatGroupListAbs", logF: Boolean = true) {
-        if (logF) Log.d(tag, "\n$tag" +
-                "\n\t\t\t\tgroupId: " + groupId +
-                "\n\t\t\t\tgroupList: " + groupIdList
-        )
-    }
-}
+) : LoggingApi by Logging,
+    GenericListAbs<NodeIdInt>(groupIdList)

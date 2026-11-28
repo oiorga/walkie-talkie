@@ -1,8 +1,11 @@
 package walkie.comm.ip
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 import walkie.util.logd
 import walkie.util.logging
 import walkie.util.randomString
@@ -15,13 +18,18 @@ enum class WTIPCommPacketType {
     ControlBroadcast,
     ControlUnicast,
     Data
+
 }
 
 @Serializable
 class WTIPPacketComm (
     val ipCommType: WTIPCommPacketType,
-    val jsonString: String
-) {
+    val jsonString: String,
+    @Transient
+    val logging: LoggingApi = Logging
+) : LoggingApi by logging
+  {
+
     companion object {
         const val TAG = "WTIPPacketComm"
         val TAGKClass = WTIPPacketComm::class

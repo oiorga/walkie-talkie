@@ -1,10 +1,11 @@
 package walkie.util
 
+import walkie.util.api.LoggingApi
 import java.io.PrintWriter
 import java.io.StringWriter
 import kotlin.reflect.KClass
 
-inline fun <reified T> T.`try`(enclosingClass: KClass<*>? = T::class, tag: String? = null, rethrowException: Boolean = true, crossinline tryCode: () -> Unit): Exception? {
+inline fun <reified T: LoggingApi> T.`try`(enclosingClass: KClass<*>? = T::class, tag: String? = null, rethrowException: Boolean = true, crashOnException: Boolean = true,  crossinline tryCode: () -> Unit): Exception? {
     val inTag = "wtTry/${tag ?: ""}/${randomString(2U)}"
     val name = getDeclaredSimpleName(enclosingClass)
     var exception: Exception? = null
@@ -13,9 +14,12 @@ inline fun <reified T> T.`try`(enclosingClass: KClass<*>? = T::class, tag: Strin
     try {
         tryCode()
     } catch (e: Exception) {
-        if (rethrowException) {
-            logd(enclosingClass, inTag, "$name throwing exception: \n${exceptionToString(e)}")
-            throw e
+        logd(enclosingClass, inTag, "$name Caught exception: \n${exceptionToString(e)}")
+        when {
+            crashOnException -> {
+                error("$name failed: ${exceptionToString(e)}")
+            }
+            rethrowException -> throw e
         }
         exception = e
     }

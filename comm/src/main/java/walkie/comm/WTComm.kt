@@ -20,6 +20,8 @@ import walkie.talkie.api.wtcomm.WTCommChatMessageOut
 import walkie.talkie.api.wtcomm.WTCommPacketIn
 import walkie.talkie.api.wtcomm.WTCommPacketOut
 import walkie.talkie.api.wtsystem.NodeIdInt
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 import walkie.util.api.MeshDispatchEventId
 import walkie.util.logd
 import walkie.util.logging
@@ -31,10 +33,11 @@ class WTComm (
     private val _busMux: WTMessageBus = WTMessageBus(),
     private val _moduleOp: WTModuleOpModApi = WTModuleOpMod(
         messageBus = _busMux,
-        remoteCall = null)
-
-) : WTMessageBusApi by _busMux,
+        remoteCall = null),
+) :
+    WTMessageBusApi by _busMux,
     WTModuleOpModApi by _moduleOp,
+    LoggingApi by Logging,
     WTCommChatMessageIn,
     WTCommChatMessageOut,
     WTCommPacketOut,

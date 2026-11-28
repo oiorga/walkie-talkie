@@ -12,6 +12,8 @@ import android.net.wifi.p2p.WifiP2pManager
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceInfo
 import android.net.wifi.p2p.nsd.WifiP2pDnsSdServiceRequest
 import walkie.util.CallbackResult
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 import walkie.util.awaitResult
 import walkie.util.awaitValue
 import walkie.util.logd
@@ -22,7 +24,7 @@ class WTWifiDirect(
     private val manager: WifiP2pManager,
     private var channel: WifiP2pManager.Channel,
     private var env: WTWifiDirectEnv,
-) {
+) : LoggingApi by Logging {
     companion object {
         const val TAG = "WTWifiDirect"
         val TAGKClass = WTWifiDirect::class

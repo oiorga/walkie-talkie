@@ -2,9 +2,12 @@ package walkie.talkie.api.wtcomm
 
 import android.util.Log
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import walkie.talkie.api.wtchat.ChatGroupType
 import walkie.talkie.api.wtsystem.nodeUniqueId
+import walkie.util.Logging
+import walkie.util.api.LoggingApi
 
 enum class CommTransmissionMedium {BlueTooth, WIFIDirect}
 enum class CommLoopback {Internal, External}
@@ -17,7 +20,7 @@ enum class WTCommType {
     Data
 }
 
-interface CommPacketInt {
+interface CommPacketInt: LoggingApi {
     /* val commType: WTCommType */
     val directReceiver: String?
     val receiverId: String?
@@ -30,7 +33,6 @@ interface CommPacketInt {
     val payloadType: String?
     val payloadTimeStampCreation: Long?
     val payloadValue: ByteArray?
-    fun logD(tag: String = "CommPacket", logF: Boolean = true)
     fun senderUId(): String?
     fun receiverUId(): String?
 }
@@ -49,7 +51,8 @@ data class CommPacket (
     override val payloadType: String,
     override val payloadTimeStampCreation: Long,
     override val payloadValue: ByteArray
-) : CommPacketInt {
+) : CommPacketInt,
+    LoggingApi by Logging {
 
     fun toJson() : String {
         val json = Json { encodeDefaults = true }

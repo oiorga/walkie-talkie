@@ -1,7 +1,6 @@
 package walkie.chat
 
 import android.util.Log
-import kotlinx.coroutines.sync.Mutex
 import walkie.talkie.api.wtchat.AuthorInt
 import walkie.talkie.api.wtchat.ChatGroupIdInt
 import walkie.talkie.api.wtchat.ChatGroupListAbs
@@ -56,7 +55,6 @@ data class ChatGroupMap(
         val exist = groupMap[chatGroupId] != null
         return exist
     }
-
 }
 
 data class ChatGroupList(
@@ -84,10 +82,6 @@ data class ChatGroupId(
         Log.d(tag, "$tag: $groupId")
         if (debug && (null == groupName)) groupName = groupId
         groupName!!
-    }
-
-    override fun logD(tag: String, logF: Boolean) {
-        if (logF) Log.d(tag, "tag\ngroupId: $groupId\ntype: $type")
     }
 }
 

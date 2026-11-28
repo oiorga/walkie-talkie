@@ -11,10 +11,14 @@ import walkie.util.api.BusMessageApi
 import walkie.util.api.BusMessageBaseApi
 import walkie.util.api.MessageBusId
 import walkie.util.api.BusMessageType
+import walkie.util.api.LoggingApi
 import walkie.util.api.MessageBusApi
 import walkie.util.api.MessageBusBaseApi
 
-open class MessageBusBase<BusId, Message: BusMessageBaseApi<MessageType, DataType>, MessageType, DataType>() : MessageBusBaseApi<BusId, Message, MessageType, DataType> {
+abstract class MessageBusBase<BusId, Message: BusMessageBaseApi<MessageType, DataType>, MessageType, DataType>() :
+    MessageBusBaseApi<BusId, Message, MessageType, DataType>,
+    LoggingApi by Logging
+{
     private var _busMap: MutableMap<BusId, MutableSharedFlow<Message>> = mutableMapOf()
     private var _scopeMap: MutableMap<BusId, CoroutineScope> = mutableMapOf()
     private val subscriberMap: MutableMap<BusId, Job> = mutableMapOf()
